@@ -95,6 +95,10 @@ if test "$gl_gcc_warnings" = yes; then
   nw="$nw -Wsuggest-attribute=pure"
   nw="$nw -Wduplicated-branches"    # Too many false alarms
 
+  # Avoid false alarm in lib/vasnprintf.c.
+  # https://lists.gnu.org/r/bug-gnulib/2021-01/msg00031.html
+  gl_WARN_ADD([-Wno-analyzer-null-argument])
+
   gl_WARN_ADD([-Wno-return-local-addr])    # avoid this false alarm:
   # careadlinkat.c: In function 'careadlinkat':
   # cc1: error: function may return address of local variable [-Werror=return-local-addr]
