@@ -22,7 +22,7 @@
 
 #include "diff.h"
 
-#include <xalloc.h>
+#include <xmalloca.h>
 
 struct group
 {
@@ -362,20 +362,14 @@ do_printf_spec (FILE *out, char const *spec,
             printint print_value = value;
             size_t spec_prefix_len = f - spec - 2;
             size_t pI_len = sizeof pI - 1;
-#if 0
-            char format[spec_prefix_len + pI_len + 2];
-#else
-            char *format = xmalloc (spec_prefix_len + pI_len + 2);
-#endif
+            char *format = xmalloca (spec_prefix_len + pI_len + 2);
             char *p = format + spec_prefix_len + pI_len;
             memcpy (format, spec, spec_prefix_len);
             memcpy (format + spec_prefix_len, pI, pI_len);
             *p++ = c;
             *p = '\0';
             fprintf (out, format, print_value);
-#if ! HAVE_C_VARARRAYS
-            free (format);
-#endif
+            freea (format);
           }
       }
       break;

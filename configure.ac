@@ -111,7 +111,6 @@ if test "$gl_gcc_warnings" = yes; then
 fi
 
 AC_C_INLINE
-AC_C_VARARRAYS
 
 AC_DEFINE([DEFAULT_EDITOR_PROGRAM], ["ed"],
   [Name of editor program, unless overridden.])
