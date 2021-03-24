@@ -100,13 +100,6 @@ if test "$gl_gcc_warnings" = yes; then
   # https://lists.gnu.org/r/bug-gnulib/2021-01/msg00031.html
   gl_WARN_ADD([-Wno-analyzer-null-argument])
 
-  gl_WARN_ADD([-Wno-return-local-addr])    # avoid this false alarm:
-  # careadlinkat.c: In function 'careadlinkat':
-  # cc1: error: function may return address of local variable [-Werror=return-local-addr]
-  # careadlinkat.c:73:8: note: declared here
-  #    73 |   char stack_buf[1024];
-  #          |        ^~~~~~~~~
-
   gl_MANYWARN_COMPLEMENT([GNULIB_WARN_CFLAGS], [$WARN_CFLAGS], [$nw])
   AC_SUBST([GNULIB_WARN_CFLAGS])
 fi
