@@ -257,6 +257,7 @@ main (int argc, char **argv)
   int mapping[3];
   int rev_mapping[3];
   int incompat = 0;
+  enum { OPTION_3, OPTION_A, OPTION_E, OPTION_X, OPTION_e, OPTION_x };
   bool conflicts_found;
   struct diff_block *thread0, *thread1, *last_block;
   struct diff3_block *diff3;
@@ -285,15 +286,15 @@ main (int argc, char **argv)
         case 'A':
           show_2nd = true;
           flagging = true;
-          incompat++;
+          incompat |= 1 << OPTION_A;
           break;
         case 'x':
           overlap_only = true;
-          incompat++;
+          incompat |= 1 << OPTION_x;
           break;
         case '3':
           simple_only = true;
-          incompat++;
+          incompat |= 1 << OPTION_3;
           break;
         case 'i':
           finalwrite = true;
@@ -303,12 +304,14 @@ main (int argc, char **argv)
           break;
         case 'X':
           overlap_only = true;
-          FALLTHROUGH;
+          incompat |= 1 << OPTION_X;
+          break;
         case 'E':
           flagging = true;
-          FALLTHROUGH;
+          incompat |= 1 << OPTION_E;
+          break;
         case 'e':
-          incompat++;
+          incompat |= 1 << OPTION_e;
           break;
         case 'T':
           initial_tab = true;
@@ -342,12 +345,12 @@ main (int argc, char **argv)
     }
 
   /* -AeExX3 without -m implies ed script.  */
-  edscript = incompat & ~(int) merge;
+  edscript = !!incompat & !merge;
 
-  show_2nd |= ~incompat & merge;  /* -m without -AeExX3 implies -A.  */
-  flagging |= ~incompat & merge;
+  show_2nd |= !incompat & merge;  /* -m without -AeExX3 implies -A.  */
+  flagging |= !incompat & merge;
 
-  if (incompat > 1  /* Ensure at most one of -AeExX3.  */
+  if (incompat & (incompat - 1)  /* Ensure at most one of -AeExX3.  */
       || finalwrite & merge /* -i -m would rewrite input file.  */
       || (tag_count && ! flagging)) /* -L requires one of -AEX.  */
     try_help ("incompatible options", 0);
