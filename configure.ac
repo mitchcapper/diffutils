@@ -67,6 +67,7 @@ if test "$gl_gcc_warnings" = yes; then
   nw=
   # This, $nw, is the list of warnings we disable.
   nw="$nw -Winline"                 # system.h's readdir_ignoring_dot_and_dotdot
+  nw="$nw -Wstack-protector"        # not worth working around
 
   gl_MANYWARN_ALL_GCC([ws])
   gl_MANYWARN_COMPLEMENT([ws], [$ws], [$nw])
