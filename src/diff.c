@@ -1018,7 +1018,7 @@ Mandatory arguments to long options are mandatory for short options too.\n\
               msg = nl + 1;
             }
 
-          printf ("  %s\n" + 2 * (*msg != ' ' && *msg != '-'), msg);
+          printf (&"  %s\n"[2 * (*msg != ' ' && *msg != '-')], msg);
         }
     }
   emit_bug_reporting_address ();
