@@ -221,7 +221,7 @@ keep the maximum line length at 72 or smaller, so that the generated
 ChangeLog lines, each with its leading TAB, will not exceed 80 columns.
 As for the ChangeLog-style content, please follow these guidelines:
 
-  http://www.gnu.org/software/guile/changelogs/guile-changelogs_3.html
+  https://www.gnu.org/prep/standards/html_node/Change-Logs.html
 
 Try to make the summary line fit one of the following forms:
 
