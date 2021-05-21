@@ -973,8 +973,8 @@ static char const * const option_help_msgid[] = {
   N_("-d, --minimal            try hard to find a smaller set of changes"),
   N_("    --horizon-lines=NUM  keep NUM lines of the common prefix and suffix"),
   N_("    --speed-large-files  assume large files and many scattered small changes"),
-  N_("    --color[=WHEN]       colorize the output; WHEN can be 'never', 'always',\n"
-     "                           or 'auto' (the default)"),
+  N_("    --color[=WHEN]       color output; WHEN is 'never', 'always', or 'auto';\n"
+     "                           plain --color means --color='auto'"),
   N_("    --palette=PALETTE    the colors to use when --color is active; PALETTE is\n"
      "                           a colon-separated list of terminfo capabilities"),
   "",
