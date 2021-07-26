@@ -459,6 +459,8 @@ cmp (void)
           /* Insert sentinels for the block compare.  */
           buf0[read0] = ~buf1[read0];
           buf1[read1] = ~buf0[read1];
+          memset (buf0 + read0 + 1, 0, sizeof (word) - read0 % sizeof (word) - 1);
+          memset (buf1 + read1 + 1, 0, sizeof (word) - read1 % sizeof (word) - 1);
 
           first_diff = block_compare (buffer0, buffer1);
         }
