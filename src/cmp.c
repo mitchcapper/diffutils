@@ -463,6 +463,11 @@ cmp (void)
             buf0[read1] = 0x79; /* arbitrary and distinct from the above */
           buf0[read0] = ~buf1[read0];
           buf1[read1] = ~buf0[read1];
+          /* Ensure all bytes of a final word-read are initialized.  */
+          memset (buf0 + read0 + 1, 0,
+                  sizeof (word) - read0 % sizeof (word) - 1);
+          memset (buf1 + read1 + 1, 0,
+                  sizeof (word) - read1 % sizeof (word) - 1);
 
           first_diff = block_compare (buffer0, buffer1);
         }
