@@ -457,6 +457,10 @@ cmp (void)
       else
         {
           /* Insert sentinels for the block compare.  */
+          if (read0 >= read1)
+            buf1[read0] = 0x55; /* arbitrary */
+          if (read1 >= read0)
+            buf0[read1] = 0x79; /* arbitrary and distinct from the above */
           buf0[read0] = ~buf1[read0];
           buf1[read1] = ~buf0[read1];
 
