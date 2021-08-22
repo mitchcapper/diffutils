@@ -1547,6 +1547,7 @@ concat (char const *s1, char const *s2, char const *s3)
   return new;
 }
 
+#ifdef DEBUG
 void
 debug_script (struct change *sp)
 {
@@ -1564,3 +1565,4 @@ debug_script (struct change *sp)
 
   fflush (stderr);
 }
+#endif
