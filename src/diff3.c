@@ -189,7 +189,7 @@ static struct diff3_block *create_diff3_block (lin, lin, lin, lin, lin, lin);
 static struct diff3_block *make_3way_diff (struct diff_block *, struct diff_block *);
 static struct diff3_block *reverse_diff3_blocklist (struct diff3_block *);
 static struct diff3_block *using_to_diff3_block (struct diff_block *[2], struct diff_block *[2], int, int, struct diff3_block const *);
-static struct diff_block *process_diff (char const *, char const *, struct diff_block **, char **);
+static struct diff_block *process_diff (char const *, char const *, char **);
 static void check_stdout (void);
 static void fatal (char const *) __attribute__((noreturn));
 static void output_diff3 (FILE *, struct diff3_block *, int const[3], int const[3]);
@@ -267,7 +267,7 @@ main (int argc, char **argv)
   int incompat = 0;
   enum { OPTION_3, OPTION_A, OPTION_E, OPTION_X, OPTION_e, OPTION_x };
   bool conflicts_found;
-  struct diff_block *thread0, *thread1, *last_block;
+  struct diff_block *thread0, *thread1;
   struct diff3_block *diff3;
   int tag_count = 0;
   char *tag_strings[3];
@@ -430,8 +430,8 @@ main (int argc, char **argv)
 
   char *b0, *b1;
   commonname = file[rev_mapping[FILEC]];
-  thread1 = process_diff (file[rev_mapping[FILE1]], commonname, &last_block, &b1);
-  thread0 = process_diff (file[rev_mapping[FILE0]], commonname, &last_block, &b0);
+  thread1 = process_diff (file[rev_mapping[FILE1]], commonname, &b1);
+  thread0 = process_diff (file[rev_mapping[FILE0]], commonname, &b0);
 
   next_to_n2 (thread0);
   next_to_n2 (thread1);
@@ -999,7 +999,6 @@ compare_line_list (char * const list1[], size_t const lengths1[],
 static struct diff_block *
 process_diff (char const *filea,
               char const *fileb,
-              struct diff_block **last_block,
               char **buf_to_free)
 {
   char *diff_contents;
@@ -1009,10 +1008,9 @@ process_diff (char const *filea,
   lin i;
   struct diff_block *block_list;
   struct diff_block **block_list_end = &block_list;
-  struct diff_block *bptr = NULL;
   size_t too_many_lines = (PTRDIFF_MAX
-                           / MIN (sizeof *bptr->lines[1],
-                                  sizeof *bptr->lengths[1]));
+                           / MIN (sizeof *block_list->lines[1],
+                                  sizeof *block_list->lengths[1]));
 
   diff_limit = read_diff (filea, fileb, &diff_contents);
   *buf_to_free = diff_contents;
@@ -1020,7 +1018,7 @@ process_diff (char const *filea,
 
   while (scan_diff < diff_limit)
     {
-      bptr = xmalloc (sizeof *bptr);
+      struct diff_block *bptr = xmalloc (sizeof *bptr);
       bptr->lines[0] = bptr->lines[1] = 0;
       bptr->lengths[0] = bptr->lengths[1] = 0;
 
@@ -1101,7 +1099,6 @@ process_diff (char const *filea,
     }
 
   *block_list_end = NULL;
-  *last_block = bptr;
   return block_list;
 }
 
