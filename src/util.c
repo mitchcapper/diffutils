@@ -107,8 +107,6 @@ message5 (char const *format_msgid, char const *arg1, char const *arg2,
     {
       char *p;
       char const *arg[5];
-      int i;
-      size_t size[5];
       size_t total_size = offsetof (struct msg, args);
       struct msg *new;
 
@@ -118,13 +116,17 @@ message5 (char const *format_msgid, char const *arg1, char const *arg2,
       arg[3] = arg3 ? arg3 : "";
       arg[4] = arg4 ? arg4 : "";
 
-      for (i = 0;  i < 5;  i++)
-        total_size += size[i] = strlen (arg[i]) + 1;
+      for (int i = 0; i < 5; i++)
+        total_size += strlen (arg[i]) + 1;
 
       new = xmalloc (total_size);
 
-      for (i = 0, p = new->args;  i < 5;  p += size[i++])
-        memcpy (p, arg[i], size[i]);
+      p = new->args;
+      for (int i = 0; i < 5; i++)
+	{
+	  p = stpcpy (p, arg[i]);
+	  *p++ = 0;
+	}
 
       *msg_chain_end = new;
       new->next = 0;
@@ -578,14 +580,13 @@ parse_diff_color (void)
   const char *p;		/* Pointer to character being parsed */
   char *buf;			/* color_buf buffer pointer */
   int ind_no;			/* Indicator number */
-  char label[3];		/* Indicator label */
+  char label[] = "??";		/* Indicator label */
   struct color_ext_type *ext;	/* Extension we are working on */
 
   if ((p = color_palette) == NULL || *p == '\0')
     return;
 
   ext = NULL;
-  strcpy (label, "??");
 
   /* This is an overly conservative estimate, but any possible
      --palette string will *not* generate a color_buf longer than

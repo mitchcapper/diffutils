@@ -362,9 +362,8 @@ do_printf_spec (FILE *out, char const *spec,
             size_t spec_prefix_len = f - spec - 2;
             size_t pI_len = sizeof pI - 1;
             char *format = xmalloca (spec_prefix_len + pI_len + 2);
-            char *p = format + spec_prefix_len + pI_len;
-            memcpy (format, spec, spec_prefix_len);
-            memcpy (format + spec_prefix_len, pI, pI_len);
+            char *p = mempcpy (format, spec, spec_prefix_len);
+            p = stpcpy (p, pI);
             *p++ = c;
             *p = '\0';
             fprintf (out, format, value);

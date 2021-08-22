@@ -337,10 +337,10 @@ expand_name (char *name, bool is_dir, char const *other_name)
       size_t namelen = strlen (name), baselen = base_len (base);
       bool insert_slash = *last_component (name) && name[namelen - 1] != '/';
       char *r = xmalloc (namelen + insert_slash + baselen + 1);
-      memcpy (r, name, namelen);
-      r[namelen] = '/';
-      memcpy (r + namelen + insert_slash, base, baselen);
-      r[namelen + insert_slash + baselen] = '\0';
+      char *p = stpcpy (r, name);
+      *p = '/';
+      p = mempcpy (p + insert_slash, base, baselen);
+      *p = '\0';
       return r;
     }
 }
@@ -429,17 +429,16 @@ lf_snarf (struct line_filter *lf, char *buffer, size_t bufsize)
       size_t s = next - start;
       if (bufsize <= s)
         return 0;
-      memcpy (buffer, start, s);
+      buffer = mempcpy (buffer, start, s);
+      bufsize -= s;
       if (next < lf->buflim)
         {
-          buffer[s] = 0;
+          *buffer = 0;
           lf->bufpos = next + 1;
           return 1;
         }
       if (! lf_refill (lf))
         return s ? 0 : EOF;
-      buffer += s;
-      bufsize -= s;
     }
 }
 
@@ -1163,10 +1162,8 @@ temporary_file (void)
 {
   char const *tmpdir = getenv (TMPDIR_ENV);
   char const *dir = tmpdir ? tmpdir : P_tmpdir;
-  size_t dirlen = strlen (dir);
-  char *buf = xmalloc (dirlen + 1 + 5 + 6 + 1);
-  memcpy (buf, dir, dirlen);
-  strcpy (buf + dirlen, "/sdiffXXXXXX");
+  char *buf = xmalloc (strlen (dir) + 1 + 5 + 6 + 1);
+  strcpy (stpcpy (buf, dir), "/sdiffXXXXXX");
   int fd = mkstemp (buf);
   if (fd < 0)
     free (buf);
