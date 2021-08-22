@@ -1163,11 +1163,14 @@ temporary_file (void)
 {
   char const *tmpdir = getenv (TMPDIR_ENV);
   char const *dir = tmpdir ? tmpdir : P_tmpdir;
-  char *buf = xmalloc (strlen (dir) + 1 + 5 + 6 + 1);
-  int fd;
-  sprintf (buf, "%s/sdiffXXXXXX", dir);
-  fd = mkstemp (buf);
-  if (0 <= fd)
+  size_t dirlen = strlen (dir);
+  char *buf = xmalloc (dirlen + 1 + 5 + 6 + 1);
+  memcpy (buf, dir, dirlen);
+  strcpy (buf + dirlen, "/sdiffXXXXXX");
+  int fd = mkstemp (buf);
+  if (fd < 0)
+    free (buf);
+  else
     tmpname = buf;
   return fd;
 }
