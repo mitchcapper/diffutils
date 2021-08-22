@@ -33,7 +33,6 @@
 #include <fnmatch.h>
 #include <getopt.h>
 #include <hard-locale.h>
-#include <prepargs.h>
 #include <progname.h>
 #include <sh-quote.h>
 #include <stat-time.h>
