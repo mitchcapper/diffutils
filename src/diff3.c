@@ -88,7 +88,7 @@ struct diff_block {
   char **lines[2];		/* The actual lines (may contain nulls) */
   size_t *lengths[2];		/* Line lengths (including newlines, if any) */
   struct diff_block *next;
-#ifdef lint
+#ifdef GCC_LINT
   struct diff_block *n2;	/* Used only when freeing.  */
 #endif
 };
@@ -228,7 +228,7 @@ static struct option const longopts[] =
 static void
 free_diff_block (struct diff_block *p)
 {
-#ifndef lint
+#ifndef GCC_LINT
   (void)p;
 #else
   while (p)
@@ -249,7 +249,7 @@ free_diff_block (struct diff_block *p)
 static void
 next_to_n2 (struct diff_block *p)
 {
-#ifndef lint
+#ifndef GCC_LINT
   (void)p;
 #else
   while (p)

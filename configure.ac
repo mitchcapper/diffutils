@@ -84,7 +84,8 @@ if test "$gl_gcc_warnings" = yes; then
 
   AC_SUBST([WARN_CFLAGS])
 
-  AC_DEFINE([lint], [1], [Define to 1 if the compiler is checking for lint.])
+  AC_DEFINE([GCC_LINT], [1],
+    [Define to 1 if the compiler is checking for lint.])
   AC_DEFINE([_FORTIFY_SOURCE], [2],
     [enable compile-time and run-time bounds-checking, and some warnings])
   AC_DEFINE([GNULIB_PORTCHECK], [1], [enable some gnulib portability checks])
