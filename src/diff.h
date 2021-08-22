@@ -382,9 +382,6 @@ extern void print_sdiff_script (struct change *);
 /* util.c */
 extern char const change_letter[4];
 extern char const pr_program[];
-extern char *concat (char const *, char const *, char const *)
-  _GL_ATTRIBUTE_MALLOC _GL_ATTRIBUTE_DEALLOC_FREE
-  _GL_ATTRIBUTE_RETURNS_NONNULL;
 extern bool lines_differ (char const *, char const *) _GL_ATTRIBUTE_PURE;
 extern lin translate_line_number (struct file_data const *, lin);
 extern struct change *find_change (struct change *);

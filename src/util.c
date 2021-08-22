@@ -25,7 +25,6 @@
 #include <error.h>
 #include <system-quote.h>
 #include <xalloc.h>
-#include "xvasprintf.h"
 #include <signal.h>
 
 /* Use SA_NOCLDSTOP as a proxy for whether the sigaction machinery is
@@ -843,7 +842,14 @@ begin_output (void)
      of the pathnames, and it requires two spaces after "diff" if
      there are no options.  These requirements are silly and do not
      match historical practice.  */
-  name = xasprintf ("diff%s %s %s", switch_string, names[0], names[1]);
+  name = xmalloc (sizeof "diff" + strlen (switch_string)
+		  + 1 + strlen (names[0]) + 1 + strlen (names[1]));
+  char *p = stpcpy (name, "diff");
+  p = stpcpy (p, switch_string);
+  *p++ = ' ';
+  p = stpcpy (p, names[0]);
+  *p++ = ' ';
+  strcpy (p, names[1]);
 
   if (paginate)
     {
@@ -1534,16 +1540,6 @@ analyze_hunk (struct change *hunk,
     return UNCHANGED;
 
   return (show_from ? OLD : UNCHANGED) | (show_to ? NEW : UNCHANGED);
-}
-
-/* Concatenate three strings, returning a newly malloc'd string.  */
-
-char *
-concat (char const *s1, char const *s2, char const *s3)
-{
-  char *new = xmalloc (strlen (s1) + strlen (s2) + strlen (s3) + 1);
-  sprintf (new, "%s%s%s", s1, s2, s3);
-  return new;
 }
 
 #ifdef DEBUG

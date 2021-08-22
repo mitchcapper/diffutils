@@ -378,21 +378,55 @@ main (int argc, char **argv)
         case 'D':
           specify_style (OUTPUT_IFDEF);
           {
-            static char const C_ifdef_group_formats[] =
-              "%%=%c#ifndef %s\n%%<#endif /* ! %s */\n%c#ifdef %s\n%%>#endif /* %s */\n%c#ifndef %s\n%%<#else /* %s */\n%%>#endif /* %s */\n";
-            char *b = xmalloc (sizeof C_ifdef_group_formats
-                               + 7 * strlen (optarg) - 14 /* 7*"%s" */
-                               - 8 /* 5*"%%" + 3*"%c" */);
-            sprintf (b, C_ifdef_group_formats,
-                     0,
-                     optarg, optarg, 0,
-                     optarg, optarg, 0,
-                     optarg, optarg, optarg);
-            for (i = 0; i < sizeof group_format / sizeof group_format[0]; i++)
-              {
-                specify_value (&group_format[i], b, "-D");
-                b += strlen (b) + 1;
-              }
+	    static char const C_ifdef_group_formats[]
+	      = (/* UNCHANGED */
+		 "%="
+		 "\0"
+
+		 /* OLD */
+		 "#ifndef @\n"
+		 "%<"
+		 "#endif /* ! @ */\n"
+		 "\0"
+
+		 /* NEW */
+		 "#ifdef @\n"
+		 "%>"
+		 "#endif /* @ */\n"
+		 "\0"
+
+		 /* CHANGED */
+		 "#ifndef @\n"
+		 "%<"
+		 "#else /* @ */\n"
+		 "%>"
+		 "#endif /* @ */\n");
+
+	    char *b = xmalloc (sizeof C_ifdef_group_formats
+			       + 7 * strlen (optarg) - 7 /* 7*"@" */);
+	    char *base = b;
+	    int changes = 0;
+
+	    for (i = 0; i < sizeof sizeof C_ifdef_group_formats; i++)
+	      {
+		char ch = C_ifdef_group_formats[i];
+		switch (ch)
+		  {
+		  default:
+		    *b++ = ch;
+		    break;
+
+		  case '@':
+		    b = stpcpy (b, optarg);
+		    break;
+
+		  case '\0':
+		    *b++ = ch;
+		    specify_value (&group_format[changes++], base, "-D");
+		    base = b;
+		    break;
+		  }
+	      }
           }
           break;
 
@@ -749,8 +783,12 @@ main (int argc, char **argv)
       if (!group_format[UNCHANGED])
         group_format[UNCHANGED] = "%=";
       if (!group_format[CHANGED])
-        group_format[CHANGED] = concat (group_format[OLD],
-                                        group_format[NEW], "");
+	{
+	  char *p = xmalloc (strlen (group_format[OLD])
+			     + strlen (group_format[NEW]) + 1);
+	  group_format[CHANGED] = p;
+	  strcpy (stpcpy (p, group_format[OLD]), group_format[NEW]);
+	}
     }
 
   no_diff_means_no_output =
