@@ -96,10 +96,6 @@ if test "$gl_gcc_warnings" = yes; then
   nw="$nw -Wsuggest-attribute=pure"
   nw="$nw -Wduplicated-branches"    # Too many false alarms
 
-  # Avoid false alarm in lib/vasnprintf.c.
-  # https://lists.gnu.org/r/bug-gnulib/2021-01/msg00031.html
-  gl_WARN_ADD([-Wno-analyzer-null-argument])
-
   gl_MANYWARN_COMPLEMENT([GNULIB_WARN_CFLAGS], [$WARN_CFLAGS], [$nw])
   AC_SUBST([GNULIB_WARN_CFLAGS])
 fi
