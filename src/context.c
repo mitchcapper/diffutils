@@ -512,8 +512,9 @@ find_function (char const * const *linbuf, lin linenum)
       char const *line = linbuf[i];
       size_t linelen = linbuf[i + 1] - line - 1;
 
-      /* FIXME: re_search's size args should be size_t, not int.  */
-      int len = MIN (linelen, INT_MAX);
+      /* This line is for documentation; in practice it's equivalent
+	 to LEN = LINELEN and no machine code is generated.  */
+      regoff_t len = MIN (linelen, TYPE_MAXIMUM (regoff_t));
 
       if (0 <= re_search (&function_regexp, line, len, 0, len, NULL))
         {
