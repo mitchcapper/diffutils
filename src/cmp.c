@@ -390,7 +390,7 @@ cmp (void)
   char *buf1 = (char *) buffer1;
   int differing = 0;
   int f;
-  int offset_width IF_LINT (= 0);
+  int offset_width IF_LINT (= 0); /* IF_LINT due to GCC bug 101768.  */
 
   if (comparison_type == type_all_diffs)
     {

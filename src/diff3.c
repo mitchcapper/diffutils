@@ -1009,7 +1009,7 @@ process_diff (char const *filea,
   lin i;
   struct diff_block *block_list;
   struct diff_block **block_list_end = &block_list;
-  struct diff_block *bptr IF_LINT (= NULL);
+  struct diff_block *bptr = NULL;
   size_t too_many_lines = (PTRDIFF_MAX
                            / MIN (sizeof *bptr->lines[1],
                                   sizeof *bptr->lengths[1]));

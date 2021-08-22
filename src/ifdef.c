@@ -329,7 +329,7 @@ do_printf_spec (FILE *out, char const *spec,
         return 0;
       else
         {
-          char value IF_LINT (= 0);
+          char value;
           f = scan_char_literal (f, &value);
           if (!f)
             return 0;
