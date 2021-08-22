@@ -245,7 +245,11 @@ option_list (char **optionvec, int count)
   char *p;
 
   for (i = 0; i < count; i++)
-    size += 1 + shell_quote_length (optionvec[i]);
+    {
+      size_t optsize = 1 + shell_quote_length (optionvec[i]);
+      if (INT_ADD_WRAPV (optsize, size, &size))
+	xalloc_die ();
+    }
 
   p = result = xmalloc (size);
 
@@ -402,8 +406,13 @@ main (int argc, char **argv)
 		 "%>"
 		 "#endif /* @ */\n");
 
-	    char *b = xmalloc (sizeof C_ifdef_group_formats
-			       + 7 * strlen (optarg) - 7 /* 7*"@" */);
+	    size_t alloc = strlen (optarg);
+	    if (INT_MULTIPLY_WRAPV (alloc, 7, &alloc)
+		|| INT_ADD_WRAPV (alloc,
+				  sizeof C_ifdef_group_formats - 7 /* 7*"@" */,
+				  &alloc))
+	      xalloc_die ();
+	    char *b = xmalloc (alloc);
 	    char *base = b;
 	    int changes = 0;
 
