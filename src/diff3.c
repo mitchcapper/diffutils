@@ -1008,9 +1008,6 @@ process_diff (char const *filea,
   lin i;
   struct diff_block *block_list;
   struct diff_block **block_list_end = &block_list;
-  size_t too_many_lines = (PTRDIFF_MAX
-                           / MIN (sizeof *block_list->lines[1],
-                                  sizeof *block_list->lengths[1]));
 
   diff_limit = read_diff (filea, fileb, &diff_contents);
   *buf_to_free = diff_contents;
@@ -1056,10 +1053,8 @@ process_diff (char const *filea,
       if (dt != ADD)
         {
           lin numlines = D_NUMLINES (bptr, 0);
-          if (too_many_lines <= numlines)
-            xalloc_die ();
-          bptr->lines[0] = xmalloc (numlines * sizeof *bptr->lines[0]);
-          bptr->lengths[0] = xmalloc (numlines * sizeof *bptr->lengths[0]);
+          bptr->lines[0] = xnmalloc (numlines, sizeof *bptr->lines[0]);
+          bptr->lengths[0] = xnmalloc (numlines, sizeof *bptr->lengths[0]);
           for (i = 0; i < numlines; i++)
             scan_diff = scan_diff_line (scan_diff,
                                         &(bptr->lines[0][i]),
@@ -1081,10 +1076,8 @@ process_diff (char const *filea,
       if (dt != DELETE)
         {
           lin numlines = D_NUMLINES (bptr, 1);
-          if (too_many_lines <= numlines)
-            xalloc_die ();
-          bptr->lines[1] = xmalloc (numlines * sizeof *bptr->lines[1]);
-          bptr->lengths[1] = xmalloc (numlines * sizeof *bptr->lengths[1]);
+          bptr->lines[1] = xnmalloc (numlines, sizeof *bptr->lines[1]);
+          bptr->lengths[1] = xnmalloc (numlines, sizeof *bptr->lengths[1]);
           for (i = 0; i < numlines; i++)
             scan_diff = scan_diff_line (scan_diff,
                                         &(bptr->lines[1][i]),

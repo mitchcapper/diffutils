@@ -165,10 +165,9 @@ slurp (struct file_data *current)
       /* Get the size out of the stat block.
          Allocate just enough room for appended newline plus word sentinel,
          plus word-alignment since we want the buffer word-aligned.  */
-      size_t file_size = current->stat.st_size;
-      cc = file_size + 2 * sizeof (word) - file_size % sizeof (word);
-      if (file_size != current->stat.st_size || cc < file_size
-          || PTRDIFF_MAX <= cc)
+      off_t file_size = current->stat.st_size;
+      if (INT_ADD_WRAPV (2 * sizeof (word) - file_size % sizeof (word),
+			 file_size, &cc))
         xalloc_die ();
 
       if (current->bufsize < cc)
@@ -716,11 +715,11 @@ find_identical_ends (struct file_data filevec[])
 
   middle_guess = guess_lines (lines, p0 - buffer0, p1 - filevec[1].prefix_end);
   suffix_guess = guess_lines (lines, p0 - buffer0, buffer1 + n1 - p1);
-  alloc_lines1 = buffered_prefix + middle_guess + MIN (context, suffix_guess);
-  if (alloc_lines1 < buffered_prefix
-      || PTRDIFF_MAX / sizeof *linbuf1 <= alloc_lines1)
+  if (INT_ADD_WRAPV (buffered_prefix,
+		     middle_guess + MIN (context, suffix_guess),
+		     &alloc_lines1))
     xalloc_die ();
-  linbuf1 = xmalloc (alloc_lines1 * sizeof *linbuf1);
+  linbuf1 = xnmalloc (alloc_lines1, sizeof *linbuf1);
 
   if (buffered_prefix != lines)
     {
@@ -791,9 +790,7 @@ read_files (struct file_data filevec[], bool pretend_binary)
   find_identical_ends (filevec);
 
   equivs_alloc = filevec[0].alloc_lines + filevec[1].alloc_lines + 1;
-  if (PTRDIFF_MAX / sizeof *equivs <= equivs_alloc)
-    xalloc_die ();
-  equivs = xmalloc (equivs_alloc * sizeof *equivs);
+  equivs = xnmalloc (equivs_alloc, sizeof *equivs);
   /* Equivalence class 0 is permanently safe for lines that were not
      hashed.  Real equivalence classes start at 1.  */
   equivs_index = 1;
@@ -804,8 +801,6 @@ read_files (struct file_data filevec[], bool pretend_binary)
   for (i = 9; (size_t) 1 << i < equivs_alloc / 3; i++)
     continue;
   nbuckets = ((size_t) 1 << i) - prime_offset[i];
-  if (PTRDIFF_MAX / sizeof *buckets <= nbuckets)
-    xalloc_die ();
   buckets = xcalloc (nbuckets + 1, sizeof *buckets);
   buckets++;
 

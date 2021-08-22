@@ -126,9 +126,7 @@ dir_read (struct file_data const *dir, struct dirdata *dirdata)
     }
 
   /* Create the 'names' table from the 'data' table.  */
-  if (PTRDIFF_MAX / sizeof *names - 1 <= nnames)
-    xalloc_die ();
-  dirdata->names = names = xmalloc ((nnames + 1) * sizeof *names);
+  dirdata->names = names = xnmalloc (nnames + 1, sizeof *names);
   dirdata->nnames = nnames;
   for (i = 0;  i < nnames;  i++)
     {

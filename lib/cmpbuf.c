@@ -104,6 +104,5 @@ buffer_lcm (size_t a, size_t b, size_t lcm_max)
 
   /* Yield a if there is an overflow.  */
   q = a / n;
-  lcm = q * b;
-  return lcm <= lcm_max && lcm / b == q ? lcm : a;
+  return !INT_MULTIPLY_WRAPV (q, b, &lcm) && lcm <= lcm_max ? lcm : a;
 }
