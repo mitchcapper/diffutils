@@ -144,7 +144,7 @@ static void
 print_rcs_hunk (struct change *hunk)
 {
   lin i, f0, l0, f1, l1;
-  printint tf0, tl0, tf1, tl1;
+  lin tf0, tl0, tf1, tl1;
 
   /* Determine range of line numbers involved in each file.  */
   enum changes changes = analyze_hunk (hunk, &f0, &l0, &f1, &l1);

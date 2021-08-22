@@ -1399,14 +1399,12 @@ translate_line_number (struct file_data const *file, lin i)
   return i + file->prefix_lines + 1;
 }
 
-/* Translate a line number range.  This is always done for printing,
-   so for convenience translate to printint rather than lin, so that the
-   caller can use printf with "%"pI"d" without casting.  */
+/* Translate a line number range.  */
 
 void
 translate_range (struct file_data const *file,
                  lin a, lin b,
-                 printint *aptr, printint *bptr)
+                 lin *aptr, lin *bptr)
 {
   *aptr = translate_line_number (file, a - 1) + 1;
   *bptr = translate_line_number (file, b + 1) - 1;
@@ -1421,7 +1419,7 @@ translate_range (struct file_data const *file,
 void
 print_number_range (char sepchar, struct file_data *file, lin a, lin b)
 {
-  printint trans_a, trans_b;
+  lin trans_a, trans_b;
   translate_range (file, a, b, &trans_a, &trans_b);
 
   /* Note: we can have B < A in the case of a range of no lines.
@@ -1554,14 +1552,8 @@ debug_script (struct change *sp)
   fflush (stdout);
 
   for (; sp; sp = sp->link)
-    {
-      printint line0 = sp->line0;
-      printint line1 = sp->line1;
-      printint deleted = sp->deleted;
-      printint inserted = sp->inserted;
-      fprintf (stderr, "%3"pI"d %3"pI"d delete %"pI"d insert %"pI"d\n",
-               line0, line1, deleted, inserted);
-    }
+    fprintf (stderr, "%3"pI"d %3"pI"d delete %"pI"d insert %"pI"d\n",
+	     sp->line0, sp->line1, sp->deleted, sp->inserted);
 
   fflush (stderr);
 }

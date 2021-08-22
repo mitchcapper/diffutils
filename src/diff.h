@@ -408,8 +408,7 @@ extern void print_number_range (char, struct file_data *, lin, lin);
 extern void print_script (struct change *, struct change * (*) (struct change *),
                           void (*) (struct change *));
 extern void setup_output (char const *, char const *, bool);
-extern void translate_range (struct file_data const *, lin, lin,
-                             printint *, printint *);
+extern void translate_range (struct file_data const *, lin, lin, lin *, lin *);
 
 enum color_context
 {

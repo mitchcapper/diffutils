@@ -968,14 +968,13 @@ edit (struct line_filter *left, char const *lname, lin lline, lin llen,
               {
               case 'd':
                 if (llen)
-                  {
-                    printint l1 = lline;
-                    printint l2 = lline + llen - 1;
-                    if (llen == 1)
-                      fprintf (tmp, "--- %s %"pI"d\n", lname, l1);
-                    else
-                      fprintf (tmp, "--- %s %"pI"d,%"pI"d\n", lname, l1, l2);
-                  }
+		  {
+		    if (llen == 1)
+		      fprintf (tmp, "--- %s %"pI"d\n", lname, lline);
+		    else
+		      fprintf (tmp, "--- %s %"pI"d,%"pI"d\n", lname, lline,
+			       lline + llen - 1);
+		  }
                 FALLTHROUGH;
               case '1': case 'b': case 'l':
                 lf_copy (left, llen, tmp);
@@ -990,14 +989,13 @@ edit (struct line_filter *left, char const *lname, lin lline, lin llen,
               {
               case 'd':
                 if (rlen)
-                  {
-                    printint l1 = rline;
-                    printint l2 = rline + rlen - 1;
-                    if (rlen == 1)
-                      fprintf (tmp, "+++ %s %"pI"d\n", rname, l1);
-                    else
-                      fprintf (tmp, "+++ %s %"pI"d,%"pI"d\n", rname, l1, l2);
-                  }
+		  {
+		    if (rlen == 1)
+		      fprintf (tmp, "+++ %s %"pI"d\n", rname, rline);
+		    else
+		      fprintf (tmp, "+++ %s %"pI"d,%"pI"d\n", rname, rline,
+			     rline + rlen - 1);
+		  }
                 FALLTHROUGH;
               case '2': case 'b': case 'r':
                 lf_copy (right, rlen, tmp);

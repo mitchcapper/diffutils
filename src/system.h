@@ -128,31 +128,12 @@ int strcasecmp (char const *, char const *);
 #endif
 
 /* The signed integer type of a line number.  Since files are read
-   into main memory, ptrdiff_t should be wide enough.  */
+   into main memory, ptrdiff_t should be wide enough.  pI is for
+   printing line numbers.  */
 
 typedef ptrdiff_t lin;
 #define LIN_MAX PTRDIFF_MAX
-
-/* The signed integer type for printing line numbers, and its printf
-   length modifier.  This is not simply ptrdiff_t, to cater to older
-   and/or nonstandard C libraries where "l" works but "ll" and "t" do
-   not, or where 'long' is too narrow and "ll" works but "t" does not.  */
-
-#if LIN_MAX <= LONG_MAX
-typedef long int printint;
-# define pI "l"
-#elif LIN_MAX <= LLONG_MAX
-typedef long long int printint;
-# define pI "ll"
-#else
-typedef ptrdiff_t printint;
-# define pI "t"
-#endif
-
-verify (TYPE_SIGNED (lin));
-verify (TYPE_SIGNED (printint));
-verify (LIN_MAX == TYPE_MAXIMUM (lin));
-verify (LIN_MAX <= TYPE_MAXIMUM (printint));
+#define pI "t"
 
 /* Limit so that 2 * CONTEXT + 1 does not overflow.  */
 

@@ -127,7 +127,7 @@ print_context_script (struct change *script, bool unidiff)
 static void
 print_context_number_range (struct file_data const *file, lin a, lin b)
 {
-  printint trans_a, trans_b;
+  lin trans_a, trans_b;
   translate_range (file, a, b, &trans_a, &trans_b);
 
   /* We can have B <= A in the case of a range of no lines.
@@ -296,7 +296,7 @@ pr_context_hunk (struct change *hunk)
 static void
 print_unidiff_number_range (struct file_data const *file, lin a, lin b)
 {
-  printint trans_a, trans_b;
+  lin trans_a, trans_b;
   translate_range (file, a, b, &trans_a, &trans_b);
 
   /* We can have B < A in the case of a range of no lines.

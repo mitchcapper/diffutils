@@ -1443,20 +1443,18 @@ output_diff3 (FILE *outputfile, struct diff3_block *diff,
           int realfile = mapping[i];
           lin lowt = D_LOWLINE (ptr, realfile);
           lin hight = D_HIGHLINE (ptr, realfile);
-          printint llowt = lowt;
-          printint lhight = hight;
 
           fprintf (outputfile, "%d:", i + 1);
           switch (lowt - hight)
             {
             case 1:
-              fprintf (outputfile, "%"pI"da\n", llowt - 1);
+              fprintf (outputfile, "%"pI"da\n", lowt - 1);
               break;
             case 0:
-              fprintf (outputfile, "%"pI"dc\n", llowt);
+              fprintf (outputfile, "%"pI"dc\n", lowt);
               break;
             default:
-              fprintf (outputfile, "%"pI"d,%"pI"dc\n", llowt, lhight);
+              fprintf (outputfile, "%"pI"d,%"pI"dc\n", lowt, hight);
               break;
             }
 
@@ -1513,7 +1511,7 @@ dotlines (FILE *outputfile, struct diff3_block *b, int filenum)
    and continuing for NUM lines.  */
 
 static void
-undotlines (FILE *outputfile, bool leading_dot, printint start, printint num)
+undotlines (FILE *outputfile, bool leading_dot, lin start, lin num)
 {
   fputs (".\n", outputfile);
   if (leading_dot)
@@ -1562,8 +1560,6 @@ output_diff3_edscript (FILE *outputfile, struct diff3_block *diff,
            ? DIFF_ALL
            : DIFF_1ST + rev_mapping[b->correspond - DIFF_1ST]);
 
-      printint low0, high0;
-
       /* If we aren't supposed to do this output block, skip it.  */
       switch (type)
         {
@@ -1573,8 +1569,8 @@ output_diff3_edscript (FILE *outputfile, struct diff3_block *diff,
         case DIFF_ALL: if (simple_only) continue; conflict = flagging; break;
         }
 
-      low0 = D_LOWLINE (b, mapping[FILE0]);
-      high0 = D_HIGHLINE (b, mapping[FILE0]);
+      lin low0 = D_LOWLINE (b, mapping[FILE0]);
+      lin high0 = D_HIGHLINE (b, mapping[FILE0]);
 
       if (conflict)
         {
