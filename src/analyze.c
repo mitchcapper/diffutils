@@ -67,7 +67,7 @@ discard_confusing_lines (struct file_data filevec[])
   /* Set up equiv_count[F][I] as the number of lines in file F
      that fall in equivalence class I.  */
 
-  p = zalloc (filevec[0].equiv_max * (2 * sizeof *p));
+  p = xcalloc (filevec[0].equiv_max, 2 * sizeof *p);
   equiv_count[0] = p;
   equiv_count[1] = p + filevec[0].equiv_max;
 
@@ -78,8 +78,8 @@ discard_confusing_lines (struct file_data filevec[])
 
   /* Set up tables of which lines are going to be discarded.  */
 
-  discarded[0] = zalloc (filevec[0].buffered_lines
-                         + filevec[1].buffered_lines);
+  discarded[0] = xzalloc (filevec[0].buffered_lines
+			  + filevec[1].buffered_lines);
   discarded[1] = discarded[0] + filevec[0].buffered_lines;
 
   /* Mark to be discarded each line that matches no line of the other file.
@@ -542,7 +542,7 @@ diff_2_files (struct comparison *cmp)
          Allocate an extra element, always 0, at each end of each vector.  */
 
       size_t s = cmp->file[0].buffered_lines + cmp->file[1].buffered_lines + 4;
-      char *flag_space = zalloc (s);
+      char *flag_space = xzalloc (s);
       cmp->file[0].changed = flag_space + 1;
       cmp->file[1].changed = flag_space + cmp->file[0].buffered_lines + 3;
 

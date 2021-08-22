@@ -806,7 +806,7 @@ read_files (struct file_data filevec[], bool pretend_binary)
   nbuckets = ((size_t) 1 << i) - prime_offset[i];
   if (PTRDIFF_MAX / sizeof *buckets <= nbuckets)
     xalloc_die ();
-  buckets = zalloc ((nbuckets + 1) * sizeof *buckets);
+  buckets = xcalloc (nbuckets + 1, sizeof *buckets);
   buckets++;
 
   for (i = 0; i < 2; i++)

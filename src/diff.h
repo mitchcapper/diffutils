@@ -389,9 +389,6 @@ extern bool lines_differ (char const *, char const *) _GL_ATTRIBUTE_PURE;
 extern lin translate_line_number (struct file_data const *, lin);
 extern struct change *find_change (struct change *);
 extern struct change *find_reverse_change (struct change *);
-extern void *zalloc (size_t)
-  _GL_ATTRIBUTE_MALLOC _GL_ATTRIBUTE_DEALLOC_FREE
-  _GL_ATTRIBUTE_ALLOC_SIZE ((1)) _GL_ATTRIBUTE_RETURNS_NONNULL;
 extern enum changes analyze_hunk (struct change *, lin *, lin *, lin *, lin *);
 extern void begin_output (void);
 extern void debug_script (struct change *);

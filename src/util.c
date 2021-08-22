@@ -1546,16 +1546,6 @@ concat (char const *s1, char const *s2, char const *s3)
   sprintf (new, "%s%s%s", s1, s2, s3);
   return new;
 }
-
-/* Yield a new block of SIZE bytes, initialized to zero.  */
-
-void *
-zalloc (size_t size)
-{
-  void *p = xmalloc (size);
-  memset (p, 0, size);
-  return p;
-}
 
 void
 debug_script (struct change *sp)
