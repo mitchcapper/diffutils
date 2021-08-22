@@ -16,6 +16,14 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
 
+/* As of GCC 11.2.1, gcc -Wanalyzer-too-complex reports that this
+   program's code is too complicated for gcc -fanalyzer.
+   FIXME: Compile with -DANALYZER_NULL_DEFERENCE and see whether the
+   resulting diagnostics are false alarms.  */
+#if 10 <= __GNUC__ && !ANALYZER_NULL_DEREFERENCE
+# pragma GCC diagnostic ignored "-Wanalyzer-null-dereference"
+#endif
+
 #include "system.h"
 #include "paths.h"
 
