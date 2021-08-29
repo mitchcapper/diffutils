@@ -19,12 +19,16 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
 
 #include "diff.h"
-#include "argmatch.h"
-#include "die.h"
+
+#include <argmatch.h>
+#include <die.h>
 #include <dirname.h>
 #include <error.h>
+#include <flexmember.h>
 #include <system-quote.h>
 #include <xalloc.h>
+
+#include <stdarg.h>
 #include <signal.h>
 
 /* Use SA_NOCLDSTOP as a proxy for whether the sigaction machinery is
@@ -49,7 +53,15 @@ char const pr_program[] = PR_PROGRAM;
 struct msg
 {
   struct msg *next;
-  char args[1]; /* Format + 4 args, each '\0' terminated, concatenated.  */
+
+  /* Msgid of printf-style format.  */
+  char const *msgid;
+
+  /* Number of bytes in ARGS.  */
+  size_t argbytes;
+
+  /* Arg strings, each '\0' terminated, concatenated.  */
+  char args[FLEXIBLE_ARRAY_MEMBER];
 };
 
 /* Head of the chain of queues messages.  */
@@ -89,42 +101,43 @@ fatal (char const *msgid)
 }
 
 /* Like printf, except if -l in effect then save the message and print later.
+   Also, all arguments must be char * or char const *.
    This is used for things like "Only in ...".  */
 
 void
-message (char const *format_msgid, char const *arg1, char const *arg2)
+message (char const *format_msgid, ...)
 {
-  message5 (format_msgid, arg1, arg2, 0, 0);
-}
+  va_list ap;
+  va_start (ap, format_msgid);
 
-void
-message5 (char const *format_msgid, char const *arg1, char const *arg2,
-          char const *arg3, char const *arg4)
-{
   if (paginate)
     {
-      char *p;
-      char const *arg[5];
-      size_t total_size = offsetof (struct msg, args);
-      struct msg *new;
+      size_t argbytes = 0;
 
-      arg[0] = format_msgid;
-      arg[1] = arg1;
-      arg[2] = arg2;
-      arg[3] = arg3 ? arg3 : "";
-      arg[4] = arg4 ? arg4 : "";
+      for (char const *m = format_msgid; *m; m++)
+	if (*m == '%')
+	  {
+	    if (m[1] == '%')
+	      m++;
+	    else
+	      argbytes += strlen (va_arg (ap, char const *)) + 1;
+	  }
+      va_end (ap);
 
-      for (int i = 0; i < 5; i++)
-        total_size += strlen (arg[i]) + 1;
+      struct msg *new = xmalloc (FLEXSIZEOF (struct msg, args, argbytes));
+      new->msgid = format_msgid;
+      new->argbytes = argbytes;
 
-      new = xmalloc (total_size);
-
-      p = new->args;
-      for (int i = 0; i < 5; i++)
-	{
-	  p = stpcpy (p, arg[i]);
-	  *p++ = 0;
-	}
+      va_start (ap, format_msgid);
+      char *p = new->args;
+      for (char const *m = format_msgid; *m; m++)
+	if (*m == '%')
+	  {
+	    if (m[1] == '%')
+	      m++;
+	    else
+	      p = stpcpy (p, va_arg (ap, char const *)) + 1;
+	  }
 
       *msg_chain_end = new;
       new->next = 0;
@@ -134,8 +147,10 @@ message5 (char const *format_msgid, char const *arg1, char const *arg2,
     {
       if (sdiff_merge_assist)
         putchar (' ');
-      printf (_(format_msgid), arg1, arg2, arg3, arg4);
+      vprintf (_(format_msgid), ap);
     }
+
+  va_end (ap);
 }
 
 /* Output all the messages that were saved up by calls to 'message'.  */
@@ -143,17 +158,22 @@ message5 (char const *format_msgid, char const *arg1, char const *arg2,
 void
 print_message_queue (void)
 {
-  char const *arg[5];
-  int i;
-  struct msg *m = msg_chain;
-
-  while (m)
+  for (struct msg *m = msg_chain; m; )
     {
+      /* Change this if diff ever has messages with more than 4 args.  */
+      char const *p = m->args;
+      char const *plim = p + m->argbytes;
+      char const *arg[4];
+      for (int i = 0; i < 4; i++)
+	{
+	  arg[i] = p;
+	  if (p < plim)
+	    p += strlen (p) + 1;
+	}
+      printf (_(m->msgid), arg[0], arg[1], arg[2], arg[3]);
+      if (p < plim)
+	abort ();
       struct msg *next = m->next;
-      arg[0] = m->args;
-      for (i = 0;  i < 4;  i++)
-        arg[i + 1] = arg[i] + strlen (arg[i]) + 1;
-      printf (_(arg[0]), arg[1], arg[2], arg[3], arg[4]);
       free (m);
       m = next;
     }

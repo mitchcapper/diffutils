@@ -1382,11 +1382,11 @@ compare_files (struct comparison const *parent,
           /* We have two files that are not to be compared.  */
 
           /* See POSIX 1003.1-2001 for this format.  */
-          message5 ("File %s is a %s while file %s is a %s\n",
-                    file_label[0] ? file_label[0] : cmp.file[0].name,
-                    file_type (&cmp.file[0].stat),
-                    file_label[1] ? file_label[1] : cmp.file[1].name,
-                    file_type (&cmp.file[1].stat));
+          message ("File %s is a %s while file %s is a %s\n",
+		   file_label[0] ? file_label[0] : cmp.file[0].name,
+		   file_type (&cmp.file[0].stat),
+		   file_label[1] ? file_label[1] : cmp.file[1].name,
+		   file_type (&cmp.file[1].stat));
 
           /* This is a difference.  */
           status = EXIT_FAILURE;
@@ -1432,11 +1432,11 @@ compare_files (struct comparison const *parent,
           /* We have two files that are not to be compared, because
              one of them is a symbolic link and the other one is not.  */
 
-          message5 ("File %s is a %s while file %s is a %s\n",
-                    file_label[0] ? file_label[0] : cmp.file[0].name,
-                    file_type (&cmp.file[0].stat),
-                    file_label[1] ? file_label[1] : cmp.file[1].name,
-                    file_type (&cmp.file[1].stat));
+          message ("File %s is a %s while file %s is a %s\n",
+		   file_label[0] ? file_label[0] : cmp.file[0].name,
+		   file_type (&cmp.file[0].stat),
+		   file_label[1] ? file_label[1] : cmp.file[1].name,
+		   file_type (&cmp.file[1].stat));
 
           /* This is a difference.  */
           status = EXIT_FAILURE;

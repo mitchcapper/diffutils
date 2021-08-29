@@ -392,9 +392,7 @@ extern void cleanup_signal_handlers (void);
 extern void debug_script (struct change *);
 extern void fatal (char const *) __attribute__((noreturn));
 extern void finish_output (void);
-extern void message (char const *, char const *, char const *);
-extern void message5 (char const *, char const *, char const *,
-                      char const *, char const *);
+extern void message (char const *, ...) _GL_ATTRIBUTE_FORMAT ((printf, 1, 2));
 extern void output_1_line (char const *, char const *, char const *,
                            char const *);
 extern void perror_with_name (char const *);
