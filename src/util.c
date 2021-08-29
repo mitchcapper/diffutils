@@ -159,16 +159,7 @@ print_message_queue (void)
     }
 }
 
-
-#if SA_NOCLDSTOP
-static void
-xsigaction (int sig, struct sigaction const *restrict act,
-	    struct sigaction *restrict oact)
-{
-  if (sigaction (sig, act, oact) != 0)
-    pfatal_with_name ("sigaction");
-}
-#endif
+/* Signal handling, needed for restoring default colors.  */
 
 static void
 xsigaddset (sigset_t *set, int sig)
@@ -321,8 +312,7 @@ install_signal_handlers (void)
   for (int j = 0; j < nsigs; j++)
     {
       struct sigaction actj;
-      xsigaction (sig[j], NULL, &actj);
-      if (actj.sa_handler != SIG_IGN)
+      if (sigaction (sig[j], NULL, &actj) == 0 && actj.sa_handler != SIG_IGN)
 	xsigaddset (&caught_signals, sig[j]);
     }
 
@@ -334,19 +324,23 @@ install_signal_handlers (void)
     if (xsigismember (&caught_signals, sig[j]))
       {
 	act.sa_handler = sig[j] == SIGTSTP ? stophandler : sighandler;
-	xsigaction (sig[j], &act, NULL);
+	if (sigaction (sig[j], &act, NULL) != 0)
+	  pfatal_with_name ("sigaction");
 	some_signals_caught = true;
       }
 #else
   for (int j = 0; j < nsigs; j++)
-    if (xsignal (sig[j], SIG_IGN) != SIG_IGN)
-      {
-	xsigaddset (&caught_signals, sig[j]);
-	xsignal (sig[j], sig[j] == SIGTSTP ? stophandler : sighandler);
-	some_signals_caught = true;
-	if (siginterrupt (sig[j], 0) != 0)
-	  pfatal_with_name ("siginterrupt");
-      }
+    {
+      signal_handler h = signal (sig[j], SIG_IGN);
+      if (h != SIG_IGN && h != SIG_ERR)
+	{
+	  xsigaddset (&caught_signals, sig[j]);
+	  xsignal (sig[j], sig[j] == SIGTSTP ? stophandler : sighandler);
+	  some_signals_caught = true;
+	  if (siginterrupt (sig[j], 0) != 0)
+	    pfatal_with_name ("siginterrupt");
+	}
+    }
 #endif
 }
 
