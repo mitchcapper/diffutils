@@ -388,6 +388,7 @@ extern struct change *find_change (struct change *);
 extern struct change *find_reverse_change (struct change *);
 extern enum changes analyze_hunk (struct change *, lin *, lin *, lin *, lin *);
 extern void begin_output (void);
+extern void cleanup_signal_handlers (void);
 extern void debug_script (struct change *);
 extern void fatal (char const *) __attribute__((noreturn));
 extern void finish_output (void);

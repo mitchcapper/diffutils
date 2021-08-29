@@ -31,10 +31,9 @@
    present.  */
 #ifndef SA_NOCLDSTOP
 # define SA_NOCLDSTOP 0
-# define sigprocmask(How, Set, Oset) /* empty */
-# define sigset_t int
+# define sigprocmask(How, Set, Oset) 0
 # if ! HAVE_SIGINTERRUPT
-#  define siginterrupt(sig, flag) /* empty */
+#  define siginterrupt(sig, flag) 0
 # endif
 #endif
 
@@ -160,16 +159,63 @@ print_message_queue (void)
     }
 }
 
-/* The set of signals that are caught.  */
 
+#if SA_NOCLDSTOP
+static void
+xsigaction (int sig, struct sigaction const *restrict act,
+	    struct sigaction *restrict oact)
+{
+  if (sigaction (sig, act, oact) != 0)
+    pfatal_with_name ("sigaction");
+}
+#endif
+
+static void
+xsigaddset (sigset_t *set, int sig)
+{
+  if (sigaddset (set, sig) != 0)
+    pfatal_with_name ("sigaddset");
+}
+
+static bool
+xsigismember (sigset_t const *set, int sig)
+{
+  int mem = sigismember (set, sig);
+  if (mem < 0)
+    pfatal_with_name ("sigismember");
+  assume (mem == 1);
+  return mem;
+}
+
+typedef void (*signal_handler) (int);
+static signal_handler
+xsignal (int sig, signal_handler func)
+{
+  signal_handler h = signal (sig, func);
+  if (h == SIG_ERR)
+    pfatal_with_name ("signal");
+  return h;
+}
+
+static void
+xsigprocmask (int how, sigset_t const *restrict set, sigset_t *restrict oset)
+{
+  if (sigprocmask (how, set, oset) != 0)
+    pfatal_with_name ("sigprocmask");
+}
+
+/* If true, some signals are caught.  This is separate from
+   'caught_signals' because POSIX doesn't require an all-zero sigset_t
+   to be valid.  */
+static bool some_signals_caught;
+
+/* The set of signals that are caught.  */
 static sigset_t caught_signals;
 
 /* If nonzero, the value of the pending fatal signal.  */
-
 static sig_atomic_t volatile interrupt_signal;
 
 /* A count of the number of pending stop signals that have been received.  */
-
 static sig_atomic_t volatile stop_signal_count;
 
 /* An ordinary signal was received; arrange for the program to exit.  */
@@ -202,21 +248,17 @@ stophandler (int sig)
 static void
 process_signals (void)
 {
-  while (interrupt_signal || stop_signal_count)
+  while (interrupt_signal | stop_signal_count)
     {
-      int sig;
-      int stops;
-      sigset_t oldset;
-
       set_color_context (RESET_CONTEXT);
       fflush (stdout);
 
-      sigprocmask (SIG_BLOCK, &caught_signals, &oldset);
+      sigset_t oldset;
+      xsigprocmask (SIG_BLOCK, &caught_signals, &oldset);
 
-      /* Reload interrupt_signal and stop_signal_count, in case a new
-         signal was handled before sigprocmask took effect.  */
-      sig = interrupt_signal;
-      stops = stop_signal_count;
+      /* Reload stop_signal_count and (if needed) interrupt_signal, in
+	 case a new signal was handled before sigprocmask took effect.  */
+      int stops = stop_signal_count, sig;
 
       /* SIGTSTP is special, since the application can receive that signal
          more than once.  In this case, don't set the signal handler to the
@@ -227,82 +269,99 @@ process_signals (void)
           sig = SIGSTOP;
         }
       else
-        signal (sig, SIG_DFL);
+	{
+	  sig = interrupt_signal;
+	  xsignal (sig, SIG_DFL);
+	}
 
       /* Exit or suspend the program.  */
-      raise (sig);
-      sigprocmask (SIG_SETMASK, &oldset, NULL);
+      if (raise (sig) != 0)
+	pfatal_with_name ("raise");
+      xsigprocmask (SIG_SETMASK, &oldset, NULL);
 
       /* If execution reaches here, then the program has been
          continued (after being suspended).  */
     }
 }
 
+/* The signals that can be caught, the number of such signals,
+   and which of them are actually caught.  */
+static int const sig[] =
+  {
+    /* This one is handled specially.  */
+    SIGTSTP,
+
+    /* The usual suspects.  */
+    SIGALRM, SIGHUP, SIGINT, SIGPIPE, SIGQUIT, SIGTERM,
+#ifdef SIGPOLL
+    SIGPOLL,
+#endif
+#ifdef SIGPROF
+    SIGPROF,
+#endif
+#ifdef SIGVTALRM
+    SIGVTALRM,
+#endif
+#ifdef SIGXCPU
+    SIGXCPU,
+#endif
+#ifdef SIGXFSZ
+    SIGXFSZ,
+#endif
+  };
+enum { nsigs = sizeof (sig) / sizeof *(sig) };
+
 static void
 install_signal_handlers (void)
 {
-  /* The signals that are trapped, and the number of such signals.  */
-  static int const sig[] =
-    {
-      /* This one is handled specially.  */
-      SIGTSTP,
+  if (sigemptyset (&caught_signals) != 0)
+    pfatal_with_name ("sigemptyset");
 
-      /* The usual suspects.  */
-      SIGALRM, SIGHUP, SIGINT, SIGPIPE, SIGQUIT, SIGTERM,
-#ifdef SIGPOLL
-      SIGPOLL,
-#endif
-#ifdef SIGPROF
-      SIGPROF,
-#endif
-#ifdef SIGVTALRM
-      SIGVTALRM,
-#endif
-#ifdef SIGXCPU
-      SIGXCPU,
-#endif
-#ifdef SIGXFSZ
-      SIGXFSZ,
-#endif
-    };
-  enum { nsigs = sizeof (sig) / sizeof *(sig) };
-
-#if ! SA_NOCLDSTOP
-  bool caught_sig[nsigs];
-#endif
-  {
-    int j;
 #if SA_NOCLDSTOP
-    struct sigaction act;
+  for (int j = 0; j < nsigs; j++)
+    {
+      struct sigaction actj;
+      xsigaction (sig[j], NULL, &actj);
+      if (actj.sa_handler != SIG_IGN)
+	xsigaddset (&caught_signals, sig[j]);
+    }
 
-    sigemptyset (&caught_signals);
-    for (j = 0; j < nsigs; j++)
+  struct sigaction act;
+  act.sa_mask = caught_signals;
+  act.sa_flags = SA_RESTART;
+
+  for (int j = 0; j < nsigs; j++)
+    if (xsigismember (&caught_signals, sig[j]))
       {
-        sigaction (sig[j], NULL, &act);
-        if (act.sa_handler != SIG_IGN)
-          sigaddset (&caught_signals, sig[j]);
+	act.sa_handler = sig[j] == SIGTSTP ? stophandler : sighandler;
+	xsigaction (sig[j], &act, NULL);
+	some_signals_caught = true;
       }
-
-    act.sa_mask = caught_signals;
-    act.sa_flags = SA_RESTART;
-
-    for (j = 0; j < nsigs; j++)
-      if (sigismember (&caught_signals, sig[j]))
-        {
-          act.sa_handler = sig[j] == SIGTSTP ? stophandler : sighandler;
-          sigaction (sig[j], &act, NULL);
-        }
 #else
-    for (j = 0; j < nsigs; j++)
+  for (int j = 0; j < nsigs; j++)
+    if (xsignal (sig[j], SIG_IGN) != SIG_IGN)
       {
-        caught_sig[j] = (signal (sig[j], SIG_IGN) != SIG_IGN);
-        if (caught_sig[j])
-          {
-            signal (sig[j], sig[j] == SIGTSTP ? stophandler : sighandler);
-            siginterrupt (sig[j], 0);
-          }
+	xsigaddset (&caught_signals, sig[j]);
+	xsignal (sig[j], sig[j] == SIGTSTP ? stophandler : sighandler);
+	some_signals_caught = true;
+	if (siginterrupt (sig[j], 0) != 0)
+	  pfatal_with_name ("siginterrupt");
       }
 #endif
+}
+
+/* Clean up signal handlers just before exiting the program.  Do this
+   by resetting signal actions back to default, and then processing
+   any signals that arrived before resetting.  */
+void
+cleanup_signal_handlers (void)
+{
+  if (some_signals_caught)
+    {
+      for (int j = 0; j < nsigs; j++)
+	if (xsigismember (&caught_signals, sig[j]))
+	  xsignal (sig[j], SIG_DFL);
+      process_signals ();
     }
 }
 

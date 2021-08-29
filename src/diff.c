@@ -853,7 +853,7 @@ main (int argc, char **argv)
   print_message_queue ();
 
   check_stdout ();
-  exit (exit_status);
+  cleanup_signal_handlers ();
   return exit_status;
 }
 
