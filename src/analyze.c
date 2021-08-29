@@ -451,8 +451,8 @@ briefly_report (int changes, struct file_data const filevec[])
 {
   if (changes)
     message ((brief
-              ? _("Files %s and %s differ\n")
-              : _("Binary files %s and %s differ\n")),
+              ? N_("Files %s and %s differ\n")
+              : N_("Binary files %s and %s differ\n")),
              file_label[0] ? file_label[0] : filevec[0].name,
              file_label[1] ? file_label[1] : filevec[1].name);
 }
