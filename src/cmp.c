@@ -53,7 +53,7 @@
 
 static int cmp (void);
 static off_t file_position (int);
-static size_t block_compare (word const *, word const *) _GL_ATTRIBUTE_PURE;
+static size_t block_compare (word const *, word const *) ATTRIBUTE_PURE;
 static size_t count_newlines (char *, size_t);
 static void sprintc (char *, unsigned char);
 
@@ -110,8 +110,7 @@ static struct option const long_options[] =
   {0, 0, 0, 0}
 };
 
-static void try_help (char const *, char const *) __attribute__((noreturn));
-static void
+static _Noreturn void
 try_help (char const *reason_msgid, char const *operand)
 {
   if (reason_msgid)

@@ -27,18 +27,12 @@
 # define IF_LINT(Code) /* empty */
 #endif
 
-/* Define '__attribute__' and 'volatile' first
-   so that they're used consistently in all system includes.  */
-#if __GNUC__ < 2 || (__GNUC__ == 2 && __GNUC_MINOR__ < 6) || __STRICT_ANSI__
-# define __attribute__(x)
-#endif
-
 #include <verify.h>
 
 #include <sys/types.h>
 
 #include <sys/stat.h>
-#include "stat-macros.h"
+#include <stat-macros.h>
 
 #ifndef STAT_BLOCKSIZE
 # if HAVE_STRUCT_STAT_ST_BLKSIZE
@@ -115,8 +109,11 @@ int strcasecmp (char const *, char const *);
 #define MAX(a, b) ((a) >= (b) ? (a) : (b))
 
 #include <stdbool.h>
+
+#include <attribute.h>
 #include <intprops.h>
-#include "propername.h"
+#include <propername.h>
+
 #include "version.h"
 
 /* Type used for fast comparison of several bytes at a time.
@@ -211,11 +208,3 @@ typedef ptrdiff_t lin;
 #endif
 
 #define STREQ(a, b) (strcmp (a, b) == 0)
-
-#ifndef FALLTHROUGH
-# if __GNUC__ < 7
-#  define FALLTHROUGH ((void) 0)
-# else
-#  define FALLTHROUGH __attribute__ ((__fallthrough__))
-# endif
-#endif

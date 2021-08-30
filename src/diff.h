@@ -356,8 +356,8 @@ extern int diff_dirs (struct comparison const *,
                       int (*) (struct comparison const *,
                                char const *, char const *));
 extern char *find_dir_file_pathname (char const *, char const *)
-  _GL_ATTRIBUTE_MALLOC _GL_ATTRIBUTE_DEALLOC_FREE
-  _GL_ATTRIBUTE_RETURNS_NONNULL;
+  ATTRIBUTE_MALLOC ATTRIBUTE_DEALLOC_FREE
+  ATTRIBUTE_RETURNS_NONNULL;
 
 /* ed.c */
 extern void print_ed_script (struct change *);
@@ -382,7 +382,7 @@ extern void print_sdiff_script (struct change *);
 /* util.c */
 extern char const change_letter[4];
 extern char const pr_program[];
-extern bool lines_differ (char const *, char const *) _GL_ATTRIBUTE_PURE;
+extern bool lines_differ (char const *, char const *) ATTRIBUTE_PURE;
 extern lin translate_line_number (struct file_data const *, lin);
 extern struct change *find_change (struct change *);
 extern struct change *find_reverse_change (struct change *);
@@ -390,13 +390,13 @@ extern enum changes analyze_hunk (struct change *, lin *, lin *, lin *, lin *);
 extern void begin_output (void);
 extern void cleanup_signal_handlers (void);
 extern void debug_script (struct change *);
-extern void fatal (char const *) __attribute__((noreturn));
+extern _Noreturn void fatal (char const *);
 extern void finish_output (void);
-extern void message (char const *, ...) _GL_ATTRIBUTE_FORMAT ((printf, 1, 2));
+extern void message (char const *, ...) ATTRIBUTE_FORMAT ((printf, 1, 2));
 extern void output_1_line (char const *, char const *, char const *,
                            char const *);
 extern void perror_with_name (char const *);
-extern void pfatal_with_name (char const *) __attribute__((noreturn));
+extern _Noreturn void pfatal_with_name (char const *);
 extern void print_1_line (char const *, char const * const *);
 extern void print_1_line_nl (char const *, char const * const *, bool);
 extern void print_message_queue (void);

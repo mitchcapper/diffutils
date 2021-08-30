@@ -63,8 +63,8 @@ static bool edit (struct line_filter *, char const *, lin, lin, struct line_filt
 static bool interact (struct line_filter *, struct line_filter *, char const *, struct line_filter *, char const *, FILE *);
 static void checksigs (void);
 static void diffarg (char const *);
-static void fatal (char const *) __attribute__((noreturn));
-static void perror_fatal (char const *) __attribute__((noreturn));
+static _Noreturn void fatal (char const *);
+static _Noreturn void perror_fatal (char const *);
 static void trapsigs (void);
 static void untrapsig (int);
 
@@ -151,8 +151,7 @@ static struct option const longopts[] =
   {0, 0, 0, 0}
 };
 
-static void try_help (char const *, char const *) __attribute__((noreturn));
-static void
+static _Noreturn void
 try_help (char const *reason_msgid, char const *operand)
 {
   if (reason_msgid)
@@ -225,7 +224,7 @@ Mandatory arguments to long options are mandatory for short options too.\n\
 /* Clean up after a signal or other failure.  This function is
    async-signal-safe.  */
 static void
-cleanup (int signo __attribute__((unused)))
+cleanup (_GL_UNUSED int signo)
 {
 #if HAVE_WORKING_FORK
   if (0 < diffpid)
@@ -235,8 +234,7 @@ cleanup (int signo __attribute__((unused)))
     unlink (tmpname);
 }
 
-static void exiterr (void) __attribute__((noreturn));
-static void
+static _Noreturn void
 exiterr (void)
 {
   cleanup (0);

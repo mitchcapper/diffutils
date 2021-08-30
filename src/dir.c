@@ -322,7 +322,7 @@ diff_dirs (struct comparison const *cmp,
 
 /* Return nonzero if CMP is looping recursively in argument I.  */
 
-static bool _GL_ATTRIBUTE_PURE
+static bool ATTRIBUTE_PURE
 dir_loop (struct comparison const *cmp, int i)
 {
   struct comparison const *p = cmp;

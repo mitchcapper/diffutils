@@ -72,7 +72,7 @@ static void summarize_regexp_list (struct regexp_list *);
 static void specify_style (enum output_style);
 static void specify_value (char const **, char const *, char const *);
 static void specify_colors_style (char const *);
-static void try_help (char const *, char const *) __attribute__((noreturn));
+static _Noreturn void try_help (char const *, char const *);
 static void check_stdout (void);
 static void usage (void);
 

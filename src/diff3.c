@@ -191,10 +191,10 @@ static struct diff3_block *reverse_diff3_blocklist (struct diff3_block *);
 static struct diff3_block *using_to_diff3_block (struct diff_block *[2], struct diff_block *[2], int, int, struct diff3_block const *);
 static struct diff_block *process_diff (char const *, char const *, char **);
 static void check_stdout (void);
-static void fatal (char const *) __attribute__((noreturn));
+static _Noreturn void fatal (char const *);
 static void output_diff3 (FILE *, struct diff3_block *, int const[3], int const[3]);
-static void perror_with_exit (char const *) __attribute__((noreturn));
-static void try_help (char const *, char const *) __attribute__((noreturn));
+static _Noreturn void perror_with_exit (char const *);
+static _Noreturn void try_help (char const *, char const *);
 static void usage (void);
 
 static char const *diff_program = DEFAULT_DIFF_PROGRAM;
@@ -1097,7 +1097,7 @@ process_diff (char const *filea,
 
 /* Skip tabs and spaces, and return the first character after them.  */
 
-static char * _GL_ATTRIBUTE_PURE
+static char * ATTRIBUTE_PURE
 skipwhite (char *s)
 {
   while (*s == ' ' || *s == '\t')
