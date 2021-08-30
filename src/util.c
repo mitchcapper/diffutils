@@ -299,11 +299,20 @@ process_signals (void)
    and which of them are actually caught.  */
 static int const sig[] =
   {
-    /* This one is handled specially.  */
+#ifdef SIGTSTP
+    /* This one is handled specially; see is_tstp_index.  */
     SIGTSTP,
+#endif
 
     /* The usual suspects.  */
-    SIGALRM, SIGHUP, SIGINT, SIGPIPE, SIGQUIT, SIGTERM,
+#ifdef SIGALRM
+    SIGALRM,
+#endif
+    SIGHUP, SIGINT, SIGPIPE,
+#ifdef SIGQUIT
+    SIGQUIT,
+#endif
+    SIGTERM,
 #ifdef SIGPOLL
     SIGPOLL,
 #endif
@@ -321,6 +330,17 @@ static int const sig[] =
 #endif
   };
 enum { nsigs = sizeof (sig) / sizeof *(sig) };
+
+/* True if sig[j] == SIGTSTP.  */
+static bool
+is_tstp_index (int j)
+{
+#ifdef SIGTSTP
+  return j == 0;
+#else
+  return false;
+#endif
+}
 
 static void
 install_signal_handlers (void)
@@ -343,7 +363,7 @@ install_signal_handlers (void)
   for (int j = 0; j < nsigs; j++)
     if (xsigismember (&caught_signals, sig[j]))
       {
-	act.sa_handler = sig[j] == SIGTSTP ? stophandler : sighandler;
+	act.sa_handler = is_tstp_index (j) ? stophandler : sighandler;
 	if (sigaction (sig[j], &act, NULL) != 0)
 	  pfatal_with_name ("sigaction");
 	some_signals_caught = true;
@@ -355,7 +375,7 @@ install_signal_handlers (void)
       if (h != SIG_IGN && h != SIG_ERR)
 	{
 	  xsigaddset (&caught_signals, sig[j]);
-	  xsignal (sig[j], sig[j] == SIGTSTP ? stophandler : sighandler);
+	  xsignal (sig[j], is_tstp_index (j) ? stophandler : sighandler);
 	  some_signals_caught = true;
 	  if (siginterrupt (sig[j], 0) != 0)
 	    pfatal_with_name ("siginterrupt");
