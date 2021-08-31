@@ -72,10 +72,10 @@
 #define	RANGE_END	1
 
 enum diff_type {
-  ERROR,			/* Should not be used */
-  ADD,				/* Two way diff add */
-  CHANGE,			/* Two way diff change */
-  DELETE,			/* Two way diff delete */
+  DIFF_ERROR,			/* Should not be used */
+  DIFF_ADD,			/* Two way diff add */
+  DIFF_CHANGE,			/* Two way diff change */
+  DIFF_DELETE,			/* Two way diff delete */
   DIFF_ALL,			/* All three are different */
   DIFF_1ST,			/* Only the first is different */
   DIFF_2ND,			/* Only the second */
@@ -922,7 +922,7 @@ create_diff3_block (lin low0, lin high0,
   struct diff3_block *result = xmalloc (sizeof *result);
   lin numlines;
 
-  D3_TYPE (result) = ERROR;
+  D3_TYPE (result) = DIFF_ERROR;
   D_NEXT (result) = 0;
 
   /* Assign ranges */
@@ -1020,7 +1020,7 @@ process_diff (char const *filea,
       bptr->lengths[0] = bptr->lengths[1] = 0;
 
       dt = process_diff_control (&scan_diff, bptr);
-      if (dt == ERROR || *scan_diff != '\n')
+      if (dt == DIFF_ERROR || *scan_diff != '\n')
         {
           fprintf (stderr, _("%s: diff failed: "), program_name);
           do
@@ -1035,13 +1035,13 @@ process_diff (char const *filea,
       /* Force appropriate ranges to be null, if necessary */
       switch (dt)
         {
-        case ADD:
+        case DIFF_ADD:
           bptr->ranges[0][0]++;
           break;
-        case DELETE:
+        case DIFF_DELETE:
           bptr->ranges[1][0]++;
           break;
-        case CHANGE:
+        case DIFF_CHANGE:
           break;
         default:
           fatal ("internal error: invalid diff type in process_diff");
@@ -1050,7 +1050,7 @@ process_diff (char const *filea,
 
       /* Allocate space for the pointers for the lines from filea, and
          parcel them out among these pointers */
-      if (dt != ADD)
+      if (dt != DIFF_ADD)
         {
           lin numlines = D_NUMLINES (bptr, 0);
           bptr->lines[0] = xnmalloc (numlines, sizeof *bptr->lines[0]);
@@ -1064,7 +1064,7 @@ process_diff (char const *filea,
         }
 
       /* Get past the separator for changes */
-      if (dt == CHANGE)
+      if (dt == DIFF_CHANGE)
         {
           if (strncmp (scan_diff, "---\n", 4))
             fatal ("invalid diff format; invalid change separator");
@@ -1073,7 +1073,7 @@ process_diff (char const *filea,
 
       /* Allocate space for the pointers for the lines from fileb, and
          parcel them out among these pointers */
-      if (dt != DELETE)
+      if (dt != DIFF_DELETE)
         {
           lin numlines = D_NUMLINES (bptr, 1);
           bptr->lines[1] = xnmalloc (numlines, sizeof *bptr->lines[1]);
@@ -1130,7 +1130,7 @@ readnum (char *s, lin *pnum)
 }
 
 /* Parse a normal format diff control string.  Return the type of the
-   diff (ERROR if the format is bad).  All of the other important
+   diff (DIFF_ERROR if the format is bad).  All of the other important
    information is filled into to the structure pointed to by db, and
    the string pointer (whose location is passed to this routine) is
    updated to point beyond the end of the string parsed.  Note that
@@ -1139,8 +1139,8 @@ readnum (char *s, lin *pnum)
    If some specific pair of numbers has been reduced to a single
    number, then both corresponding numbers in the diff block are set
    to that number.  In general these numbers are interpreted as ranges
-   inclusive, unless being used by the ADD or DELETE commands.  It is
-   assumed that these will be special cased in a superior routine.   */
+   inclusive, unless being used by the DIFF_ADD or DIFF_DELETE commands.
+   It is assumed that these will be special cased in a superior routine.  */
 
 static enum diff_type
 process_diff_control (char **string, struct diff_block *db)
@@ -1151,7 +1151,7 @@ process_diff_control (char **string, struct diff_block *db)
   /* Read first set of digits */
   s = readnum (skipwhite (s), &db->ranges[0][RANGE_START]);
   if (! s)
-    return ERROR;
+    return DIFF_ERROR;
 
   /* Was that the only digit? */
   s = skipwhite (s);
@@ -1159,7 +1159,7 @@ process_diff_control (char **string, struct diff_block *db)
     {
       s = readnum (s + 1, &db->ranges[0][RANGE_END]);
       if (! s)
-        return ERROR;
+        return DIFF_ERROR;
     }
   else
     db->ranges[0][RANGE_END] = db->ranges[0][RANGE_START];
@@ -1169,23 +1169,23 @@ process_diff_control (char **string, struct diff_block *db)
   switch (*s)
     {
     case 'a':
-      type = ADD;
+      type = DIFF_ADD;
       break;
     case 'c':
-      type = CHANGE;
+      type = DIFF_CHANGE;
       break;
     case 'd':
-      type = DELETE;
+      type = DIFF_DELETE;
       break;
     default:
-      return ERROR;			/* Bad format */
+      return DIFF_ERROR;	/* Bad format */
     }
   s++;				/* Past letter */
 
   /* Read second set of digits */
   s = readnum (skipwhite (s), &db->ranges[1][RANGE_START]);
   if (! s)
-    return ERROR;
+    return DIFF_ERROR;
 
   /* Was that the only digit? */
   s = skipwhite (s);
@@ -1193,7 +1193,7 @@ process_diff_control (char **string, struct diff_block *db)
     {
       s = readnum (s + 1, &db->ranges[1][RANGE_END]);
       if (! s)
-        return ERROR;
+        return DIFF_ERROR;
       s = skipwhite (s);		/* To move to end */
     }
   else
