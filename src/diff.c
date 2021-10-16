@@ -729,6 +729,9 @@ main (int argc, char **argv)
 #else
       time_format = "%Y-%m-%d %H:%M:%S %z";
 #endif
+#if !HAVE_TM_GMTOFF
+      localtz = tzalloc (getenv ("TZ"));
+#endif
     }
   else
     {

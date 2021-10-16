@@ -52,7 +52,7 @@ print_context_label (char const *mark,
                     INT_STRLEN_BOUND (time_t) + 11)];
       struct tm const *tm = localtime (&inf->stat.st_mtime);
       int nsec = get_stat_mtime_ns (&inf->stat);
-      if (! (tm && nstrftime (buf, sizeof buf, time_format, tm, 0, nsec)))
+      if (! (tm && nstrftime (buf, sizeof buf, time_format, tm, localtz, nsec)))
         {
           verify (TYPE_IS_INTEGER (time_t));
           if (LONG_MIN <= TYPE_MINIMUM (time_t)

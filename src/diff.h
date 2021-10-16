@@ -155,6 +155,13 @@ XTERN bool ignore_file_name_case;
    (--no-dereference).  */
 XTERN bool no_dereference_symlinks;
 
+/* Local timezone for 'c' output headers, if needed.  */
+#if HAVE_TM_GMTOFF
+# define localtz 0 /* Placeholder since localtz is never needed.  */
+#else
+XTERN timezone_t localtz;
+#endif
+
 /* File labels for '-c' output headers (--label).  */
 XTERN char *file_label[2];
 

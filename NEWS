@@ -2,6 +2,12 @@ GNU diffutils NEWS                                    -*- outline -*-
 
 * Noteworthy changes in release ?.? (????-??-??) [?]
 
+** Bug fixes
+
+  diff -c and -u no longer output incorrect timezones in headers
+  on platforms like Solaris where struct tm lacks tm_gmtoff.
+  [bug#51228 introduced in 3.4]
+
 
 * Noteworthy changes in release 3.8 (2021-08-01) [stable]
 

@@ -22,6 +22,7 @@ TESTS = \
   strcoll-0-names \
   filename-quoting \
   strip-trailing-cr \
+  timezone \
   colors
 
 XFAIL_TESTS = large-subopt
