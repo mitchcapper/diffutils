@@ -1,2 +1,4 @@
 [SEE ALSO]
-diff(1), diff3(1), sdiff(1)
+.BR diff (1),
+.BR diff3 (1),
+.BR sdiff (1)

@@ -1,2 +1,6 @@
 [SEE ALSO]
-wdiff(1), cmp(1), diff3(1), sdiff(1), patch(1)
+.BR wdiff (1),
+.BR cmp (1),
+.BR diff3 (1),
+.BR sdiff (1),
+.BR patch (1)
