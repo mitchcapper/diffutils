@@ -153,6 +153,13 @@ message (char const *format_msgid, ...)
   va_end (ap);
 }
 
+/* Suppress false positive from gcc version 13.0.0 20221208 (experimental) (GCC)
+ */
+_Pragma ("GCC diagnostic push")
+#if 12 <= __GNUC__
+_Pragma ("GCC diagnostic ignored \"-Wanalyzer-use-of-uninitialized-value\"")
+#endif
+
 /* Output all the messages that were saved up by calls to 'message'.  */
 
 void
@@ -178,7 +185,8 @@ print_message_queue (void)
       m = next;
     }
 }
-
+_Pragma ("GCC diagnostic pop")
+
 /* Signal handling, needed for restoring default colors.  */
 
 static void
