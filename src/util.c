@@ -202,7 +202,7 @@ xsigismember (sigset_t const *set, int sig)
   int mem = sigismember (set, sig);
   if (mem < 0)
     pfatal_with_name ("sigismember");
-  assume (mem == 1);
+  assume (mem <= 1);
   return mem;
 }
 
