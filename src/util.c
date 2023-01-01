@@ -153,13 +153,6 @@ message (char const *format_msgid, ...)
   va_end (ap);
 }
 
-/* Suppress false positive from gcc version 13.0.0 20221208 (experimental) (GCC)
- */
-_Pragma ("GCC diagnostic push")
-#if 12 <= __GNUC__
-_Pragma ("GCC diagnostic ignored \"-Wanalyzer-use-of-uninitialized-value\"")
-#endif
-
 /* Output all the messages that were saved up by calls to 'message'.  */
 
 void
@@ -170,14 +163,13 @@ print_message_queue (void)
       /* Change this if diff ever has messages with more than 4 args.  */
       char const *p = m->args;
       char const *plim = p + m->argbytes;
-      char const *arg[4];
-      for (int i = 0; i < 4; i++)
-	{
-	  arg[i] = p;
-	  if (p < plim)
-	    p += strlen (p) + 1;
-	}
-      printf (_(m->msgid), arg[0], arg[1], arg[2], arg[3]);
+      /* Unroll the loop to work around GCC 12 bug with
+	 -Wanalyzer-use-of-uninitialized-value.  */
+      char const *arg0 = p; p += p < plim ? strlen (p) + 1 : 0;
+      char const *arg1 = p; p += p < plim ? strlen (p) + 1 : 0;
+      char const *arg2 = p; p += p < plim ? strlen (p) + 1 : 0;
+      char const *arg3 = p; p += p < plim ? strlen (p) + 1 : 0;
+      printf (_(m->msgid), arg0, arg1, arg2, arg3);
       if (p < plim)
 	abort ();
       struct msg *next = m->next;
@@ -185,7 +177,6 @@ print_message_queue (void)
       m = next;
     }
 }
-_Pragma ("GCC diagnostic pop")
 
 /* Signal handling, needed for restoring default colors.  */
 
