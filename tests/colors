@@ -12,7 +12,7 @@ echo b > b
 
 # On systems lacking fractional timestamp support, diff -u does not print
 # a decimal point and 9-digit nanosecond suffix.
-nanosecond_zeros=$(diff -u a b|grep -F . > /dev/null && echo .000000000)
+nanosecond_zeros=$(diff -u a b|grep '\.' > /dev/null && echo .000000000)
 
 epoch='1970-01-01 00:00:00'
 touch -t 197001010000.00 a b
