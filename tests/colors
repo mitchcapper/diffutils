@@ -128,6 +128,9 @@ printf '%1000000s-a' > a
 printf '%1000000s-b' > b
 head -c 10 < fifo > /dev/null &
 diff --color=always ---presume-output-tty a b > fifo
-test $? = 141 || fail=1
+
+# Depending on version of GNU make (4.3.92-4.4 set SIGPIPE to "ignore"),
+# either of these is acceptable.
+case $? in 2|141) ;; *) fail=1 ;; esac
 
 Exit $fail
