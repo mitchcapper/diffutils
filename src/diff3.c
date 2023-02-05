@@ -329,7 +329,7 @@ main (int argc, char **argv)
           break;
         case 'v':
           version_etc (stdout, PROGRAM_NAME, PACKAGE_NAME, Version,
-                       AUTHORS, (char *) NULL);
+                       AUTHORS, nullptr);
           check_stdout ();
           return EXIT_SUCCESS;
         case DIFF_PROGRAM_OPTION:
@@ -1091,7 +1091,7 @@ process_diff (char const *filea,
       block_list_end = &bptr->next;
     }
 
-  *block_list_end = NULL;
+  *block_list_end = nullptr;
   return block_list;
 }
 

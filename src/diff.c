@@ -224,7 +224,7 @@ static struct option const longopts[] =
   {"width", 1, 0, 'W'},
 
   /* This is solely for testing.  Do not document.  */
-  {"-presume-output-tty", no_argument, NULL, PRESUME_OUTPUT_TTY_OPTION},
+  {"-presume-output-tty", no_argument, nullptr, PRESUME_OUTPUT_TTY_OPTION},
   {0, 0, 0, 0}
 };
 
@@ -283,8 +283,8 @@ main (int argc, char **argv)
   bool explicit_context = false;
   size_t width = 0;
   bool show_c_function = false;
-  char const *from_file = NULL;
-  char const *to_file = NULL;
+  char const *from_file = nullptr;
+  char const *to_file = nullptr;
   intmax_t numval;
   char *numend;
 
@@ -305,7 +305,7 @@ main (int argc, char **argv)
 
   /* Decode the options.  */
 
-  while ((c = getopt_long (argc, argv, shortopts, longopts, NULL)) != -1)
+  while ((c = getopt_long (argc, argv, shortopts, longopts, nullptr)) != -1)
     {
       switch (c)
         {
@@ -477,7 +477,7 @@ main (int argc, char **argv)
 
         case 'l':
           if (!pr_program[0])
-            try_help ("pagination not supported on this host", NULL);
+            try_help ("pagination not supported on this host", nullptr);
           paginate = true;
 #ifdef SIGCHLD
           /* Pagination requires forking and waiting, and
@@ -544,7 +544,7 @@ main (int argc, char **argv)
 
         case 'v':
           version_etc (stdout, PROGRAM_NAME, PACKAGE_NAME, Version,
-                       AUTHORS, (char *) NULL);
+                       AUTHORS, nullptr);
           check_stdout ();
           return EXIT_SUCCESS;
 
@@ -697,7 +697,7 @@ main (int argc, char **argv)
           break;
 
         default:
-          try_help (NULL, NULL);
+          try_help (nullptr, nullptr);
         }
       prev = c;
     }
@@ -824,7 +824,7 @@ main (int argc, char **argv)
       else
         for (; optind < argc; optind++)
           {
-            int status = compare_files (NULL, from_file, argv[optind]);
+            int status = compare_files (nullptr, from_file, argv[optind]);
             if (exit_status < status)
               exit_status = status;
           }
@@ -834,7 +834,7 @@ main (int argc, char **argv)
       if (to_file)
         for (; optind < argc; optind++)
           {
-            int status = compare_files (NULL, argv[optind], to_file);
+            int status = compare_files (nullptr, argv[optind], to_file);
             if (exit_status < status)
               exit_status = status;
           }
@@ -848,7 +848,7 @@ main (int argc, char **argv)
                 try_help ("extra operand '%s'", argv[optind + 2]);
             }
 
-          exit_status = compare_files (NULL, argv[optind], argv[optind + 1]);
+          exit_status = compare_files (nullptr, argv[optind], argv[optind + 1]);
         }
     }
 
@@ -1081,7 +1081,7 @@ specify_value (char const **var, char const *value, char const *option)
   if (*var && ! STREQ (*var, value))
     {
       error (0, 0, _("conflicting %s option value '%s'"), option, value);
-      try_help (NULL, NULL);
+      try_help (nullptr, nullptr);
     }
   *var = value;
 }
@@ -1093,7 +1093,7 @@ specify_style (enum output_style style)
   if (output_style != style)
     {
       if (output_style != OUTPUT_UNSPECIFIED)
-        try_help ("conflicting output style options", NULL);
+        try_help ("conflicting output style options", nullptr);
       output_style = style;
     }
 }
@@ -1102,7 +1102,7 @@ specify_style (enum output_style style)
 static void
 specify_colors_style (char const *value)
 {
-  if (value == NULL || STREQ (value, "auto"))
+  if (value == nullptr || STREQ (value, "auto"))
     colors_style = AUTO;
   else if (STREQ (value, "always"))
     colors_style = ALWAYS;
@@ -1194,17 +1194,17 @@ compare_files (struct comparison const *parent,
 
   if (!parent)
     {
-      free0 = NULL;
-      free1 = NULL;
+      free0 = nullptr;
+      free1 = nullptr;
       cmp.file[0].name = name0;
       cmp.file[1].name = name1;
     }
   else
     {
       cmp.file[0].name = free0
-        = file_name_concat (parent->file[0].name, name0, NULL);
+        = file_name_concat (parent->file[0].name, name0, nullptr);
       cmp.file[1].name = free1
-        = file_name_concat (parent->file[1].name, name1, NULL);
+        = file_name_concat (parent->file[1].name, name1, nullptr);
     }
 
   /* Stat the files.  */
@@ -1370,7 +1370,7 @@ compare_files (struct comparison const *parent,
             {
               char const *dir;
 
-              /* PARENT must be non-NULL here.  */
+              /* PARENT must be non-null here.  */
               assert (parent);
               dir = parent->file[cmp.file[0].desc == NONEXISTENT].name;
 
@@ -1405,12 +1405,12 @@ compare_files (struct comparison const *parent,
           && S_ISLNK (cmp.file[1].stat.st_mode))
         {
           /* Compare the values of the symbolic links.  */
-          char *link_value[2] = { NULL, NULL };
+          char *link_value[2] = { nullptr, nullptr };
 
           for (f = 0; f < 2; f++)
             {
               link_value[f] = xreadlink (cmp.file[f].name);
-              if (link_value[f] == NULL)
+              if (link_value[f] == nullptr)
                 {
                   perror_with_name (cmp.file[f].name);
                   status = EXIT_TROUBLE;

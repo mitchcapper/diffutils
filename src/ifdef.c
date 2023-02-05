@@ -395,7 +395,7 @@ scan_char_literal (char const *lit, char *valptr)
     {
       case 0:
       case '\'':
-        return NULL;
+        return nullptr;
 
       case '\\':
         value = 0;
@@ -403,18 +403,18 @@ scan_char_literal (char const *lit, char *valptr)
           {
             unsigned int digit = c - '0';
             if (8 <= digit)
-              return NULL;
+              return nullptr;
             value = 8 * value + digit;
           }
         digits = p - lit - 2;
         if (! (1 <= digits && digits <= 3))
-          return NULL;
+          return nullptr;
         break;
 
       default:
         value = c;
         if (*p++ != '\'')
-          return NULL;
+          return nullptr;
         break;
     }
 

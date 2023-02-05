@@ -518,7 +518,7 @@ main (int argc, char *argv[])
 
         case 'v':
           version_etc (stdout, PROGRAM_NAME, PACKAGE_NAME, Version,
-                       AUTHORS, (char *) NULL);
+                       AUTHORS, nullptr);
           check_stdout ();
           return EXIT_SUCCESS;
 

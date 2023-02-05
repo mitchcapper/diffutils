@@ -342,8 +342,8 @@ find_dir_file_pathname (char const *dir, char const *file)
 
   char *val;
   struct dirdata dirdata;
-  dirdata.names = NULL;
-  dirdata.data = NULL;
+  dirdata.names = nullptr;
+  dirdata.data = nullptr;
 
   if (ignore_file_name_case)
     {
@@ -373,7 +373,7 @@ find_dir_file_pathname (char const *dir, char const *file)
         }
     }
 
-  val = file_name_concat (dir, match, NULL);
+  val = file_name_concat (dir, match, nullptr);
   free (dirdata.names);
   free (dirdata.data);
   return val;

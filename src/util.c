@@ -287,7 +287,7 @@ process_signals (void)
       /* Exit or suspend the program.  */
       if (raise (sig) != 0)
 	pfatal_with_name ("raise");
-      xsigprocmask (SIG_SETMASK, &oldset, NULL);
+      xsigprocmask (SIG_SETMASK, &oldset, nullptr);
 
       /* If execution reaches here, then the program has been
          continued (after being suspended).  */
@@ -351,7 +351,7 @@ install_signal_handlers (void)
   for (int j = 0; j < nsigs; j++)
     {
       struct sigaction actj;
-      if (sigaction (sig[j], NULL, &actj) == 0 && actj.sa_handler != SIG_IGN)
+      if (sigaction (sig[j], nullptr, &actj) == 0 && actj.sa_handler != SIG_IGN)
 	xsigaddset (&caught_signals, sig[j]);
     }
 
@@ -363,7 +363,7 @@ install_signal_handlers (void)
     if (xsigismember (&caught_signals, sig[j]))
       {
 	act.sa_handler = is_tstp_index (j) ? stophandler : sighandler;
-	if (sigaction (sig[j], &act, NULL) != 0)
+	if (sigaction (sig[j], &act, nullptr) != 0)
 	  pfatal_with_name ("sigaction");
 	some_signals_caught = true;
       }
@@ -403,7 +403,7 @@ static char const *current_name1;
 static bool currently_recursive;
 static bool colors_enabled;
 
-static struct color_ext_type *color_ext_list = NULL;
+static struct color_ext_type *color_ext_list = nullptr;
 
 struct bin_str
   {
@@ -642,7 +642,7 @@ static struct bin_str color_indicator[] =
   {
     { LEN_STR_PAIR ("\033[") },		/* lc: Left of color sequence */
     { LEN_STR_PAIR ("m") },		/* rc: Right of color sequence */
-    { 0, NULL },			/* ec: End color (replaces lc+rs+rc) */
+    { 0, nullptr },			/* ec: End color (replaces lc+rs+rc) */
     { LEN_STR_PAIR ("0") },		/* rs: Reset to ordinary colors */
     { LEN_STR_PAIR ("1") },		/* hd: Header */
     { LEN_STR_PAIR ("32") },		/* ad: Add line */
@@ -652,7 +652,7 @@ static struct bin_str color_indicator[] =
 
 static const char *const indicator_name[] =
   {
-    "lc", "rc", "ec", "rs", "hd", "ad", "de", "ln", NULL
+    "lc", "rc", "ec", "rs", "hd", "ad", "de", "ln", nullptr
   };
 ARGMATCH_VERIFY (indicator_name, color_indicator);
 
@@ -674,10 +674,11 @@ parse_diff_color (void)
   char label[] = "??";		/* Indicator label */
   struct color_ext_type *ext;	/* Extension we are working on */
 
-  if ((p = color_palette) == NULL || *p == '\0')
+  p = color_palette;
+  if (p == nullptr || *p == '\0')
     return;
 
-  ext = NULL;
+  ext = nullptr;
 
   /* This is an overly conservative estimate, but any possible
      --palette string will *not* generate a color_buf longer than
@@ -739,7 +740,7 @@ parse_diff_color (void)
           state = PS_FAIL;	/* Assume failure...  */
           if (*(p++) == '=')/* It *should* be...  */
             {
-              for (ind_no = 0; indicator_name[ind_no] != NULL; ++ind_no)
+              for (ind_no = 0; indicator_name[ind_no] != nullptr; ++ind_no)
                 {
                   if (STREQ (label, indicator_name[ind_no]))
                     {
@@ -783,7 +784,7 @@ parse_diff_color (void)
       error (0, 0,
              _("unparsable value for --palette"));
       free (color_buf);
-      for (e = color_ext_list; e != NULL; /* empty */)
+      for (e = color_ext_list; e != nullptr; /* empty */)
         {
           e2 = e;
           e = e->next;
