@@ -20,7 +20,7 @@ Use the latest upstream sources
 Base any changes you make on the latest upstream sources.
 You can get a copy of the latest with this command:
 
-    git clone git://git.sv.gnu.org/diffutils
+    git clone https://git.savannah.gnu.org/git/diffutils
 
 That downloads the entire repository, including revision control history
 dating back to 1991.  The repository (the part you download, and which
@@ -94,7 +94,7 @@ Make your changes on a private "topic" branch
 =============================================
 So you checked out diffutils like this:
 
-  git clone git://git.sv.gnu.org/diffutils
+  git clone https://git.savannah.gnu.org/git/diffutils
 
 Now, cd into the diffutils/ directory and run:
 
@@ -438,12 +438,12 @@ The forms to choose from are in gnulib's doc/Copyright/ directory.
 If you want to assign a single change, you should use the file,
 doc/Copyright/request-assign.changes:
 
-    http://git.sv.gnu.org/gitweb/?p=gnulib.git;a=blob;f=doc/Copyright/request-assign.changes;hb=HEAD
+    http://git.savannah.gnu.org/gitweb/?p=gnulib.git;a=blob;f=doc/Copyright/request-assign.changes;hb=HEAD
 
 If you would like to assign past and future contributions to a project,
 you'd use doc/Copyright/request-assign.future:
 
-    http://git.sv.gnu.org/gitweb/?p=gnulib.git;a=blob;f=doc/Copyright/request-assign.future;hb=HEAD
+    http://git.savannah.gnu.org/gitweb/?p=gnulib.git;a=blob;f=doc/Copyright/request-assign.future;hb=HEAD
 
 You may make assignments for up to four projects at a time.
 
