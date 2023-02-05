@@ -108,8 +108,6 @@ int strcasecmp (char const *, char const *);
 #define MIN(a, b) ((a) <= (b) ? (a) : (b))
 #define MAX(a, b) ((a) >= (b) ? (a) : (b))
 
-#include <stdbool.h>
-
 #include <attribute.h>
 #include <intprops.h>
 #include <propername.h>
