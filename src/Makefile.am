@@ -30,11 +30,16 @@ LDADD = \
   $(LIBINTL) \
   $(LIBICONV) \
   $(LIBSIGSEGV) \
-  $(LIB_CLOCK_GETTIME)
+  $(LIBTHREAD) \
+  $(LIBUNISTRING) \
+  $(CLOCK_TIME_LIB) \
+  $(HARD_LOCALE_LIB) \
+  $(MBRTOWC_LIB) \
+  $(SETLOCALE_NULL_LIB)
 
 diff_LDADD = $(LDADD)
 cmp_LDADD = $(LDADD)
-sdiff_LDADD = $(LDADD)
+sdiff_LDADD = $(LDADD) $(GETRANDOM_LIB)
 diff3_LDADD = $(LDADD)
 
 cmp_SOURCES = cmp.c
