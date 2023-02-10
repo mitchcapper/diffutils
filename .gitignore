@@ -5,7 +5,7 @@
 *.patch
 *~
 .Tpo
-.deps
+.deps/
 .dirstamp
 .gdb-history
 /*.diff
@@ -23,7 +23,7 @@
 /configure
 /conftest*
 /diffutils-*.tar.xz
-/gnulib-tests
+/gnulib-tests/
 /m4/
 /maint.mk
 ChangeLog
@@ -40,10 +40,6 @@ doc/diffutils.log
 doc/diffutils.toc
 doc/stamp-vti
 doc/version.texi
-gnulib-tests/*.log
-gnulib-tests/.gitignore
-gnulib-tests/locale/
-gnulib-tests/uniwidth/
 lib/*/
 lib/.gitignore
 lib/alloca.h
@@ -56,7 +52,6 @@ lib/configmake.h
 lib/ctype.h
 lib/errno.h
 lib/fcntl.h
-lib/float.h
 lib/fnmatch.h
 lib/getopt-cdefs.h
 lib/getopt.h
@@ -70,9 +65,8 @@ lib/ref-del.sed
 lib/signal.h
 lib/sigsegv.h
 lib/stamp-h1
-lib/stdalign.h
 lib/stdarg.h
-lib/stdbool.h
+lib/stdckdint.h
 lib/stddef.h
 lib/stdint.h
 lib/stdio.h
@@ -83,10 +77,10 @@ lib/string.h
 lib/strings.h
 lib/time.h
 lib/unistd.h
-lib/unistr
+lib/unistr/
 lib/unistr.h
 lib/unitypes.h
-lib/uniwidth
+lib/uniwidth/
 lib/uniwidth.h
 lib/warn-on-use.h
 lib/wchar.h
