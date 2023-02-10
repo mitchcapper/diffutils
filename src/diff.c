@@ -416,7 +416,7 @@ main (int argc, char **argv)
 	    char *base = b;
 	    int changes = 0;
 
-	    for (i = 0; i < sizeof sizeof C_ifdef_group_formats; i++)
+	    for (i = 0; i < sizeof C_ifdef_group_formats; i++)
 	      {
 		char ch = C_ifdef_group_formats[i];
 		switch (ch)

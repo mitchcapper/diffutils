@@ -2,6 +2,11 @@ GNU diffutils NEWS                                    -*- outline -*-
 
 * Noteworthy changes in release ?.? (????-??-??) [?]
 
+** Bug fixes
+
+  diff -D no longer fails to output #ifndef lines.
+  [bug#61193 introduced in 3.9]
+
 
 * Noteworthy changes in release 3.9 (2023-01-15) [stable]
 

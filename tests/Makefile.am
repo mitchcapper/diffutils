@@ -10,6 +10,7 @@ TESTS = \
   diff3 \
   excess-slash \
   help-version	\
+  ifdef \
   invalid-re	\
   function-line-vs-leading-space \
   ignore-matching-lines \
