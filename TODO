@@ -1,3 +1,9 @@
+Add --git option to generate output compatible with 'git diff -p'.
+This would behave like 'diff -p', except that it would also generate
+the extended headers 'old mode', 'new mode', 'deleted file mode', and
+'new file mode', and it would quote file names with unusual characters.
+GNU patch already parses this format.
+
 Add --include option (opposite of --exclude).
 
 Look into sdiff improvement here:
