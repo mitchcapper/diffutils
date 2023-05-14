@@ -24,7 +24,8 @@ TESTS = \
   filename-quoting \
   strip-trailing-cr \
   timezone \
-  colors
+  colors \
+  y2038-vs-32bit
 
 XFAIL_TESTS = large-subopt
 
