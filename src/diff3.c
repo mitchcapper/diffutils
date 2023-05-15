@@ -1267,9 +1267,9 @@ read_diff (char const *filea,
 
 #endif
 
-  if (fstat (fd, &pipestat) != 0)
-    perror_with_exit ("fstat");
-  current_chunk_size = MAX (1, STAT_BLOCKSIZE (pipestat));
+  current_chunk_size = (fstat (fd, &pipestat) == 0
+                        ? MAX (1, STAT_BLOCKSIZE (pipestat))
+                        : 8 * 1024);
   diff_result = xmalloc (current_chunk_size);
   total = 0;
 
