@@ -104,6 +104,9 @@ static bool unidirectional_new_file;
 /* Report files compared that are the same (-s).
    Normally nothing is output when that happens.  */
 static bool report_identical_files;
+
+/* Do not treat directories specially.  */
+static bool no_directory;
 
 static char const shortopts[] =
 "0123456789abBcC:dD:eEfF:hHiI:lL:nNpPqrsS:tTuU:vwW:x:X:yZ";
@@ -143,6 +146,7 @@ enum
   COLOR_OPTION,
   COLOR_PALETTE_OPTION,
 
+  NO_DIRECTORY_OPTION,
   PRESUME_OUTPUT_TTY_OPTION,
 };
 
@@ -222,6 +226,9 @@ static struct option const longopts[] =
   {"unified", 2, 0, 'U'},
   {"version", 0, 0, 'v'},
   {"width", 1, 0, 'W'},
+
+  /* This is solely for diff3.  Do not document.  */
+  {"-no-directory", no_argument, nullptr, NO_DIRECTORY_OPTION},
 
   /* This is solely for testing.  Do not document.  */
   {"-presume-output-tty", no_argument, nullptr, PRESUME_OUTPUT_TTY_OPTION},
@@ -690,6 +697,10 @@ main (int argc, char **argv)
 
         case COLOR_PALETTE_OPTION:
           set_color_palette (optarg);
+          break;
+
+        case NO_DIRECTORY_OPTION:
+          no_directory = true;
           break;
 
         case PRESUME_OUTPUT_TTY_OPTION:
@@ -1286,7 +1297,8 @@ compare_files (struct comparison const *parent,
         }
     }
 
-  if (status == EXIT_SUCCESS && ! parent && DIR_P (0) != DIR_P (1))
+  if (status == EXIT_SUCCESS && ! parent && !no_directory
+      && DIR_P (0) != DIR_P (1))
     {
       /* If one is a directory, and it was specified in the command line,
          use the file in that dir with the other file's basename.  */

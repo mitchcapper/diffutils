@@ -273,7 +273,6 @@ main (int argc, char **argv)
   char *tag_strings[3];
   char *commonname;
   char **file;
-  struct stat statb;
 
   exit_failure = EXIT_TROUBLE;
   initialize_main (&argc, &argv);
@@ -410,15 +409,6 @@ main (int argc, char **argv)
 
   for (i = 0; i < 3; i++)
     rev_mapping[mapping[i]] = i;
-
-  for (i = 0; i < 3; i++)
-    if (! STREQ (file[i], "-"))
-      {
-        if (stat (file[i], &statb) < 0)
-          perror_with_exit (file[i]);
-        else if (S_ISDIR (statb.st_mode))
-          die (EXIT_TROUBLE, EISDIR, "%s", file[i]);
-      }
 
 #ifdef SIGCHLD
   /* System V fork+wait does not work if SIGCHLD is ignored.  */
@@ -1213,7 +1203,7 @@ read_diff (char const *filea,
   int fd, wstatus, status;
   int werrno = 0;
   struct stat pipestat;
-  char const *argv[9];
+  char const *argv[10];
   char const **ap;
 #if HAVE_WORKING_FORK
   int fds[2];
@@ -1230,6 +1220,7 @@ read_diff (char const *filea,
   if (strip_trailing_cr)
     *ap++ = "--strip-trailing-cr";
   *ap++ = "--horizon-lines=100";
+  *ap++ = "---no-directory";
   *ap++ = "--";
   *ap++ = filea;
   *ap++ = fileb;
