@@ -63,7 +63,8 @@ static char const *file[2];
 /* File descriptors of the files.  */
 static int file_desc[2];
 
-/* Status of the files.  */
+/* Status of the files.  If st_size is negative, the status is unknown
+   and st_blksize (if it exists) is just a reasonable guess.  */
 static struct stat stat_buf[2];
 
 /* Read buffers for the files.  */
@@ -294,21 +295,31 @@ main (int argc, char **argv)
             set_binary_mode (STDIN_FILENO, O_BINARY);
         }
       else
-        file_desc[f] = open (file[f], O_RDONLY | O_BINARY, 0);
-
-      if (file_desc[f] < 0 || fstat (file_desc[f], stat_buf + f) != 0)
         {
-          if (file_desc[f] < 0 && comparison_type == type_status)
-            exit (EXIT_TROUBLE);
-          else
-            die (EXIT_TROUBLE, errno, "%s", file[f]);
+          file_desc[f] = open (file[f], O_RDONLY | O_BINARY, 0);
+
+          if (file_desc[f] < 0)
+            {
+              if (comparison_type != type_status)
+                error (0, errno, "%s", file[f]);
+              exit (EXIT_TROUBLE);
+            }
+        }
+
+      if (fstat (file_desc[f], stat_buf + f) < 0)
+        {
+          stat_buf[f].st_size = -1;
+#if HAVE_STRUCT_STAT_ST_BLKSIZE
+          stat_buf[f].st_blksize = 8 * 1024;
+#endif
         }
     }
 
   /* If the files are links to the same inode and have the same file position,
      they are identical.  */
 
-  if (0 < same_file (&stat_buf[0], &stat_buf[1])
+  if (0 <= stat_buf[0].st_size && 0 <= stat_buf[1].st_size
+      && 0 < same_file (&stat_buf[0], &stat_buf[1])
       && same_file_attributes (&stat_buf[0], &stat_buf[1])
       && file_position (0) == file_position (1))
     return EXIT_SUCCESS;
@@ -332,8 +343,8 @@ main (int argc, char **argv)
      and if more bytes will be compared than are in the smaller file.  */
 
   if (comparison_type == type_status
-      && S_ISREG (stat_buf[0].st_mode)
-      && S_ISREG (stat_buf[1].st_mode))
+      && 0 <= stat_buf[0].st_size && S_ISREG (stat_buf[0].st_mode)
+      && 0 <= stat_buf[1].st_size && S_ISREG (stat_buf[1].st_mode))
     {
       off_t s0 = stat_buf[0].st_size - file_position (0);
       off_t s1 = stat_buf[1].st_size - file_position (1);
@@ -345,7 +356,7 @@ main (int argc, char **argv)
         exit (EXIT_FAILURE);
     }
 
-  /* Get the optimal block size of the files.  */
+  /* Guess a good block size for the files.  */
 
   buf_size = buffer_lcm (STAT_BLOCKSIZE (stat_buf[0]),
                          STAT_BLOCKSIZE (stat_buf[1]),
@@ -397,7 +408,7 @@ cmp (void)
 			       ? bytes : TYPE_MAXIMUM (off_t));
 
       for (f = 0; f < 2; f++)
-        if (S_ISREG (stat_buf[f].st_mode))
+        if (0 <= stat_buf[f].st_size && S_ISREG (stat_buf[f].st_mode))
           {
             off_t file_bytes = stat_buf[f].st_size - file_position (f);
             if (file_bytes < byte_number_max)
