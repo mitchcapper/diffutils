@@ -44,7 +44,7 @@
 #include <binary-io.h>
 
 /* The official name of this program (e.g., no 'g' prefix).  */
-#define PROGRAM_NAME "diff"
+static char const PROGRAM_NAME[] = "diff";
 
 #define AUTHORS \
   proper_name ("Paul Eggert"), \
@@ -1143,6 +1143,24 @@ set_mtime_to_now (struct stat *st)
 #endif
 }
 
+/* cmp.file[f].desc markers */
+enum { NONEXISTENT = -1 }; /* nonexistent file */
+enum { UNOPENED = -2 }; /* unopened file (e.g. directory) */
+
+/* encoded errno value */
+static int
+errno_encode (int err)
+{
+  return -3 - err;
+}
+
+/* inverse of errno_encode */
+static int
+errno_decode (int desc)
+{
+  return -3 - desc;
+}
+
 /* Compare two files (or dirs) with parent comparison PARENT
    and names NAME0 and NAME1.
    (If PARENT is null, then the first name is just NAME0, etc.)
@@ -1186,13 +1204,6 @@ compare_files (struct comparison const *parent,
   memset (cmp.file, 0, sizeof cmp.file);
   cmp.parent = parent;
 
-  /* cmp.file[f].desc markers */
-#define NONEXISTENT (-1) /* nonexistent file */
-#define UNOPENED (-2) /* unopened file (e.g. directory) */
-#define ERRNO_ENCODE(errno) (-3 - (errno)) /* encoded errno value */
-
-#define ERRNO_DECODE(desc) (-3 - (desc)) /* inverse of ERRNO_ENCODE */
-
   cmp.file[0].desc = name0 ? UNOPENED : NONEXISTENT;
   cmp.file[1].desc = name1 ? UNOPENED : NONEXISTENT;
 
@@ -1235,14 +1246,14 @@ compare_files (struct comparison const *parent,
               if (binary && ! isatty (STDIN_FILENO))
                 set_binary_mode (STDIN_FILENO, O_BINARY);
               if (fstat (STDIN_FILENO, &cmp.file[f].stat) != 0)
-                cmp.file[f].desc = ERRNO_ENCODE (errno);
+                cmp.file[f].desc = errno_encode (errno);
               else
                 {
                   if (S_ISREG (cmp.file[f].stat.st_mode))
                     {
                       off_t pos = lseek (STDIN_FILENO, 0, SEEK_CUR);
                       if (pos < 0)
-                        cmp.file[f].desc = ERRNO_ENCODE (errno);
+                        cmp.file[f].desc = errno_encode (errno);
                       else
                         cmp.file[f].stat.st_size =
                           MAX (0, cmp.file[f].stat.st_size - pos);
@@ -1257,7 +1268,7 @@ compare_files (struct comparison const *parent,
                     ? lstat (cmp.file[f].name, &cmp.file[f].stat)
                     : stat (cmp.file[f].name, &cmp.file[f].stat))
                    != 0)
-            cmp.file[f].desc = ERRNO_ENCODE (errno);
+            cmp.file[f].desc = errno_encode (errno);
         }
     }
 
@@ -1272,8 +1283,8 @@ compare_files (struct comparison const *parent,
             ? (S_ISREG (cmp.file[f].stat.st_mode)
                && ! (cmp.file[f].stat.st_mode & (S_IRWXU | S_IRWXG | S_IRWXO))
                && cmp.file[f].stat.st_size == 0)
-            : ((cmp.file[f].desc == ERRNO_ENCODE (ENOENT)
-                || cmp.file[f].desc == ERRNO_ENCODE (EBADF))
+            : ((cmp.file[f].desc == errno_encode (ENOENT)
+                || cmp.file[f].desc == errno_encode (EBADF))
                && ! parent
                && (cmp.file[1 - f].desc == UNOPENED
                    || cmp.file[1 - f].desc == STDIN_FILENO))))
@@ -1288,7 +1299,7 @@ compare_files (struct comparison const *parent,
 
   for (f = 0; f < 2; f++)
     {
-      int e = ERRNO_DECODE (cmp.file[f].desc);
+      int e = errno_decode (cmp.file[f].desc);
       if (0 <= e)
         {
           errno = e;
