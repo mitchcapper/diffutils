@@ -39,17 +39,21 @@
 #include <xstrtol.h>
 
 /* The official name of this program (e.g., no 'g' prefix).  */
-#define PROGRAM_NAME "cmp"
+static char const PROGRAM_NAME[] = "cmp";
 
 #define AUTHORS \
   proper_name_utf8 ("Torbjorn Granlund", "Torbj\303\266rn Granlund"), \
   proper_name ("David MacKenzie")
 
+static bool
+hard_locale_LC_MESSAGES (void)
+{
 #if defined LC_MESSAGES && ENABLE_NLS
-# define hard_locale_LC_MESSAGES hard_locale (LC_MESSAGES)
+  return hard_locale (LC_MESSAGES);
 #else
-# define hard_locale_LC_MESSAGES 0
+  return false;
 #endif
+}
 
 static int cmp (void);
 static off_t file_position (int);
@@ -517,7 +521,7 @@ cmp (void)
                       N_("%s %s differ: byte %s, line %s\n");
                     char const *byte_message = _(byte_msgid);
                     bool use_byte_message = (byte_message != byte_msgid
-                                             || hard_locale_LC_MESSAGES);
+                                             || hard_locale_LC_MESSAGES ());
 
                     printf (use_byte_message ? byte_message : char_message,
                             file[0], file[1], byte_num, line_num);
