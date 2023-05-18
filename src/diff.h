@@ -23,6 +23,16 @@
 #include <stdio.h>
 #include <unlocked-io.h>
 
+_GL_INLINE_HEADER_BEGIN
+
+#ifdef GDIFF_MAIN
+# define DIFF_INLINE _GL_EXTERN_INLINE
+# define XTERN
+#else
+# define DIFF_INLINE _GL_INLINE
+# define XTERN extern
+#endif
+
 /* What kind of changes a hunk contains.  */
 enum changes
 {
@@ -53,12 +63,6 @@ enum colors_style
 };
 
 /* Variables for command line options */
-
-#ifndef GDIFF_MAIN
-# define XTERN extern
-#else
-# define XTERN
-#endif
 
 enum output_style
 {
@@ -92,7 +96,11 @@ enum output_style
 
 /* True for output styles that are robust,
    i.e. can handle a file that ends in a non-newline.  */
-#define ROBUST_OUTPUT_STYLE(S) ((S) != OUTPUT_ED && (S) != OUTPUT_FORWARD_ED)
+DIFF_INLINE bool
+robust_output_style (enum output_style s)
+{
+  return s != OUTPUT_ED && s != OUTPUT_FORWARD_ED;
+}
 
 XTERN enum output_style output_style;
 
@@ -426,3 +434,5 @@ XTERN bool presume_output_tty;
 
 extern void set_color_context (enum color_context color_context);
 extern void set_color_palette (char const *palette);
+
+_GL_INLINE_HEADER_END

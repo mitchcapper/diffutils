@@ -697,7 +697,7 @@ diff_2_files (struct comparison *cmp)
           free (e);
         }
 
-      if (! ROBUST_OUTPUT_STYLE (output_style))
+      if (! robust_output_style (output_style))
         for (f = 0; f < 2; ++f)
           if (cmp->file[f].missing_newline)
             {

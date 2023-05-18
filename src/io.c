@@ -347,7 +347,7 @@ find_and_hash_each_line (struct file_data *current)
 
       if (p == bufend
           && current->missing_newline
-          && ROBUST_OUTPUT_STYLE (output_style))
+          && robust_output_style (output_style))
         {
           /* The last line is incomplete and we do not silently
              complete lines.  If the line cannot compare equal to any
@@ -446,7 +446,7 @@ find_and_hash_each_line (struct file_data *current)
         {
           /* If the last line is incomplete and we do not silently
              complete lines, don't count its appended newline.  */
-          if (current->missing_newline && ROBUST_OUTPUT_STYLE (output_style))
+          if (current->missing_newline && robust_output_style (output_style))
             linbuf[line]--;
           break;
         }
@@ -589,7 +589,7 @@ find_identical_ends (struct file_data filevec[])
         p0++, p1++;
 
       /* Don't mistakenly count missing newline as part of prefix.  */
-      if (ROBUST_OUTPUT_STYLE (output_style)
+      if (robust_output_style (output_style)
           && ((buffer0 + n0 - filevec[0].missing_newline < p0)
               !=
               (buffer1 + n1 - filevec[1].missing_newline < p1)))
@@ -614,7 +614,7 @@ find_identical_ends (struct file_data filevec[])
   p0 = buffer0 + n0;
   p1 = buffer1 + n1;
 
-  if (! ROBUST_OUTPUT_STYLE (output_style)
+  if (! robust_output_style (output_style)
       || filevec[0].missing_newline == filevec[1].missing_newline)
     {
       end0 = p0;	/* Addr of last char in file 0.  */
