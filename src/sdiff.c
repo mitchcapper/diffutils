@@ -38,13 +38,13 @@
 #include <xstdopen.h>
 
 /* The official name of this program (e.g., no 'g' prefix).  */
-#define PROGRAM_NAME "sdiff"
+static char const PROGRAM_NAME[] = "sdiff";
 
 #define AUTHORS \
   proper_name ("Thomas Lord")
 
 /* Size of chunks read from files which must be parsed into lines.  */
-#define SDIFF_BUFSIZE ((size_t) 65536)
+enum { SDIFF_BUFSIZE = 65536 };
 
 static char const *editor_program = DEFAULT_EDITOR_PROGRAM;
 static char const **diffargv;
