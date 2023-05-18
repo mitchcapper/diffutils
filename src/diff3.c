@@ -45,7 +45,7 @@
 #include <xstdopen.h>
 
 /* The official name of this program (e.g., no 'g' prefix).  */
-#define PROGRAM_NAME "diff3"
+static char const PROGRAM_NAME[] = "diff3";
 
 #define AUTHORS \
   proper_name ("Randy Smith")
@@ -54,22 +54,18 @@
    data structures for both diff3 diffs and normal diffs.  */
 
 /* Different files within a three way diff.  */
-#define	FILE0	0
-#define	FILE1	1
-#define	FILE2	2
+enum { FILE0, FILE1, FILE2 };
 
 /* A three way diff is built from two two-way diffs; the file which
    the two two-way diffs share is:  */
-#define	FILEC	FILE2
+enum { FILEC = FILE2 };
 
 /* Different files within a two way diff.
    FC is the common file, FO the other file.  */
-#define FO 0
-#define FC 1
+enum { FO, FC };
 
 /* The ranges are indexed by */
-#define	RANGE_START	0
-#define	RANGE_END	1
+enum { RANGE_START, RANGE_END };
 
 enum diff_type {
   DIFF_ERROR,			/* Should not be used */
@@ -103,7 +99,11 @@ struct diff3_block {
   struct diff3_block *next;
 };
 
-/* Access the ranges on a diff block.  */
+/* The following are macros, not functions, as they may be used as
+   lvalues, or they may be polymorphic in that they work with either
+   diff or diff3 blocks.  */
+
+/* Access the ranges on a diff or diff3 block.  */
 #define	D_LOWLINE(diff, filenum)	\
   ((diff)->ranges[filenum][RANGE_START])
 #define	D_HIGHLINE(diff, filenum)	\
@@ -111,7 +111,7 @@ struct diff3_block {
 #define	D_NUMLINES(diff, filenum)	\
   (D_HIGHLINE (diff, filenum) - D_LOWLINE (diff, filenum) + 1)
 
-/* Access the line numbers in a file in a diff by relative line
+/* Access the line numbers in a file in a diff or diff3 block by relative line
    numbers (i.e. line number within the diff itself).  Note that these
    are lvalues and can be used for assignment.  */
 #define	D_RELNUM(diff, filenum, linenum)	\
@@ -125,23 +125,23 @@ struct diff3_block {
 #define	D_LENARRAY(diff, filenum)	\
   ((diff)->lengths[filenum])
 
-/* Next block.  */
+/* Next diff or diff3 block.  */
 #define	D_NEXT(diff)	((diff)->next)
 
 /* Access the type of a diff3 block.  */
 #define	D3_TYPE(diff)	((diff)->correspond)
 
-/* Line mappings based on diffs.  The first maps off the top of the
-   diff, the second off of the bottom.  */
+/* Line mappings based on diff or diff3 blocks.  The first maps off
+   the top of the diff, the second off of the bottom.  */
 #define	D_HIGH_MAPLINE(diff, fromfile, tofile, linenum)	\
   ((linenum)						\
-   - D_HIGHLINE ((diff), (fromfile))			\
-   + D_HIGHLINE ((diff), (tofile)))
+   - D_HIGHLINE (diff, fromfile)			\
+   + D_HIGHLINE (diff, tofile))
 
 #define	D_LOW_MAPLINE(diff, fromfile, tofile, linenum)	\
   ((linenum)						\
-   - D_LOWLINE ((diff), (fromfile))			\
-   + D_LOWLINE ((diff), (tofile)))
+   - D_LOWLINE (diff, fromfile)				\
+   + D_LOWLINE (diff, tofile))
 
 /* Options variables for flags set on command line.  */
 
