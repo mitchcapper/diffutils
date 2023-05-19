@@ -28,6 +28,7 @@
 #define ELEMENT lin
 #define EQUAL(x,y) ((x) == (y))
 #define OFFSET lin
+#define OFFSET_MAX LIN_MAX
 #define EXTRA_CONTEXT_FIELDS /* none */
 #define NOTE_DELETE(c, xoff) (files[0].changed[files[0].realindexes[xoff]] = 1)
 #define NOTE_INSERT(c, yoff) (files[1].changed[files[1].realindexes[yoff]] = 1)
