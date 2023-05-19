@@ -64,6 +64,15 @@ static lin equivs_index;
 /* Number of elements allocated in the array 'equivs'.  */
 static lin equivs_alloc;
 
+/* The file buffer, considered as an array of bytes rather than
+   as an array of words.  */
+
+static char *
+file_buffer (struct file_data const *f)
+{
+  return (char *) f->buffer;
+}
+
 /* Read a block of data into a file buffer, checking for EOF and error.  */
 
 void
@@ -72,7 +81,7 @@ file_block_read (struct file_data *current, size_t size)
   if (size && ! current->eof)
     {
       size_t s = block_read (current->desc,
-                             FILE_BUFFER (current) + current->buffered, size);
+                             file_buffer (current) + current->buffered, size);
       if (s == SIZE_MAX)
         pfatal_with_name (current->name);
       current->buffered += s;
@@ -232,7 +241,7 @@ find_and_hash_each_line (struct file_data *current)
   lin eqs_index = equivs_index;
   lin eqs_alloc = equivs_alloc;
   char const *suffix_begin = current->suffix_begin;
-  char const *bufend = FILE_BUFFER (current) + current->buffered;
+  char const *bufend = file_buffer (current) + current->buffered;
   bool ig_case = ignore_case;
   enum DIFF_white_space ig_white_space = ignore_white_space;
   bool diff_length_compare_anyway =
@@ -479,7 +488,7 @@ static void
 prepare_text (struct file_data *current)
 {
   size_t buffered = current->buffered;
-  char *p = FILE_BUFFER (current);
+  char *p = file_buffer (current);
   if (!p)
     return;
 

@@ -337,10 +337,6 @@ struct file_data {
     lin equiv_max;
 };
 
-/* The file buffer, considered as an array of bytes rather than
-   as an array of words.  */
-#define FILE_BUFFER(f) ((char *) (f)->buffer)
-
 /* Data on two input files being compared.  */
 
 struct comparison
