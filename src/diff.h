@@ -96,8 +96,7 @@ enum output_style
 
 /* True for output styles that are robust,
    i.e. can handle a file that ends in a non-newline.  */
-DIFF_INLINE bool
-robust_output_style (enum output_style s)
+DIFF_INLINE bool robust_output_style (enum output_style s)
 {
   return s != OUTPUT_ED && s != OUTPUT_FORWARD_ED;
 }
