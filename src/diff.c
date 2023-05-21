@@ -36,6 +36,7 @@
 #include <progname.h>
 #include <sh-quote.h>
 #include <stat-time.h>
+#include <stdckdint.h>
 #include <timespec.h>
 #include <version-etc.h>
 #include <xalloc.h>
@@ -254,7 +255,7 @@ option_list (char **optionvec, int count)
   for (i = 0; i < count; i++)
     {
       size_t optsize = 1 + shell_quote_length (optionvec[i]);
-      if (INT_ADD_WRAPV (optsize, size, &size))
+      if (ckd_add (&size, size, optsize))
 	xalloc_die ();
     }
 
@@ -414,10 +415,9 @@ main (int argc, char **argv)
 		 "#endif /* @ */\n");
 
 	    size_t alloc = strlen (optarg);
-	    if (INT_MULTIPLY_WRAPV (alloc, 7, &alloc)
-		|| INT_ADD_WRAPV (alloc,
-				  sizeof C_ifdef_group_formats - 7 /* 7*"@" */,
-				  &alloc))
+            if (ckd_mul (&alloc, 7, alloc)
+                || ckd_add (&alloc, alloc,
+                            sizeof C_ifdef_group_formats - 7 /* 7*"@" */))
 	      xalloc_die ();
 	    char *b = xmalloc (alloc);
 	    char *base = b;

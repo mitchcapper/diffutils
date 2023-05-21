@@ -21,12 +21,12 @@
 #include <errno.h>
 #include <limits.h>
 #include <signal.h>
+#include <stdckdint.h>
 #include <unistd.h>
 #include <stdint.h>
 #include <inttypes.h>
 #include <sys/types.h>
 #include "cmpbuf.h"
-#include "intprops.h"
 
 #ifndef SSIZE_MAX
 # define SSIZE_MAX TYPE_MAXIMUM (ssize_t)
@@ -104,5 +104,5 @@ buffer_lcm (size_t a, size_t b, size_t lcm_max)
 
   /* Yield a if there is an overflow.  */
   q = a / n;
-  return !INT_MULTIPLY_WRAPV (q, b, &lcm) && lcm <= lcm_max ? lcm : a;
+  return !ckd_mul (&lcm, b, q) && lcm <= lcm_max ? lcm : a;
 }

@@ -22,6 +22,7 @@
 #include <binary-io.h>
 #include <cmpbuf.h>
 #include <file-type.h>
+#include <stdckdint.h>
 #include <xalloc.h>
 
 /* Rotate an unsigned value to the left.  */
@@ -175,8 +176,8 @@ slurp (struct file_data *current)
          Allocate just enough room for appended newline plus word sentinel,
          plus word-alignment since we want the buffer word-aligned.  */
       off_t file_size = current->stat.st_size;
-      if (INT_ADD_WRAPV (2 * sizeof (word) - file_size % sizeof (word),
-			 file_size, &cc))
+      if (ckd_add (&cc, 2 * sizeof (word) - file_size % sizeof (word),
+                   file_size))
         xalloc_die ();
 
       if (current->bufsize < cc)
@@ -724,9 +725,8 @@ find_identical_ends (struct file_data filevec[])
 
   middle_guess = guess_lines (lines, p0 - buffer0, p1 - filevec[1].prefix_end);
   suffix_guess = guess_lines (lines, p0 - buffer0, buffer1 + n1 - p1);
-  if (INT_ADD_WRAPV (buffered_prefix,
-		     middle_guess + MIN (context, suffix_guess),
-		     &alloc_lines1))
+  if (ckd_add (&alloc_lines1, buffered_prefix,
+               middle_guess + MIN (context, suffix_guess)))
     xalloc_die ();
   linbuf1 = xnmalloc (alloc_lines1, sizeof *linbuf1);
 
