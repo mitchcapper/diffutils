@@ -13,6 +13,8 @@
 
 . "${srcdir=.}/init.sh"; path_prepend_ ../src
 
+require_perl_
+
 fail=0
 
 diff -u \
