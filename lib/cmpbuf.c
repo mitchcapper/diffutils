@@ -90,8 +90,6 @@ block_read (int fd, char *buf, size_t nbytes)
 size_t
 buffer_lcm (size_t a, size_t b, size_t lcm_max)
 {
-  size_t lcm, m, n, q, r;
-
   /* Yield reasonable values if buffer sizes are zero.  */
   if (!a)
     return b ? b : 8 * 1024;
@@ -99,10 +97,11 @@ buffer_lcm (size_t a, size_t b, size_t lcm_max)
     return a;
 
   /* n = gcd (a, b) */
+  size_t m, n, r;
   for (m = a, n = b;  (r = m % n) != 0;  m = n, n = r)
     continue;
 
   /* Yield a if there is an overflow.  */
-  q = a / n;
+  size_t q = a / n, lcm;
   return !ckd_mul (&lcm, b, q) && lcm <= lcm_max ? lcm : a;
 }
