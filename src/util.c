@@ -435,21 +435,16 @@ static bool
 get_funky_string (char **dest, const char **src, bool equals_end,
                   size_t *output_count)
 {
-  char num;			/* For numerical codes */
-  size_t count;			/* Something to count with */
   enum {
     ST_GND, ST_BACKSLASH, ST_OCTAL, ST_HEX, ST_CARET, ST_END, ST_ERROR
-  } state;
-  const char *p;
-  char *q;
+  } state = ST_GND;
 
-  p = *src;			/* We don't want to double-indirect */
-  q = *dest;			/* the whole darn time.  */
+  char const *p = *src;		/* We don't want to double-indirect */
+  char *q = *dest;		/* the whole darn time.  */
 
-  count = 0;			/* No characters counted in yet.  */
-  num = 0;
+  size_t count = 0;		/* No characters counted in yet.  */
+  char num = 0;			/* For numerical codes.  */
 
-  state = ST_GND;		/* Start in ground state.  */
   while (state < ST_END)
     {
       switch (state)
@@ -667,24 +662,19 @@ set_color_palette (char const *palette)
 static void
 parse_diff_color (void)
 {
-  char *color_buf;
-  const char *p;		/* Pointer to character being parsed */
-  char *buf;			/* color_buf buffer pointer */
-  int ind_no;			/* Indicator number */
-  char label[] = "??";		/* Indicator label */
-  struct color_ext_type *ext;	/* Extension we are working on */
-
-  p = color_palette;
+  char const *p = color_palette;
   if (p == nullptr || *p == '\0')
     return;
 
-  ext = nullptr;
+  char label[] = "??";		/* Indicator label */
+  struct color_ext_type *ext = nullptr;	/* Extension we are working on */
 
   /* This is an overly conservative estimate, but any possible
      --palette string will *not* generate a color_buf longer than
      itself, so it is a safe way of allocating a buffer in
      advance.  */
-  buf = color_buf = xstrdup (p);
+  char *color_buf = xstrdup (p);
+  char *buf = color_buf;
 
   enum parse_state state = PS_START;
   while (true)
@@ -740,7 +730,7 @@ parse_diff_color (void)
           state = PS_FAIL;	/* Assume failure...  */
           if (*(p++) == '=')/* It *should* be...  */
             {
-              for (ind_no = 0; indicator_name[ind_no] != nullptr; ++ind_no)
+              for (int ind_no = 0; indicator_name[ind_no] != nullptr; ind_no++)
                 {
                   if (STREQ (label, indicator_name[ind_no]))
                     {
@@ -778,17 +768,14 @@ parse_diff_color (void)
 
   if (state == PS_FAIL)
     {
-      struct color_ext_type *e;
-      struct color_ext_type *e2;
-
       error (0, 0,
              _("unparsable value for --palette"));
       free (color_buf);
-      for (e = color_ext_list; e != nullptr; /* empty */)
+      for (struct color_ext_type *e = color_ext_list; e != nullptr; )
         {
-          e2 = e;
-          e = e->next;
-          free (e2);
+          struct color_ext_type *next = e->next;
+          free (e);
+          e = next;
         }
       colors_enabled = false;
     }
@@ -920,14 +907,10 @@ c_escape (char const *str)
 void
 begin_output (void)
 {
-  char *names[2];
-  char *name;
-
   if (outfile != 0)
     return;
 
-  names[0] = c_escape (current_name0);
-  names[1] = c_escape (current_name1);
+  char *names[2] = {c_escape (current_name0), c_escape (current_name1)};
 
   /* Construct the header of this piece of diff.  */
   /* POSIX 1003.1-2001 specifies this format.  But there are some bugs in
@@ -935,8 +918,8 @@ begin_output (void)
      of the pathnames, and it requires two spaces after "diff" if
      there are no options.  These requirements are silly and do not
      match historical practice.  */
-  name = xmalloc (sizeof "diff" + strlen (switch_string)
-		  + 1 + strlen (names[0]) + 1 + strlen (names[1]));
+  char *name = xmalloc (sizeof "diff" + strlen (switch_string)
+			+ 1 + strlen (names[0]) + 1 + strlen (names[1]));
   char *p = stpcpy (name, "diff");
   p = stpcpy (p, switch_string);
   *p++ = ' ';
@@ -946,59 +929,51 @@ begin_output (void)
 
   if (paginate)
     {
-      char const *argv[4];
-
       if (fflush (stdout) != 0)
         pfatal_with_name (_("write failed"));
 
-      argv[0] = pr_program;
-      argv[1] = "-h";
-      argv[2] = name;
-      argv[3] = 0;
+      char const *argv[4] = {pr_program, "-h", name, nullptr };
 
       /* Make OUTFILE a pipe to a subsidiary 'pr'.  */
-      {
 #if HAVE_WORKING_FORK
-        int pipes[2];
+      int pipes[2];
+      if (pipe (pipes) != 0)
+	pfatal_with_name ("pipe");
 
-        if (pipe (pipes) != 0)
-          pfatal_with_name ("pipe");
+      pr_pid = fork ();
+      if (pr_pid < 0)
+	pfatal_with_name ("fork");
 
-        pr_pid = fork ();
-        if (pr_pid < 0)
-          pfatal_with_name ("fork");
+      if (pr_pid == 0)
+	{
+	  close (pipes[1]);
+	  if (pipes[0] != STDIN_FILENO)
+	    {
+	      if (dup2 (pipes[0], STDIN_FILENO) < 0)
+		pfatal_with_name ("dup2");
+	      close (pipes[0]);
+	    }
 
-        if (pr_pid == 0)
-          {
-            close (pipes[1]);
-            if (pipes[0] != STDIN_FILENO)
-              {
-                if (dup2 (pipes[0], STDIN_FILENO) < 0)
-                  pfatal_with_name ("dup2");
-                close (pipes[0]);
-              }
-
-            execv (pr_program, (char **) argv);
-            _exit (errno == ENOENT ? 127 : 126);
-          }
-        else
-          {
-            close (pipes[0]);
-            outfile = fdopen (pipes[1], "w");
-            if (!outfile)
-              pfatal_with_name ("fdopen");
-            check_color_output (true);
-          }
+	  execv (pr_program, (char **) argv);
+	  _exit (errno == ENOENT ? 127 : 126);
+	}
+      else
+	{
+	  close (pipes[0]);
+	  outfile = fdopen (pipes[1], "w");
+	  if (!outfile)
+	    pfatal_with_name ("fdopen");
+	  check_color_output (true);
+	}
 #else
-        char *command = system_quote_argv (SCI_SYSTEM, (char **) argv);
-        errno = 0;
-        outfile = popen (command, "w");
-        if (!outfile)
-          pfatal_with_name (command);
-        check_color_output (true);
-        free (command);
+      char *command = system_quote_argv (SCI_SYSTEM, (char **) argv);
+      errno = 0;
+      outfile = popen (command, "w");
+      if (!outfile)
+	pfatal_with_name (command);
+      check_color_output (true);
+      free (command);
 #endif
-      }
     }
   else
     {
@@ -1045,7 +1020,6 @@ finish_output (void)
 {
   if (outfile != 0 && outfile != stdout)
     {
-      int status;
       int wstatus;
       int werrno = 0;
       if (ferror (outfile))
@@ -1060,9 +1034,9 @@ finish_output (void)
       if (waitpid (pr_pid, &wstatus, 0) < 0)
         pfatal_with_name ("waitpid");
 #endif
-      status = (! werrno && WIFEXITED (wstatus)
-                ? WEXITSTATUS (wstatus)
-                : INT_MAX);
+      int status = (! werrno && WIFEXITED (wstatus)
+		    ? WEXITSTATUS (wstatus)
+		    : INT_MAX);
       if (status)
         die (EXIT_TROUBLE, werrno,
                _(status == 126
@@ -1167,10 +1141,10 @@ lines_differ (char const *s1, char const *s2)
             case IGNORE_TAB_EXPANSION_AND_TRAILING_SPACE:
               if (isspace (c1) && isspace (c2))
                 {
-                  unsigned char c;
                   if (c1 != '\n')
                     {
                       char const *p = t1;
+		      unsigned char c;
                       while ((c = *p) != '\n' && isspace (c))
                         ++p;
                       if (c != '\n')
@@ -1179,6 +1153,7 @@ lines_differ (char const *s1, char const *s2)
                   if (c2 != '\n')
                     {
                       char const *p = t2;
+		      unsigned char c;
                       while ((c = *p) != '\n' && isspace (c))
                         ++p;
                       if (c != '\n')
@@ -1277,11 +1252,9 @@ print_script (struct change *script,
 
   while (next)
     {
-      struct change *this, *end;
-
       /* Find a set of changes that belong together.  */
-      this = next;
-      end = (*hunkfun) (next);
+      struct change *this = next;
+      struct change *end = (*hunkfun) (next);
 
       /* Disconnect them from the rest of the changes,
          making them a hunk, and remember the rest for next iteration.  */
@@ -1382,7 +1355,6 @@ output_1_line (char const *base, char const *limit, char const *flag_format,
   else
     {
       register FILE *out = outfile;
-      register unsigned char c;
       register char const *t = base;
       register size_t column = 0;
       size_t tab_size = tabsize;
@@ -1397,7 +1369,8 @@ output_1_line (char const *base, char const *limit, char const *flag_format,
               counter_proc_signals = 0;
             }
 
-          switch ((c = *t++))
+	  unsigned char c = *t++;
+          switch (c)
             {
             case '\t':
               {
@@ -1549,10 +1522,6 @@ analyze_hunk (struct change *hunk,
               lin *first0, lin *last0,
               lin *first1, lin *last1)
 {
-  struct change *next;
-  lin l0, l1;
-  lin show_from, show_to;
-  lin i;
   bool trivial = ignore_blank_lines || ignore_regexp.fastmap;
   size_t trivial_length = ignore_blank_lines - 1;
     /* If 0, ignore zero-length lines;
@@ -1566,12 +1535,13 @@ analyze_hunk (struct change *hunk,
   char const * const *linbuf0 = files[0].linbuf;  /* Help the compiler.  */
   char const * const *linbuf1 = files[1].linbuf;
 
-  show_from = show_to = 0;
+  lin show_from = 0, show_to = 0;
 
   *first0 = hunk->line0;
   *first1 = hunk->line1;
 
-  next = hunk;
+  struct change *next = hunk;
+  lin l0, l1;
   do
     {
       l0 = next->line0 + next->deleted - 1;
@@ -1579,7 +1549,7 @@ analyze_hunk (struct change *hunk,
       show_from += next->deleted;
       show_to += next->inserted;
 
-      for (i = next->line0; i <= l0 && trivial; i++)
+      for (lin i = next->line0; i <= l0 && trivial; i++)
         {
           char const *line = linbuf0[i];
           char const *lastbyte = linbuf0[i + 1] - 1;
@@ -1600,7 +1570,7 @@ analyze_hunk (struct change *hunk,
             trivial = 0;
         }
 
-      for (i = next->line1; i <= l1 && trivial; i++)
+      for (lin i = next->line1; i <= l1 && trivial; i++)
         {
           char const *line = linbuf1[i];
           char const *lastbyte = linbuf1[i + 1] - 1;
