@@ -68,9 +68,8 @@ print_ifdef_script (struct change *script)
 static void
 print_ifdef_hunk (struct change *hunk)
 {
-  lin first0, last0, first1, last1;
-
   /* Determine range of line numbers involved in each file.  */
+  lin first0, last0, first1, last1;
   enum changes changes = analyze_hunk (hunk, &first0, &last0, &first1, &last1);
   if (!changes)
     return;
@@ -98,15 +97,10 @@ print_ifdef_hunk (struct change *hunk)
 static void
 format_ifdef (char const *format, lin beg0, lin end0, lin beg1, lin end1)
 {
-  struct group groups[2];
-
-  groups[0].file = &files[0];
-  groups[0].from = beg0;
-  groups[0].upto = end0;
-  groups[1].file = &files[1];
-  groups[1].from = beg1;
-  groups[1].upto = end1;
-  format_group (outfile, format, 0, groups);
+  format_group (outfile, format, 0,
+		((struct group const[])
+		 {{.file = &files[0], .from = beg0, .upto = end0},
+		  {.file = &files[1], .from = beg1, .upto = end1}}));
 }
 
 /* Print to file OUT a set of lines according to FORMAT.
@@ -119,10 +113,9 @@ static char const *
 format_group (register FILE *out, char const *format, char endchar,
               struct group const *groups)
 {
-  register char c;
   register char const *f = format;
 
-  while ((c = *f) != endchar && c != 0)
+  for (char c; (c = *f) != endchar && c != 0; )
     {
       char const *f1 = ++f;
       if (c == '%')
@@ -134,11 +127,9 @@ format_group (register FILE *out, char const *format, char endchar,
           case '(':
             /* Print if-then-else format e.g. '%(n=1?thenpart:elsepart)'.  */
             {
-              int i;
               intmax_t value[2];
-              FILE *thenout, *elseout;
 
-              for (i = 0; i < 2; i++)
+              for (int i = 0; i < 2; i++)
                 {
                   if (ISDIGIT (*f))
                     {
@@ -159,10 +150,10 @@ format_group (register FILE *out, char const *format, char endchar,
                   if (*f++ != "=?"[i])
                     goto bad_format;
                 }
-              if (value[0] == value[1])
-                thenout = out, elseout = 0;
-              else
-                thenout = 0, elseout = out;
+
+	      bool equal_values = value[0] == value[1];
+              FILE *thenout = equal_values ? out : nullptr;
+	      FILE *elseout = equal_values ? nullptr : out;
               f = format_group (thenout, f, ':', groups);
               if (*f)
                 {
@@ -237,12 +228,12 @@ static void
 print_ifdef_lines (register FILE *out, char const *format,
                    struct group const *group)
 {
+  if (!out)
+    return;
+
   struct file_data const *file = group->file;
   char const * const *linbuf = file->linbuf;
   lin from = group->from, upto = group->upto;
-
-  if (!out)
-    return;
 
   /* If possible, use a single fwrite; it's faster.  */
   if (!expand_tabs && format[0] == '%')
@@ -308,7 +299,6 @@ do_printf_spec (FILE *out, char const *spec,
 {
   char const *f = spec;
   char c;
-  char c1;
 
   /* Scan printf-style SPEC of the form %[-'0]*[0-9]*(.[0-9]*)?[cdoxX].  */
   /* assert (*f == '%'); */
@@ -320,7 +310,7 @@ do_printf_spec (FILE *out, char const *spec,
   if (c == '.')
     while (ISDIGIT (c = *f++))
       continue;
-  c1 = *f++;
+  char c1 = *f++;
 
   switch (c)
     {
@@ -388,7 +378,6 @@ scan_char_literal (char const *lit, char *valptr)
 {
   register char const *p = lit;
   char value;
-  ptrdiff_t digits;
   char c = *p++;
 
   switch (c)
@@ -406,7 +395,7 @@ scan_char_literal (char const *lit, char *valptr)
               return nullptr;
             value = 8 * value + digit;
           }
-        digits = p - lit - 2;
+        ptrdiff_t digits = p - lit - 2;
         if (! (1 <= digits && digits <= 3))
           return nullptr;
         break;
