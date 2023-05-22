@@ -877,7 +877,7 @@ edit (struct line_filter *left, char const *lname, lin lline, lin llen,
   for (;;)
     {
       int cmd0;
-      int cmd1 IF_LINT (= 0);  /* IF_LINT due to GCC bug 101770.  */
+      int cmd1;
       bool gotcmd = false;
 
       while (! gotcmd)
