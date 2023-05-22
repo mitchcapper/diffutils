@@ -52,23 +52,14 @@ static bool dir_loop (struct comparison const *, int);
 static bool
 dir_read (struct file_data const *dir, struct dirdata *dirdata)
 {
-  register struct dirent *next;
-  register size_t i;
-
-  /* Address of block containing the files that are described.  */
-  char const **names;
-
   /* Number of files in directory.  */
-  size_t nnames;
+  size_t nnames = 0;
 
   /* Allocated and used storage for file name data.  */
   char *data;
-  size_t data_alloc, data_used;
 
   dirdata->names = 0;
   dirdata->data = 0;
-  nnames = 0;
-  data = 0;
 
   if (dir->desc != -1)
     {
@@ -79,15 +70,20 @@ dir_read (struct file_data const *dir, struct dirdata *dirdata)
 
       /* Initialize the table of filenames.  */
 
-      data_alloc = 512;
-      data_used = 0;
+      size_t data_alloc = 512;
+      size_t data_used = 0;
       dirdata->data = data = xmalloc (data_alloc);
 
       /* Read the directory entries, and insert the subfiles
          into the 'data' table.  */
 
-      while ((errno = 0, (next = readdir (reading)) != 0))
+      while (true)
         {
+	  errno = 0;
+	  struct dirent *next = readdir (reading);
+	  if (!next)
+	    break;
+
           char *d_name = next->d_name;
           size_t d_size = _D_EXACT_NAMLEN (next) + 1;
 
@@ -126,9 +122,10 @@ dir_read (struct file_data const *dir, struct dirdata *dirdata)
     }
 
   /* Create the 'names' table from the 'data' table.  */
-  dirdata->names = names = xnmalloc (nnames + 1, sizeof *names);
+  char const **names = xnmalloc (nnames + 1, sizeof *names);
+  dirdata->names = names;
   dirdata->nnames = nnames;
-  for (i = 0;  i < nnames;  i++)
+  for (size_t i = 0;  i < nnames;  i++)
     {
       names[i] = data;
       data += strlen (data) + 1;
@@ -143,12 +140,10 @@ dir_read (struct file_data const *dir, struct dirdata *dirdata)
 static int
 compare_collated (char const *name1, char const *name2)
 {
-  int r;
   errno = 0;
-  if (ignore_file_name_case)
-    r = strcasecoll (name1, name2);
-  else
-    r = strcoll (name1, name2);
+  int r = (ignore_file_name_case
+	   ? strcasecoll (name1, name2)
+	   : strcoll (name1, name2));
   if (errno)
     {
       error (0, errno, _("cannot compare file names '%s' and '%s'"),
@@ -213,10 +208,6 @@ diff_dirs (struct comparison const *cmp,
            int (*handle_file) (struct comparison const *,
                                char const *, char const *))
 {
-  struct dirdata dirdata[2];
-  int volatile val = EXIT_SUCCESS;
-  int i;
-
   if ((cmp->file[0].desc == -1 || dir_loop (cmp, 0))
       && (cmp->file[1].desc == -1 || dir_loop (cmp, 1)))
     {
@@ -226,7 +217,9 @@ diff_dirs (struct comparison const *cmp,
     }
 
   /* Get contents of both dirs.  */
-  for (i = 0; i < 2; i++)
+  struct dirdata dirdata[2];
+  int volatile val = EXIT_SUCCESS;
+  for (int i = 0; i < 2; i++)
     if (! dir_read (&cmp->file[i], &dirdata[i]))
       {
         perror_with_name (cmp->file[i].name);
@@ -235,9 +228,7 @@ diff_dirs (struct comparison const *cmp,
 
   if (val == EXIT_SUCCESS)
     {
-      char const **volatile names[2];
-      names[0] = dirdata[0].names;
-      names[1] = dirdata[1].names;
+      char const **volatile names[2] = {dirdata[0].names, dirdata[1].names};
 
       /* Use locale-specific sorting if possible, else native byte order.  */
       locale_specific_sorting = true;
@@ -245,7 +236,7 @@ diff_dirs (struct comparison const *cmp,
         locale_specific_sorting = false;
 
       /* Sort the directories.  */
-      for (i = 0; i < 2; i++)
+      for (int i = 0; i < 2; i++)
         qsort (names[i], dirdata[i].nnames, sizeof *dirdata[i].names,
                compare_names_for_qsort);
 
@@ -282,9 +273,8 @@ diff_dirs (struct comparison const *cmp,
                   int lesser_side = 1 - greater_side;
                   char const **lesser = names[lesser_side];
                   char const *greater_name = *names[greater_side];
-                  char const **p;
 
-                  for (p = lesser + 1;
+                  for (char const **p = lesser + 1;
                        *p && compare_names (*p, greater_name) == 0;
                        p++)
                     {
@@ -311,7 +301,7 @@ diff_dirs (struct comparison const *cmp,
         }
     }
 
-  for (i = 0; i < 2; i++)
+  for (int i = 0; i < 2; i++)
     {
       free (dirdata[i].names);
       free (dirdata[i].data);
@@ -325,8 +315,7 @@ diff_dirs (struct comparison const *cmp,
 static bool ATTRIBUTE_PURE
 dir_loop (struct comparison const *cmp, int i)
 {
-  struct comparison const *p = cmp;
-  while ((p = p->parent))
+  for (struct comparison const *p = cmp; (p = p->parent); )
     if (0 < same_file (&p->file[i].stat, &cmp->file[i].stat))
       return true;
   return false;
@@ -340,7 +329,6 @@ find_dir_file_pathname (char const *dir, char const *file)
   /* IF_LINT due to GCC bug 21161.  */
   char const * IF_LINT (volatile) match = file;
 
-  char *val;
   struct dirdata dirdata;
   dirdata.names = nullptr;
   dirdata.data = nullptr;
@@ -373,7 +361,7 @@ find_dir_file_pathname (char const *dir, char const *file)
         }
     }
 
-  val = file_name_concat (dir, match, nullptr);
+  char *val = file_name_concat (dir, match, nullptr);
   free (dirdata.names);
   free (dirdata.data);
   return val;
