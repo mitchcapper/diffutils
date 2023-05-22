@@ -95,15 +95,24 @@ enum
     handler_index_of_SIGINT = NUM_SIGS - 1
   };
 
+typedef void (*sighandler) (int);
+static void signal_handler (int, sighandler);
+
 #if HAVE_SIGACTION
-  /* Prefer 'sigaction' if available, since 'signal' can lose signals.  */
-  static struct sigaction initial_action[NUM_SIGS];
-# define initial_handler(i) (initial_action[i].sa_handler)
-  static void signal_handler (int, void (*) (int));
+/* Prefer 'sigaction' if available, since 'signal' can lose signals.  */
+static struct sigaction initial_action[NUM_SIGS];
+static sighandler
+initial_handler (int i)
+{
+  return initial_action[i].sa_handler;
+}
 #else
-  static void (*initial_action[NUM_SIGS]) ();
-# define initial_handler(i) (initial_action[i])
-# define signal_handler(sig, handler) signal (sig, handler)
+static sighandler initial_action[NUM_SIGS];
+static sighandler
+initial_handler (int i)
+{
+  return initial_action[i];
+}
 #endif
 
 static bool diraccess (char const *);
@@ -735,14 +744,18 @@ catchsig (int s)
 
 #if HAVE_SIGACTION
 static struct sigaction catchaction;
+#endif
 
 static void
-signal_handler (int sig, void (*handler) (int))
+signal_handler (int sig, sighandler handler)
 {
+#if HAVE_SIGACTION
   catchaction.sa_handler = handler;
   sigaction (sig, &catchaction, 0);
-}
+#else
+  signal (sig, handler);
 #endif
+}
 
 static void
 trapsigs (void)
