@@ -37,15 +37,13 @@ print_ed_script (struct change *script)
 static void
 print_ed_hunk (struct change *hunk)
 {
-  lin f0, l0, f1, l1;
-  enum changes changes;
-
 #ifdef DEBUG
   debug_script (hunk);
 #endif
 
   /* Determine range of line numbers involved in each file.  */
-  changes = analyze_hunk (hunk, &f0, &l0, &f1, &l1);
+  lin f0, l0, f1, l1;
+  enum changes changes = analyze_hunk (hunk, &f0, &l0, &f1, &l1);
   if (!changes)
     return;
 
@@ -59,10 +57,9 @@ print_ed_hunk (struct change *hunk)
   /* Print new/changed lines from second file, if needed */
   if (changes != OLD)
     {
-      lin i;
       bool insert_mode = true;
 
-      for (i = f1; i <= l1; i++)
+      for (lin i = f1; i <= l1; i++)
         {
           if (!insert_mode)
             {
@@ -101,9 +98,8 @@ pr_forward_ed_script (struct change *script)
 static void
 pr_forward_ed_hunk (struct change *hunk)
 {
-  lin i, f0, l0, f1, l1;
-
   /* Determine range of line numbers involved in each file.  */
+  lin f0, l0, f1, l1;
   enum changes changes = analyze_hunk (hunk, &f0, &l0, &f1, &l1);
   if (!changes)
     return;
@@ -122,7 +118,7 @@ pr_forward_ed_hunk (struct change *hunk)
   /* For insertion (with or without deletion), print the number range
      and the lines from file 2.  */
 
-  for (i = f1; i <= l1; i++)
+  for (lin i = f1; i <= l1; i++)
     print_1_line ("", &files[1].linbuf[i]);
 
   fputs (".\n", outfile);
@@ -143,16 +139,15 @@ print_rcs_script (struct change *script)
 static void
 print_rcs_hunk (struct change *hunk)
 {
-  lin i, f0, l0, f1, l1;
-  lin tf0, tl0, tf1, tl1;
-
   /* Determine range of line numbers involved in each file.  */
+  lin f0, l0, f1, l1;
   enum changes changes = analyze_hunk (hunk, &f0, &l0, &f1, &l1);
   if (!changes)
     return;
 
   begin_output ();
 
+  lin tf0, tl0, tf1, tl1;
   translate_range (&files[0], f0, l0, &tf0, &tl0);
 
   if (changes & OLD)
@@ -171,7 +166,7 @@ print_rcs_hunk (struct change *hunk)
                tf1 <= tl1 ? tl1 - tf1 + 1 : 1);
 
       /* Print the inserted lines.  */
-      for (i = f1; i <= l1; i++)
+      for (lin i = f1; i <= l1; i++)
         print_1_line ("", &files[1].linbuf[i]);
     }
 }
