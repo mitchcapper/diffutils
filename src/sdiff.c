@@ -210,8 +210,6 @@ static char const * const option_help_msgid[] = {
 static void
 usage (void)
 {
-  char const * const *p;
-
   printf (_("Usage: %s [OPTION]... FILE1 FILE2\n"), program_name);
   printf ("%s\n\n",
           _("Side-by-side merge of differences between FILE1 and FILE2."));
@@ -219,7 +217,7 @@ usage (void)
   fputs (_("\
 Mandatory arguments to long options are mandatory for short options too.\n\
 "), stdout);
-  for (p = option_help_msgid;  *p;  p++)
+  for (char const *const *p = option_help_msgid;  *p;  p++)
     if (**p)
       printf ("  %s\n", _(*p));
     else
@@ -452,9 +450,6 @@ lf_snarf (struct line_filter *lf, char *buffer, size_t bufsize)
 int
 main (int argc, char *argv[])
 {
-  int opt;
-  char const *prog;
-
   exit_failure = EXIT_TROUBLE;
   initialize_main (&argc, &argv);
   set_program_name (argv[0]);
@@ -464,15 +459,16 @@ main (int argc, char *argv[])
   c_stack_action (cleanup);
   xstdopen ();
 
-  prog = getenv ("EDITOR");
+  char const *prog = getenv ("EDITOR");
   if (prog)
     editor_program = prog;
 
   diffarg (DEFAULT_DIFF_PROGRAM);
 
   /* parse command line args */
-  while ((opt = getopt_long (argc, argv, "abBdEHiI:lo:stvw:WZ", longopts, 0))
-         != -1)
+  for (int opt;
+       ((opt = getopt_long (argc, argv, "abBdEHiI:lo:stvw:WZ", longopts, 0))
+        != -1); )
     {
       switch (opt)
         {
@@ -590,23 +586,19 @@ main (int argc, char *argv[])
     }
   else
     {
-      char const *lname, *rname;
-      FILE *left, *right, *out, *diffout;
-      bool interact_ok;
-      struct line_filter lfilt;
-      struct line_filter rfilt;
-      struct line_filter diff_filt;
       bool leftdir = diraccess (argv[optind]);
       bool rightdir = diraccess (argv[optind + 1]);
 
       if (leftdir & rightdir)
         fatal ("both files to be compared are directories");
 
-      lname = expand_name (argv[optind], leftdir, argv[optind + 1]);
-      left = ck_fopen (lname, "r");
-      rname = expand_name (argv[optind + 1], rightdir, argv[optind]);
-      right = ck_fopen (rname, "r");
-      out = ck_fopen (output, "w");
+      char const *lname
+        = expand_name (argv[optind], leftdir, argv[optind + 1]);
+      char const *rname
+        = expand_name (argv[optind + 1], rightdir, argv[optind]);
+      FILE *left = ck_fopen (lname, "r");
+      FILE *right = ck_fopen (rname, "r");
+      FILE *out = ck_fopen (output, "w");
 
       diffarg ("--sdiff-merge-assist");
       diffarg ("--");
@@ -616,6 +608,7 @@ main (int argc, char *argv[])
 
       trapsigs ();
 
+      FILE *diffout;
 #if ! HAVE_WORKING_FORK
       {
         char *command = system_quote_argv (SCI_SYSTEM, (char **) diffargv);
@@ -662,11 +655,13 @@ main (int argc, char *argv[])
       }
 #endif
 
+      struct line_filter lfilt, rfilt, diff_filt;
       lf_init (&diff_filt, diffout);
       lf_init (&lfilt, left);
       lf_init (&rfilt, right);
 
-      interact_ok = interact (&diff_filt, &lfilt, lname, &rfilt, rname, out);
+      bool interact_ok
+        = interact (&diff_filt, &lfilt, lname, &rfilt, rname, out);
 
       ck_fclose (left);
       ck_fclose (right);
@@ -760,16 +755,14 @@ signal_handler (int sig, sighandler handler)
 static void
 trapsigs (void)
 {
-  int i;
-
 #if HAVE_SIGACTION
   catchaction.sa_flags = SA_RESTART;
   sigemptyset (&catchaction.sa_mask);
-  for (i = 0;  i < NUM_SIGS;  i++)
+  for (int i = 0;  i < NUM_SIGS;  i++)
     sigaddset (&catchaction.sa_mask, sigs[i]);
 #endif
 
-  for (i = 0;  i < NUM_SIGS;  i++)
+  for (int i = 0;  i < NUM_SIGS;  i++)
     {
 #if HAVE_SIGACTION
       sigaction (sigs[i], 0, &initial_action[i]);
@@ -792,10 +785,8 @@ trapsigs (void)
 static void
 untrapsig (int s)
 {
-  int i;
-
   if (sigs_trapped)
-    for (i = 0;  i < NUM_SIGS;  i++)
+    for (int i = 0;  i < NUM_SIGS;  i++)
       if ((! s || sigs[i] == s)  &&  initial_handler (i) != SIG_IGN)
         {
 #if HAVE_SIGACTION
@@ -860,8 +851,7 @@ skip_white (void)
 static void
 flush_line (void)
 {
-  int c;
-  while ((c = getchar ()) != '\n' && c != EOF)
+  for (int c; (c = getchar ()) != '\n' && c != EOF; )
     continue;
   if (ferror (stdin))
     perror_fatal (_("read failed"));
@@ -958,123 +948,108 @@ edit (struct line_filter *left, char const *lname, lin lline, lin llen,
           break;
         case 'q':
           return false;
+
         case 'e':
-          {
-            int fd;
-
-            if (tmpname)
-              tmp = fopen (tmpname, "w");
-            else
-              {
-                if ((fd = temporary_file ()) < 0)
-                  perror_fatal ("mkstemp");
-                tmp = fdopen (fd, "w");
-              }
-
-            if (! tmp)
-              perror_fatal (tmpname);
-
-            switch (cmd1)
-              {
-              case 'd':
-                if (llen)
-		  {
-		    if (llen == 1)
-		      fprintf (tmp, "--- %s %"pI"d\n", lname, lline);
-		    else
-		      fprintf (tmp, "--- %s %"pI"d,%"pI"d\n", lname, lline,
-			       lline + llen - 1);
-		  }
-                FALLTHROUGH;
-              case '1': case 'b': case 'l':
-                lf_copy (left, llen, tmp);
-                break;
-
-              default:
-                lf_skip (left, llen);
-                break;
-              }
-
-            switch (cmd1)
-              {
-              case 'd':
-                if (rlen)
-		  {
-		    if (rlen == 1)
-		      fprintf (tmp, "+++ %s %"pI"d\n", rname, rline);
-		    else
-		      fprintf (tmp, "+++ %s %"pI"d,%"pI"d\n", rname, rline,
-			     rline + rlen - 1);
-		  }
-                FALLTHROUGH;
-              case '2': case 'b': case 'r':
-                lf_copy (right, rlen, tmp);
-                break;
-
-              default:
-                lf_skip (right, rlen);
-                break;
-              }
-
-            ck_fclose (tmp);
-
+          if (tmpname)
+            tmp = fopen (tmpname, "w");
+          else
             {
-              int wstatus;
-              int werrno = 0;
-              char const *argv[3];
-
-              ignore_SIGINT = true;
-              checksigs ();
-              argv[0] = editor_program;
-              argv[1] = tmpname;
-              argv[2] = 0;
-
-              {
-#if ! HAVE_WORKING_FORK
-                char *command = system_quote_argv (SCI_SYSTEM, (char **) argv);
-                wstatus = system (command);
-                if (wstatus == -1)
-                  werrno = errno;
-                free (command);
-#else
-                pid_t pid;
-
-                pid = fork ();
-                if (pid == 0)
-                  {
-                    execvp (editor_program, (char **) argv);
-                    _exit (errno == ENOENT ? 127 : 126);
-                  }
-
-                if (pid < 0)
-                  perror_fatal ("fork");
-
-                while (waitpid (pid, &wstatus, 0) < 0)
-                  if (errno == EINTR)
-                    checksigs ();
-                  else
-                    perror_fatal ("waitpid");
-#endif
-              }
-
-              ignore_SIGINT = false;
-              check_child_status (werrno, wstatus, EXIT_SUCCESS,
-                                  editor_program);
+              int fd = temporary_file ();
+              if (fd < 0)
+                perror_fatal ("mkstemp");
+              tmp = fdopen (fd, "w");
             }
 
+          if (! tmp)
+            perror_fatal (tmpname);
+
+          switch (cmd1)
             {
-              char buf[SDIFF_BUFSIZE];
-              size_t size;
-              tmp = ck_fopen (tmpname, "r");
-              while ((size = ck_fread (buf, SDIFF_BUFSIZE, tmp)) != 0)
+            case 'd':
+              if (llen)
                 {
-                  checksigs ();
-                  ck_fwrite (buf, size, outfile);
+                  if (llen == 1)
+                    fprintf (tmp, "--- %s %"pI"d\n", lname, lline);
+                  else
+                    fprintf (tmp, "--- %s %"pI"d,%"pI"d\n", lname, lline,
+                             lline + llen - 1);
                 }
-              ck_fclose (tmp);
+              FALLTHROUGH;
+            case '1': case 'b': case 'l':
+              lf_copy (left, llen, tmp);
+              break;
+
+            default:
+              lf_skip (left, llen);
+              break;
             }
-            return true;
-          }
+
+          switch (cmd1)
+            {
+            case 'd':
+              if (rlen)
+                {
+                  if (rlen == 1)
+                    fprintf (tmp, "+++ %s %"pI"d\n", rname, rline);
+                  else
+                    fprintf (tmp, "+++ %s %"pI"d,%"pI"d\n", rname, rline,
+                           rline + rlen - 1);
+                }
+              FALLTHROUGH;
+            case '2': case 'b': case 'r':
+              lf_copy (right, rlen, tmp);
+              break;
+
+            default:
+              lf_skip (right, rlen);
+              break;
+            }
+
+          ck_fclose (tmp);
+
+          ignore_SIGINT = true;
+          checksigs ();
+          char *argv[] = { (char *) editor_program, tmpname, nullptr };
+          int wstatus;
+          int werrno = 0;
+#if ! HAVE_WORKING_FORK
+          char *command = system_quote_argv (SCI_SYSTEM, argv);
+          wstatus = system (command);
+          if (wstatus == -1)
+            werrno = errno;
+          free (command);
+#else
+          pid_t pid = fork ();
+          if (pid == 0)
+            {
+              execvp (editor_program, argv);
+              _exit (errno == ENOENT ? 127 : 126);
+            }
+
+          if (pid < 0)
+            perror_fatal ("fork");
+
+          while (waitpid (pid, &wstatus, 0) < 0)
+            if (errno == EINTR)
+              checksigs ();
+            else
+              perror_fatal ("waitpid");
+#endif
+          ignore_SIGINT = false;
+          check_child_status (werrno, wstatus, EXIT_SUCCESS,
+                              editor_program);
+
+          char buf[SDIFF_BUFSIZE];
+          tmp = ck_fopen (tmpname, "r");
+          for (size_t size;
+               (size = ck_fread (buf, SDIFF_BUFSIZE, tmp)) != 0; )
+            {
+              checksigs ();
+              ck_fwrite (buf, size, outfile);
+            }
+          ck_fclose (tmp);
+          return true;
+
         default:
           give_help ();
           break;
@@ -1105,20 +1080,18 @@ interact (struct line_filter *diff,
         puts (diff_help + 1);
       else
         {
-          char *numend;
-          intmax_t val;
-          lin llen, rlen, lenmax;
           errno = 0;
-          val = strtoimax (diff_help + 1, &numend, 10);
+          char *numend;
+          intmax_t val = strtoimax (diff_help + 1, &numend, 10);
           if (! (0 <= val && val <= LIN_MAX) || errno || *numend != ',')
             fatal (diff_help);
-          llen = val;
+          lin llen = val;
           val = strtoimax (numend + 1, &numend, 10);
           if (! (0 <= val && val <= LIN_MAX) || errno || *numend)
             fatal (diff_help);
-          rlen = val;
+          lin rlen = val;
 
-          lenmax = MAX (llen, rlen);
+          lin lenmax = MAX (llen, rlen);
 
           switch (diff_help[0])
             {
