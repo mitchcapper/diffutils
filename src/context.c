@@ -103,11 +103,8 @@ print_context_script (struct change *script, bool unidiff)
   if (ignore_blank_lines || ignore_regexp.fastmap)
     mark_ignorable (script);
   else
-    {
-      struct change *e;
-      for (e = script; e; e = e->link)
-        e->ignore = false;
-    }
+    for (struct change *e = script; e; e = e->link)
+      e->ignore = false;
 
   find_function_last_search = - files[0].prefix_lines;
   find_function_last_match = LIN_MAX;
@@ -170,22 +167,17 @@ print_context_function (FILE *out, char const *function)
 static void
 pr_context_hunk (struct change *hunk)
 {
-  lin first0, last0, first1, last1, i;
-  char const *prefix;
-  char const *function;
-  FILE *out;
-
   /* Determine range of line numbers involved in each file.  */
-
+  lin first0, last0, first1, last1;
   enum changes changes = analyze_hunk (hunk, &first0, &last0, &first1, &last1);
   if (! changes)
     return;
 
   /* Include a context's width before and after.  */
 
-  i = - files[0].prefix_lines;
-  first0 = MAX (first0 - context, i);
-  first1 = MAX (first1 - context, i);
+  lin minus_prefix_lines = files[0].prefix_lines;
+  first0 = MAX (first0 - context, minus_prefix_lines);
+  first1 = MAX (first1 - context, minus_prefix_lines);
   if (last0 < files[0].valid_lines - context)
     last0 += context;
   else
@@ -196,12 +188,12 @@ pr_context_hunk (struct change *hunk)
     last1 = files[1].valid_lines - 1;
 
   /* If desired, find the preceding function definition line in file 0.  */
-  function = nullptr;
+  char const *function = nullptr;
   if (function_regexp.fastmap)
     function = find_function (files[0].linbuf, first0);
 
   begin_output ();
-  out = outfile;
+  FILE *out = outfile;
 
   fputs ("***************", out);
 
@@ -220,7 +212,7 @@ pr_context_hunk (struct change *hunk)
     {
       struct change *next = hunk;
 
-      for (i = first0; i <= last0; i++)
+      for (lin i = first0; i <= last0; i++)
         {
           set_color_context (DELETE_CONTEXT);
 
@@ -232,7 +224,7 @@ pr_context_hunk (struct change *hunk)
 
           /* Compute the marking for line I.  */
 
-          prefix = " ";
+          char const *prefix = " ";
           if (next && next->line0 <= i)
             {
               /* The change NEXT covers this line.
@@ -258,7 +250,7 @@ pr_context_hunk (struct change *hunk)
     {
       struct change *next = hunk;
 
-      for (i = first1; i <= last1; i++)
+      for (lin i = first1; i <= last1; i++)
         {
           set_color_context (ADD_CONTEXT);
 
@@ -270,7 +262,7 @@ pr_context_hunk (struct change *hunk)
 
           /* Compute the marking for line I.  */
 
-          prefix = " ";
+          char const *prefix = " ";
           if (next && next->line1 <= i)
             {
               /* The change NEXT covers this line.
@@ -319,22 +311,16 @@ print_unidiff_number_range (struct file_data const *file, lin a, lin b)
 static void
 pr_unidiff_hunk (struct change *hunk)
 {
-  lin first0, last0, first1, last1;
-  lin i, j, k;
-  struct change *next;
-  char const *function;
-  FILE *out;
-
   /* Determine range of line numbers involved in each file.  */
-
+  lin first0, last0, first1, last1;
   if (! analyze_hunk (hunk, &first0, &last0, &first1, &last1))
     return;
 
   /* Include a context's width before and after.  */
 
-  i = - files[0].prefix_lines;
-  first0 = MAX (first0 - context, i);
-  first1 = MAX (first1 - context, i);
+  lin minus_prefix_lines = - files[0].prefix_lines;
+  first0 = MAX (first0 - context, minus_prefix_lines);
+  first1 = MAX (first1 - context, minus_prefix_lines);
   if (last0 < files[0].valid_lines - context)
     last0 += context;
   else
@@ -345,12 +331,12 @@ pr_unidiff_hunk (struct change *hunk)
     last1 = files[1].valid_lines - 1;
 
   /* If desired, find the preceding function definition line in file 0.  */
-  function = nullptr;
+  char const *function = nullptr;
   if (function_regexp.fastmap)
     function = find_function (files[0].linbuf, first0);
 
   begin_output ();
-  out = outfile;
+  FILE *out = outfile;
 
   set_color_context (LINE_NUMBER_CONTEXT);
   fputs ("@@ -", out);
@@ -365,9 +351,9 @@ pr_unidiff_hunk (struct change *hunk)
 
   putc ('\n', out);
 
-  next = hunk;
-  i = first0;
-  j = first1;
+  struct change *next = hunk;
+  lin i = first0;
+  lin j = first1;
 
   while (i <= last0 || j <= last1)
     {
@@ -386,7 +372,7 @@ pr_unidiff_hunk (struct change *hunk)
         {
           /* For each difference, first output the deleted part. */
 
-          k = next->deleted;
+          lin k = next->deleted;
 
           while (k--)
             {
@@ -436,36 +422,32 @@ pr_unidiff_hunk (struct change *hunk)
 static struct change * ATTRIBUTE_PURE
 find_hunk (struct change *start)
 {
-  struct change *prev;
-  lin top0, top1;
-  lin thresh;
-
   /* Threshold distance is CONTEXT if the second change is ignorable,
      2 * CONTEXT + 1 otherwise.  Integer overflow can't happen, due
      to CONTEXT_LIM.  */
   lin ignorable_threshold = context;
   lin non_ignorable_threshold = 2 * context + 1;
 
-  do
+  while (true)
     {
       /* Compute number of first line in each file beyond this changed.  */
-      top0 = start->line0 + start->deleted;
-      top1 = start->line1 + start->inserted;
-      prev = start;
+      lin top0 = start->line0 + start->deleted;
+      lin top1 = start->line1 + start->inserted;
+      struct change *prev = start;
       start = start->link;
-      thresh = (start && start->ignore
-                ? ignorable_threshold
-                : non_ignorable_threshold);
+      lin thresh = (start && start->ignore
+		    ? ignorable_threshold
+		    : non_ignorable_threshold);
       /* It is not supposed to matter which file we check in the end-test.
          If it would matter, crash.  */
       if (start && start->line0 - top0 != start->line1 - top1)
         abort ();
-    } while (start
-             /* Keep going if less than THRESH lines
-                elapse before the affected line.  */
-             && start->line0 - top0 < thresh);
 
-  return prev;
+      /* Keep going if less than THRESH lines elapse
+	 before the affected line.  */
+      if (!start || thresh <= start->line0 - top0)
+	return prev;
+    }
 }
 
 /* Set the 'ignore' flag properly in each change in SCRIPT.
@@ -478,12 +460,12 @@ mark_ignorable (struct change *script)
   while (script)
     {
       struct change *next = script->link;
-      lin first0, last0, first1, last1;
 
       /* Turn this change into a hunk: detach it from the others.  */
       script->link = nullptr;
 
       /* Determine whether this change is ignorable.  */
+      lin first0, last0, first1, last1;
       script->ignore = ! analyze_hunk (script,
                                        &first0, &last0, &first1, &last1);
 
