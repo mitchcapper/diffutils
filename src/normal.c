@@ -38,10 +38,8 @@ print_normal_script (struct change *script)
 static void
 print_normal_hunk (struct change *hunk)
 {
-  lin first0, last0, first1, last1;
-  register lin i;
-
   /* Determine range of line numbers involved in each file.  */
+  lin first0, last0, first1, last1;
   enum changes changes = analyze_hunk (hunk, &first0, &last0, &first1, &last1);
   if (!changes)
     return;
@@ -59,7 +57,7 @@ print_normal_hunk (struct change *hunk)
   /* Print the lines that the first file has.  */
   if (changes & OLD)
     {
-      for (i = first0; i <= last0; i++)
+      for (lin i = first0; i <= last0; i++)
         {
           set_color_context (DELETE_CONTEXT);
           print_1_line_nl ("<", &files[0].linbuf[i], true);
@@ -75,7 +73,7 @@ print_normal_hunk (struct change *hunk)
   /* Print the lines that the second file has.  */
   if (changes & NEW)
     {
-      for (i = first1; i <= last1; i++)
+      for (lin i = first1; i <= last1; i++)
         {
           set_color_context (ADD_CONTEXT);
           print_1_line_nl (">", &files[1].linbuf[i], true);
