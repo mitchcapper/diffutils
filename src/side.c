@@ -49,15 +49,17 @@ static size_t
 tab_from_to (size_t from, size_t to)
 {
   FILE *out = outfile;
-  size_t tab;
-  size_t tab_size = tabsize;
 
   if (!expand_tabs)
-    for (tab = from + tab_size - from % tab_size;  tab <= to;  tab += tab_size)
-      {
-        putc ('\t', out);
-        from = tab;
-      }
+    {
+      size_t tab_size = tabsize;
+      for (size_t tab = from + tab_size - from % tab_size;
+	   tab <= to;  tab += tab_size)
+	{
+	  putc ('\t', out);
+	  from = tab;
+	}
+    }
   while (from++ < to)
     putc (' ', out);
   return to;
@@ -284,10 +286,8 @@ print_sdiff_common_lines (lin limit0, lin limit1)
 static void
 print_sdiff_hunk (struct change *hunk)
 {
-  lin first0, last0, first1, last1;
-  register lin i, j;
-
   /* Determine range of line numbers involved in each file.  */
+  lin first0, last0, first1, last1;
   enum changes changes =
     analyze_hunk (hunk, &first0, &last0, &first1, &last1);
   if (!changes)
@@ -304,6 +304,7 @@ print_sdiff_hunk (struct change *hunk)
   /* Print "xxx  |  xxx " lines.  */
   if (changes == CHANGED)
     {
+      lin i, j;
       for (i = first0, j = first1;  i <= last0 && j <= last1;  i++, j++)
         print_1sdiff_line (&files[0].linbuf[i], '|', &files[1].linbuf[j]);
       changes = (i <= last0 ? OLD : 0) + (j <= last1 ? NEW : 0);
@@ -314,6 +315,7 @@ print_sdiff_hunk (struct change *hunk)
   /* Print "     >  xxx " lines.  */
   if (changes & NEW)
     {
+      lin j;
       for (j = first1; j <= last1; ++j)
         print_1sdiff_line (0, '>', &files[1].linbuf[j]);
       next1 = j;
@@ -322,6 +324,7 @@ print_sdiff_hunk (struct change *hunk)
   /* Print "xxx  <     " lines.  */
   if (changes & OLD)
     {
+      lin i;
       for (i = first0; i <= last0; ++i)
         print_1sdiff_line (&files[0].linbuf[i], '<', 0);
       next0 = i;
