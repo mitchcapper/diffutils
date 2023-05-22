@@ -260,20 +260,6 @@ next_to_n2 (struct diff_block *p)
 int
 main (int argc, char **argv)
 {
-  int c, i;
-  int common;
-  int mapping[3];
-  int rev_mapping[3];
-  int incompat = 0;
-  enum { OPTION_3, OPTION_A, OPTION_E, OPTION_X, OPTION_e, OPTION_x };
-  bool conflicts_found;
-  struct diff_block *thread0, *thread1;
-  struct diff3_block *diff3;
-  int tag_count = 0;
-  char *tag_strings[3];
-  char *commonname;
-  char **file;
-
   exit_failure = EXIT_TROUBLE;
   initialize_main (&argc, &argv);
   set_program_name (argv[0]);
@@ -283,7 +269,13 @@ main (int argc, char **argv)
   c_stack_action (0);
   xstdopen ();
 
-  while ((c = getopt_long (argc, argv, "aeimvx3AEL:TX", longopts, 0)) != -1)
+  int incompat = 0;
+  enum { OPTION_3, OPTION_A, OPTION_E, OPTION_X, OPTION_e, OPTION_x };
+  int tag_count = 0;
+  char *tag_strings[3];
+
+  for (int c;
+       (c = getopt_long (argc, argv, "aeimvx3AEL:TX", longopts, 0)) != -1; )
     {
       switch (c)
         {
@@ -370,9 +362,9 @@ main (int argc, char **argv)
         try_help ("extra operand '%s'", argv[optind + 3]);
     }
 
-  file = &argv[optind];
+  char **file = &argv[optind];
 
-  for (i = tag_count; i < 3; i++)
+  for (int i = tag_count; i < 3; i++)
     tag_strings[i] = file[i];
 
   /* Always compare file1 to file2, even if file2 is "-".
@@ -391,7 +383,7 @@ main (int argc, char **argv)
      for compatibility, if this is a 3-way diff (not a merge or
      edscript), prefer file2 as the common file.  */
 
-  common = 2 - (edscript | merge);
+  int common = 2 - (edscript | merge);
 
   if (STREQ (file[common], "-"))
     {
@@ -403,11 +395,9 @@ main (int argc, char **argv)
         fatal ("'-' specified for more than one input file");
     }
 
-  mapping[0] = 0;
-  mapping[1] = 3 - common;
-  mapping[2] = common;
-
-  for (i = 0; i < 3; i++)
+  int mapping[3] = { 0, 3 - common, common };
+  int rev_mapping[3];
+  for (int i = 0; i < 3; i++)
     rev_mapping[mapping[i]] = i;
 
 #ifdef SIGCHLD
@@ -418,18 +408,21 @@ main (int argc, char **argv)
   /* Invoke diff twice on two pairs of input files, combine the two
      diffs, and output them.  */
 
+  char *commonname = file[rev_mapping[FILEC]];
   char *b0, *b1;
-  commonname = file[rev_mapping[FILEC]];
-  thread1 = process_diff (file[rev_mapping[FILE1]], commonname, &b1);
-  thread0 = process_diff (file[rev_mapping[FILE0]], commonname, &b0);
+  struct diff_block
+    *thread1 = process_diff (file[rev_mapping[FILE1]], commonname, &b1),
+    *thread0 = process_diff (file[rev_mapping[FILE0]], commonname, &b0);
 
   next_to_n2 (thread0);
   next_to_n2 (thread1);
 
-  diff3 = make_3way_diff (thread0, thread1);
+  struct diff3_block *diff3 = make_3way_diff (thread0, thread1);
 
   free_diff_block (thread0);
   free_diff_block (thread1);
+
+  bool conflicts_found;
 
   if (edscript)
     conflicts_found
@@ -503,8 +496,6 @@ static char const * const option_help_msgid[] = {
 static void
 usage (void)
 {
-  char const * const *p;
-
   printf (_("Usage: %s [OPTION]... MYFILE OLDFILE YOURFILE\n"),
           program_name);
   printf ("%s\n\n", _("Compare three files line by line."));
@@ -512,7 +503,7 @@ usage (void)
   fputs (_("\
 Mandatory arguments to long options are mandatory for short options too.\n\
 "), stdout);
-  for (p = option_help_msgid;  *p;  p++)
+  for (char const *const *p = option_help_msgid;  *p;  p++)
     if (**p)
       printf ("  %s\n", _(*p));
     else
@@ -618,53 +609,30 @@ make_3way_diff (struct diff_block *thread0, struct diff_block *thread1)
      currently being worked on.  It is ZERO_DIFF before any blocks
      have been created.  */
 
-  struct diff_block *using[2];
-  struct diff_block *last_using[2];
-  struct diff_block *current[2];
+  struct diff_block *current[2] = {thread0, thread1};
 
-  lin high_water_mark;
-
-  int high_water_thread;
-  int base_water_thread;
-  int other_thread;
-
-  struct diff_block *high_water_diff;
-  struct diff_block *other_diff;
-
-  struct diff3_block *result;
-  struct diff3_block *tmpblock;
-  struct diff3_block **result_end;
-
-  struct diff3_block const *last_diff3;
-
+  struct diff3_block *result = nullptr;
+  struct diff3_block **result_end = &result;
   static struct diff3_block const zero_diff3;
-
-  /* Initialization */
-  result = 0;
-  result_end = &result;
-  current[0] = thread0; current[1] = thread1;
-  last_diff3 = &zero_diff3;
+  struct diff3_block const *last_diff3 = &zero_diff3;
 
   /* Sniff up the threads until we reach the end */
 
   while (current[0] || current[1])
     {
-      using[0] = using[1] = last_using[0] = last_using[1] = 0;
+      struct diff_block *using[2] = {nullptr, nullptr};
+      struct diff_block *last_using[2] = {nullptr, nullptr};
 
       /* Setup low and high water threads, diffs, and marks.  */
-      if (!current[0])
-        base_water_thread = 1;
-      else if (!current[1])
-        base_water_thread = 0;
-      else
-        base_water_thread =
-          (D_LOWLINE (current[0], FC) > D_LOWLINE (current[1], FC));
+      int base_water_thread
+        = (!current[0] ? 1
+           : !current[1] ? 0
+           : D_LOWLINE (current[0], FC) > D_LOWLINE (current[1], FC));
+      int high_water_thread = base_water_thread;
 
-      high_water_thread = base_water_thread;
+      struct diff_block *high_water_diff = current[high_water_thread];
 
-      high_water_diff = current[high_water_thread];
-
-      high_water_mark = D_HIGHLINE (high_water_diff, FC);
+      lin high_water_mark = D_HIGHLINE (high_water_diff, FC);
 
       /* Make the diff you just got info from into the using class */
       using[high_water_thread]
@@ -674,15 +642,14 @@ make_3way_diff (struct diff_block *thread0, struct diff_block *thread1)
       last_using[high_water_thread]->next = 0;
 
       /* And mark the other diff */
-      other_thread = high_water_thread ^ 0x1;
-      other_diff = current[other_thread];
+      int other_thread = high_water_thread ^ 0x1;
+      struct diff_block *other_diff = current[other_thread];
 
       /* Shuffle up the ladder, checking the other diff to see if it
          needs to be incorporated.  */
       while (other_diff
              && D_LOWLINE (other_diff, FC) <= high_water_mark + 1)
         {
-
           /* Incorporate this diff into the using list.  Note that
              this doesn't take it off the current list */
           if (using[other_thread])
@@ -717,9 +684,9 @@ make_3way_diff (struct diff_block *thread0, struct diff_block *thread1)
       /* The using lists contain a list of all of the blocks to be
          included in this diff3_block.  Create it.  */
 
-      tmpblock = using_to_diff3_block (using, last_using,
-                                       base_water_thread, high_water_thread,
-                                       last_diff3);
+      struct diff3_block *tmpblock
+        = using_to_diff3_block (using, last_using, base_water_thread,
+                                high_water_thread, last_diff3);
 
       if (!tmpblock)
         fatal ("internal error: screwup in format of diff blocks");
@@ -756,12 +723,6 @@ using_to_diff3_block (struct diff_block *using[2],
                       int low_thread, int high_thread,
                       struct diff3_block const *last_diff3)
 {
-  lin low[2], high[2];
-  struct diff3_block *result;
-  struct diff_block *ptr;
-  int d;
-  lin i;
-
   /* Find the range in the common file.  */
   lin lowc = D_LOWLINE (using[low_thread], FC);
   lin highc = D_HIGHLINE (last_using[high_thread], FC);
@@ -770,7 +731,8 @@ using_to_diff3_block (struct diff_block *using[2],
      If using[d] is null, that means that the file to which that diff
      refers is equivalent to the common file over this range.  */
 
-  for (d = 0; d < 2; d++)
+  lin low[2], high[2];
+  for (int d = 0; d < 2; d++)
     if (using[d])
       {
         low[d] = D_LOW_MAPLINE (using[d], FC, FO, lowc);
@@ -783,13 +745,14 @@ using_to_diff3_block (struct diff_block *using[2],
       }
 
   /* Create a block with the appropriate sizes */
-  result = create_diff3_block (low[0], high[0], low[1], high[1], lowc, highc);
+  struct diff3_block *result
+    = create_diff3_block (low[0], high[0], low[1], high[1], lowc, highc);
 
   /* Copy information for the common file.
      Return with a zero if any of the compares failed.  */
 
-  for (d = 0; d < 2; d++)
-    for (ptr = using[d]; ptr; ptr = D_NEXT (ptr))
+  for (int d = 0; d < 2; d++)
+    for (struct diff_block *ptr = using[d]; ptr; ptr = D_NEXT (ptr))
       {
         lin result_offset = D_LOWLINE (ptr, FC) - lowc;
 
@@ -804,12 +767,12 @@ using_to_diff3_block (struct diff_block *using[2],
   /* Copy information for file d.  First deal with anything that might be
      before the first diff.  */
 
-  for (d = 0; d < 2; d++)
+  for (int d = 0; d < 2; d++)
     {
       struct diff_block *u = using[d];
       lin lo = low[d], hi = high[d];
 
-      for (i = 0;
+      for (lin i = 0;
            i + lo < (u ? D_LOWLINE (u, FO) : hi + 1);
            i++)
         {
@@ -817,10 +780,9 @@ using_to_diff3_block (struct diff_block *using[2],
           D_RELLEN (result, FILE0 + d, i) = D_RELLEN (result, FILEC, i);
         }
 
-      for (ptr = u; ptr; ptr = D_NEXT (ptr))
+      for (struct diff_block *ptr = u; ptr; ptr = D_NEXT (ptr))
         {
           lin result_offset = D_LOWLINE (ptr, FO) - lo;
-          lin linec;
 
           if (!copy_stringlist (D_LINEARRAY (ptr, FO),
                                 D_LENARRAY (ptr, FO),
@@ -830,8 +792,8 @@ using_to_diff3_block (struct diff_block *using[2],
             return 0;
 
           /* Catch the lines between here and the next diff */
-          linec = D_HIGHLINE (ptr, FC) + 1 - lowc;
-          for (i = D_HIGHLINE (ptr, FO) + 1 - lo;
+          lin linec = D_HIGHLINE (ptr, FC) + 1 - lowc;
+          for (lin i = D_HIGHLINE (ptr, FO) + 1 - lo;
                i < (D_NEXT (ptr) ? D_LOWLINE (D_NEXT (ptr), FO) : hi + 1) - lo;
                i++)
             {
@@ -910,7 +872,6 @@ create_diff3_block (lin low0, lin high0,
                     lin low2, lin high2)
 {
   struct diff3_block *result = xmalloc (sizeof *result);
-  lin numlines;
 
   D3_TYPE (result) = DIFF_ERROR;
   D_NEXT (result) = 0;
@@ -924,7 +885,7 @@ create_diff3_block (lin low0, lin high0,
   D_HIGHLINE (result, FILE2) = high2;
 
   /* Allocate and zero space */
-  numlines = D_NUMLINES (result, FILE0);
+  lin numlines = D_NUMLINES (result, FILE0);
   if (numlines)
     {
       D_LINEARRAY (result, FILE0) = xcalloc (numlines, sizeof (char *));
@@ -991,17 +952,11 @@ process_diff (char const *filea,
               char const *fileb,
               char **buf_to_free)
 {
-  char *diff_contents;
-  char *diff_limit;
-  char *scan_diff;
-  enum diff_type dt;
-  lin i;
   struct diff_block *block_list;
   struct diff_block **block_list_end = &block_list;
 
-  diff_limit = read_diff (filea, fileb, &diff_contents);
-  *buf_to_free = diff_contents;
-  scan_diff = diff_contents;
+  char *diff_limit = read_diff (filea, fileb, buf_to_free);
+  char *scan_diff = *buf_to_free;
 
   while (scan_diff < diff_limit)
     {
@@ -1009,7 +964,7 @@ process_diff (char const *filea,
       bptr->lines[0] = bptr->lines[1] = 0;
       bptr->lengths[0] = bptr->lengths[1] = 0;
 
-      dt = process_diff_control (&scan_diff, bptr);
+      enum diff_type dt = process_diff_control (&scan_diff, bptr);
       if (dt == DIFF_ERROR || *scan_diff != '\n')
         {
           fprintf (stderr, _("%s: diff failed: "), program_name);
@@ -1045,7 +1000,7 @@ process_diff (char const *filea,
           lin numlines = D_NUMLINES (bptr, 0);
           bptr->lines[0] = xnmalloc (numlines, sizeof *bptr->lines[0]);
           bptr->lengths[0] = xnmalloc (numlines, sizeof *bptr->lengths[0]);
-          for (i = 0; i < numlines; i++)
+          for (lin i = 0; i < numlines; i++)
             scan_diff = scan_diff_line (scan_diff,
                                         &(bptr->lines[0][i]),
                                         &(bptr->lengths[0][i]),
@@ -1068,7 +1023,7 @@ process_diff (char const *filea,
           lin numlines = D_NUMLINES (bptr, 1);
           bptr->lines[1] = xnmalloc (numlines, sizeof *bptr->lines[1]);
           bptr->lengths[1] = xnmalloc (numlines, sizeof *bptr->lengths[1]);
-          for (i = 0; i < numlines; i++)
+          for (lin i = 0; i < numlines; i++)
             scan_diff = scan_diff_line (scan_diff,
                                         &(bptr->lines[1][i]),
                                         &(bptr->lengths[1][i]),
@@ -1136,7 +1091,6 @@ static enum diff_type
 process_diff_control (char **string, struct diff_block *db)
 {
   char *s = *string;
-  enum diff_type type;
 
   /* Read first set of digits */
   s = readnum (skipwhite (s), &db->ranges[0][RANGE_START]);
@@ -1156,6 +1110,7 @@ process_diff_control (char **string, struct diff_block *db)
 
   /* Get the letter */
   s = skipwhite (s);
+  enum diff_type type;
   switch (*s)
     {
     case 'a':
@@ -1198,22 +1153,8 @@ read_diff (char const *filea,
            char const *fileb,
            char **output_placement)
 {
-  char *diff_result;
-  size_t current_chunk_size, total;
-  int fd, wstatus, status;
-  int werrno = 0;
-  struct stat pipestat;
   char const *argv[10];
-  char const **ap;
-#if HAVE_WORKING_FORK
-  int fds[2];
-  pid_t pid;
-#else
-  FILE *fpipe;
-  char *command;
-#endif
-
-  ap = argv;
+  char const **ap = argv;
   *ap++ = diff_program;
   if (text)
     *ap++ = "-a";
@@ -1224,14 +1165,15 @@ read_diff (char const *filea,
   *ap++ = "--";
   *ap++ = filea;
   *ap++ = fileb;
-  *ap = 0;
+  *ap = nullptr;
 
 #if HAVE_WORKING_FORK
 
+  int fds[2];
   if (pipe (fds) != 0)
     perror_with_exit ("pipe");
 
-  pid = fork ();
+  pid_t pid = fork ();
   if (pid == 0)
     {
       /* Child */
@@ -1253,25 +1195,26 @@ read_diff (char const *filea,
     perror_with_exit ("fork");
 
   close (fds[1]);		/* Prevent erroneous lack of EOF */
-  fd = fds[0];
+  int fd = fds[0];
 
 #else
 
-  command = system_quote_argv (SCI_SYSTEM, (char **) argv);
+  char *command = system_quote_argv (SCI_SYSTEM, (char **) argv);
   errno = 0;
-  fpipe = popen (command, "r");
+  FILE *fpipe = popen (command, "r");
   if (!fpipe)
     perror_with_exit (command);
   free (command);
-  fd = fileno (fpipe);
+  int fd = fileno (fpipe);
 
 #endif
 
-  current_chunk_size = (fstat (fd, &pipestat) == 0
-                        ? MAX (1, STAT_BLOCKSIZE (pipestat))
-                        : 8 * 1024);
-  diff_result = xmalloc (current_chunk_size);
-  total = 0;
+  struct stat pipestat;
+  size_t current_chunk_size = (fstat (fd, &pipestat) == 0
+                               ? MAX (1, STAT_BLOCKSIZE (pipestat))
+                               : 8 * 1024);
+  char *diff_result = xmalloc (current_chunk_size);
+  size_t total = 0;
 
   for (;;)
     {
@@ -1295,6 +1238,8 @@ read_diff (char const *filea,
 
   *output_placement = diff_result;
 
+  int werrno = 0;
+  int wstatus;
 #if ! HAVE_WORKING_FORK
 
   wstatus = pclose (fpipe);
@@ -1310,7 +1255,8 @@ read_diff (char const *filea,
 
 #endif
 
-  status = ! werrno && WIFEXITED (wstatus) ? WEXITSTATUS (wstatus) : INT_MAX;
+  int status = (! werrno && WIFEXITED (wstatus)
+                ? WEXITSTATUS (wstatus) : INT_MAX);
 
   if (EXIT_TROUBLE <= status)
     die (EXIT_TROUBLE, werrno,
@@ -1336,13 +1282,11 @@ static char *
 scan_diff_line (char *scan_ptr, char **set_start, size_t *set_length,
                 char *limit, char leadingchar)
 {
-  char *line_ptr;
-
   if (!(scan_ptr[0] == leadingchar
         && scan_ptr[1] == ' '))
     fatal ("invalid diff format; incorrect leading line chars");
 
-  *set_start = line_ptr = scan_ptr + 2;
+  char *line_ptr = *set_start = scan_ptr + 2;
   while (*line_ptr++ != '\n')
     continue;
 
@@ -1382,19 +1326,14 @@ static void
 output_diff3 (FILE *outputfile, struct diff3_block *diff,
               int const mapping[3], int const rev_mapping[3])
 {
-  int i;
-  int oddoneout;
-  char *cp;
-  struct diff3_block *ptr;
-  lin line;
-  size_t length;
   int dontprint;
   static int skew_increment[3] = { 2, 3, 1 }; /* 0==>2==>1==>3 */
   char const *line_prefix = initial_tab ? "\t" : "  ";
 
-  for (ptr = diff; ptr; ptr = D_NEXT (ptr))
+  for (struct diff3_block *ptr = diff; ptr; ptr = D_NEXT (ptr))
     {
       char x[2];
+      int oddoneout;
 
       switch (ptr->correspond)
         {
@@ -1418,7 +1357,7 @@ output_diff3 (FILE *outputfile, struct diff3_block *diff,
       fprintf (outputfile, "====%s\n", x);
 
       /* Go 0, 2, 1 if the first and third outputs are equivalent.  */
-      for (i = 0; i < 3;
+      for (int i = 0; i < 3;
            i = (oddoneout == 1 ? skew_increment[i] : i + 1))
         {
           int realfile = mapping[i];
@@ -1442,20 +1381,20 @@ output_diff3 (FILE *outputfile, struct diff3_block *diff,
           if (i == dontprint) continue;
 
           if (lowt <= hight)
-            {
-              line = 0;
-              do
-                {
-                  fputs (line_prefix, outputfile);
-                  cp = D_RELNUM (ptr, realfile, line);
-                  length = D_RELLEN (ptr, realfile, line);
-                  fwrite (cp, sizeof (char), length, outputfile);
-                }
-              while (++line < hight - lowt + 1);
-              if (cp[length - 1] != '\n')
-                fprintf (outputfile, "\n\\ %s\n",
-                         _("No newline at end of file"));
-            }
+            for (lin line = 0; ; line++)
+              {
+                fputs (line_prefix, outputfile);
+                char *cp = D_RELNUM (ptr, realfile, line);
+                size_t length = D_RELLEN (ptr, realfile, line);
+                fwrite (cp, sizeof (char), length, outputfile);
+                if (hight - lowt <= line)
+                  {
+                    if (cp[length - 1] != '\n')
+                      fprintf (outputfile, "\n\\ %s\n",
+                               _("No newline at end of file"));
+                    break;
+                  }
+              }
         }
     }
 }
@@ -1467,10 +1406,9 @@ output_diff3 (FILE *outputfile, struct diff3_block *diff,
 static bool
 dotlines (FILE *outputfile, struct diff3_block *b, int filenum)
 {
-  lin i;
   bool leading_dot = false;
 
-  for (i = 0;
+  for (lin i = 0;
        i < D_NUMLINES (b, filenum);
        i++)
     {
@@ -1528,12 +1466,9 @@ output_diff3_edscript (FILE *outputfile, struct diff3_block *diff,
                        int const mapping[3], int const rev_mapping[3],
                        char const *file0, char const *file1, char const *file2)
 {
-  bool leading_dot;
   bool conflicts_found = false;
-  bool conflict;
-  struct diff3_block *b;
 
-  for (b = reverse_diff3_blocklist (diff); b; b = b->next)
+  for (struct diff3_block *b = reverse_diff3_blocklist (diff); b; b = b->next)
     {
       /* Must do mapping correctly.  */
       enum diff_type type
@@ -1542,6 +1477,7 @@ output_diff3_edscript (FILE *outputfile, struct diff3_block *diff,
            : DIFF_1ST + rev_mapping[b->correspond - DIFF_1ST]);
 
       /* If we aren't supposed to do this output block, skip it.  */
+      bool conflict;
       switch (type)
         {
         default: continue;
@@ -1561,7 +1497,7 @@ output_diff3_edscript (FILE *outputfile, struct diff3_block *diff,
           /* Mark end of conflict.  */
 
           fprintf (outputfile, "%"pI"da\n", high0);
-          leading_dot = false;
+          bool leading_dot = false;
           if (type == DIFF_ALL)
             {
               if (show_2nd)
@@ -1643,14 +1579,10 @@ output_diff3_merge (FILE *infile, FILE *outputfile, struct diff3_block *diff,
                     int const mapping[3], int const rev_mapping[3],
                     char const *file0, char const *file1, char const *file2)
 {
-  int c;
-  lin i;
   bool conflicts_found = false;
-  bool conflict;
-  struct diff3_block *b;
   lin linesread = 0;
 
-  for (b = diff; b; b = b->next)
+  for (struct diff3_block *b = diff; b; b = b->next)
     {
       /* Must do mapping correctly.  */
       enum diff_type type
@@ -1660,6 +1592,7 @@ output_diff3_merge (FILE *infile, FILE *outputfile, struct diff3_block *diff,
       char const *format_2nd = "<<<<<<< %s\n";
 
       /* If we aren't supposed to do this output block, skip it.  */
+      bool conflict;
       switch (type)
         {
         default: continue;
@@ -1670,13 +1603,13 @@ output_diff3_merge (FILE *infile, FILE *outputfile, struct diff3_block *diff,
           break;
         }
 
-      /* Copy I lines from file 0.  */
-      i = D_LOWLINE (b, FILE0) - linesread - 1;
-      linesread += i;
-      while (0 <= --i)
-        do
+      /* Copy I0 lines from file 0.  */
+      lin i0 = D_LOWLINE (b, FILE0) - linesread - 1;
+      linesread += i0;
+      while (0 <= --i0)
+        while (true)
           {
-            c = getc (infile);
+            int c = getc (infile);
             if (c == EOF)
               {
                 if (ferror (infile))
@@ -1685,8 +1618,9 @@ output_diff3_merge (FILE *infile, FILE *outputfile, struct diff3_block *diff,
                   fatal ("input file shrank");
               }
             putc (c, outputfile);
+            if (c == '\n')
+              break;
           }
-        while (c != '\n');
 
       if (conflict)
         {
@@ -1696,7 +1630,7 @@ output_diff3_merge (FILE *infile, FILE *outputfile, struct diff3_block *diff,
             {
               /* Put in lines from FILE0 with bracket.  */
               fprintf (outputfile, "<<<<<<< %s\n", file0);
-              for (i = 0;
+              for (lin i = 0;
                    i < D_NUMLINES (b, mapping[FILE0]);
                    i++)
                 fwrite (D_RELNUM (b, mapping[FILE0], i), sizeof (char),
@@ -1707,7 +1641,7 @@ output_diff3_merge (FILE *infile, FILE *outputfile, struct diff3_block *diff,
             {
               /* Put in lines from FILE1 with bracket.  */
               fprintf (outputfile, format_2nd, file1);
-              for (i = 0;
+              for (lin i = 0;
                    i < D_NUMLINES (b, mapping[FILE1]);
                    i++)
                 fwrite (D_RELNUM (b, mapping[FILE1], i), sizeof (char),
@@ -1718,7 +1652,7 @@ output_diff3_merge (FILE *infile, FILE *outputfile, struct diff3_block *diff,
         }
 
       /* Put in lines from FILE2.  */
-      for (i = 0;
+      for (lin i = 0;
            i < D_NUMLINES (b, mapping[FILE2]);
            i++)
         fwrite (D_RELNUM (b, mapping[FILE2], i), sizeof (char),
@@ -1727,25 +1661,26 @@ output_diff3_merge (FILE *infile, FILE *outputfile, struct diff3_block *diff,
       if (conflict)
         fprintf (outputfile, ">>>>>>> %s\n", file2);
 
-      /* Skip I lines in file 0.  */
-      i = D_NUMLINES (b, FILE0);
-      linesread += i;
-      while (0 <= --i)
-        while ((c = getc (infile)) != '\n')
+      /* Skip I1 lines in file 0.  */
+      lin i1 = D_NUMLINES (b, FILE0);
+      linesread += i1;
+      while (0 <= --i1)
+        for (int c; (c = getc (infile)) != '\n'; )
           if (c == EOF)
             {
               if (ferror (infile))
                 perror_with_exit (_("read failed"));
               else if (feof (infile))
                 {
-                  if (i || b->next)
+                  if (i1 || b->next)
                     fatal ("input file shrank");
                   return conflicts_found;
                 }
             }
     }
   /* Copy rest of common file.  */
-  while ((c = getc (infile)) != EOF || !(ferror (infile) | feof (infile)))
+  for (int c;
+       (c = getc (infile)) != EOF || !(ferror (infile) | feof (infile)); )
     putc (c, outputfile);
   return conflicts_found;
 }
@@ -1755,13 +1690,14 @@ output_diff3_merge (FILE *infile, FILE *outputfile, struct diff3_block *diff,
 static struct diff3_block *
 reverse_diff3_blocklist (struct diff3_block *diff)
 {
-  register struct diff3_block *tmp, *next, *prev;
+  struct diff3_block *prev = nullptr;
 
-  for (tmp = diff, prev = 0;  tmp;  tmp = next)
+  for (struct diff3_block *tmp = diff; tmp; )
     {
-      next = tmp->next;
+      struct diff3_block *next = tmp->next;
       tmp->next = prev;
       prev = tmp;
+      tmp = next;
     }
 
   return prev;
