@@ -247,21 +247,19 @@ static struct option const longopts[] =
 static char *
 option_list (char **optionvec, int count)
 {
-  int i;
   size_t size = 1;
-  char *result;
-  char *p;
 
-  for (i = 0; i < count; i++)
+  for (int i = 0; i < count; i++)
     {
       size_t optsize = 1 + shell_quote_length (optionvec[i]);
       if (ckd_add (&size, size, optsize))
 	xalloc_die ();
     }
 
-  p = result = xmalloc (size);
+  char *result = xmalloc (size);
+  char *p = result;
 
-  for (i = 0; i < count; i++)
+  for (int i = 0; i < count; i++)
     {
       *p++ = ' ';
       p = shell_quote_copy (p, optionvec[i]);
@@ -283,19 +281,6 @@ exclude_options (void)
 int
 main (int argc, char **argv)
 {
-  int exit_status = EXIT_SUCCESS;
-  int c;
-  int i;
-  int prev = -1;
-  lin ocontext = -1;
-  bool explicit_context = false;
-  size_t width = 0;
-  bool show_c_function = false;
-  char const *from_file = nullptr;
-  char const *to_file = nullptr;
-  intmax_t numval;
-  char *numend;
-
   /* Do our initializations.  */
   exit_failure = EXIT_TROUBLE;
   initialize_main (&argc, &argv);
@@ -313,7 +298,16 @@ main (int argc, char **argv)
 
   /* Decode the options.  */
 
-  while ((c = getopt_long (argc, argv, shortopts, longopts, nullptr)) != -1)
+  int prev = -1;
+  lin ocontext = -1;
+  bool explicit_context = false;
+  size_t width = 0;
+  bool show_c_function = false;
+  char const *from_file = nullptr;
+  char const *to_file = nullptr;
+
+  for (int c;
+       (c = getopt_long (argc, argv, shortopts, longopts, nullptr)) != -1; )
     {
       switch (c)
         {
@@ -359,9 +353,12 @@ main (int argc, char **argv)
         case 'C':
         case 'U':
           {
+	    intmax_t numval;
+
             if (optarg)
               {
-                numval = strtoimax (optarg, &numend, 10);
+		char *numend;
+		numval = strtoimax (optarg, &numend, 10);
                 if (*numend || numval < 0)
                   try_help ("invalid context length '%s'", optarg);
                 if (CONTEXT_MAX < numval)
@@ -423,7 +420,7 @@ main (int argc, char **argv)
 	    char *base = b;
 	    int changes = 0;
 
-	    for (i = 0; i < sizeof C_ifdef_group_formats; i++)
+	    for (int i = 0; i < sizeof C_ifdef_group_formats; i++)
 	      {
 		char ch = C_ifdef_group_formats[i];
 		switch (ch)
@@ -574,15 +571,18 @@ main (int argc, char **argv)
           break;
 
         case 'W':
-          numval = strtoimax (optarg, &numend, 10);
-          if (! (0 < numval && numval <= SIZE_MAX) || *numend)
-            try_help ("invalid width '%s'", optarg);
-          if (width != numval)
-            {
-              if (width)
-                fatal ("conflicting width options");
-              width = numval;
-            }
+	  {
+	    char *numend;
+	    intmax_t numval = strtoimax (optarg, &numend, 10);
+	    if (! (0 < numval && numval <= SIZE_MAX) || *numend)
+	      try_help ("invalid width '%s'", optarg);
+	    if (width != numval)
+	      {
+		if (width)
+		  fatal ("conflicting width options");
+		width = numval;
+	      }
+	  }
           break;
 
         case BINARY_OPTION:
@@ -603,10 +603,13 @@ main (int argc, char **argv)
           return EXIT_SUCCESS;
 
         case HORIZON_LINES_OPTION:
-          numval = strtoimax (optarg, &numend, 10);
-          if (*numend || numval < 0)
-            try_help ("invalid horizon length '%s'", optarg);
-          horizon_lines = MAX (horizon_lines, MIN (numval, LIN_MAX));
+	  {
+	    char *numend;
+	    intmax_t numval = strtoimax (optarg, &numend, 10);
+	    if (*numend || numval < 0)
+	      try_help ("invalid horizon length '%s'", optarg);
+	    horizon_lines = MAX (horizon_lines, MIN (numval, LIN_MAX));
+	  }
           break;
 
         case IGNORE_FILE_NAME_CASE_OPTION:
@@ -624,7 +627,7 @@ main (int argc, char **argv)
 
         case LINE_FORMAT_OPTION:
           specify_style (OUTPUT_IFDEF);
-          for (i = 0; i < sizeof line_format / sizeof line_format[0]; i++)
+          for (int i = 0; i < sizeof line_format / sizeof line_format[0]; i++)
             specify_value (&line_format[i], optarg, "--line-format");
           break;
 
@@ -658,16 +661,19 @@ main (int argc, char **argv)
           break;
 
         case TABSIZE_OPTION:
-          numval = strtoimax (optarg, &numend, 10);
-          if (! (0 < numval && numval <= SIZE_MAX - GUTTER_WIDTH_MINIMUM)
-              || *numend)
-            try_help ("invalid tabsize '%s'", optarg);
-          if (tabsize != numval)
-            {
-              if (tabsize)
-                fatal ("conflicting tabsize options");
-              tabsize = numval;
-            }
+	  {
+	    char *numend;
+	    intmax_t numval = strtoimax (optarg, &numend, 10);
+	    if (! (0 < numval && numval <= SIZE_MAX - GUTTER_WIDTH_MINIMUM)
+		|| *numend)
+	      try_help ("invalid tabsize '%s'", optarg);
+	    if (tabsize != numval)
+	      {
+		if (tabsize)
+		  fatal ("conflicting tabsize options");
+		tabsize = numval;
+	      }
+	  }
           break;
 
         case TO_FILE_OPTION:
@@ -794,7 +800,7 @@ main (int argc, char **argv)
 
   if (output_style == OUTPUT_IFDEF)
     {
-      for (i = 0; i < sizeof line_format / sizeof line_format[0]; i++)
+      for (int i = 0; i < sizeof line_format / sizeof line_format[0]; i++)
         if (!line_format[i])
           line_format[i] = "%l\n";
       if (!group_format[OLD])
@@ -827,6 +833,8 @@ main (int argc, char **argv)
           | (ignore_regexp_list.regexps || ignore_white_space)));
 
   switch_string = option_list (argv + 1, optind - 1);
+
+  int exit_status = EXIT_SUCCESS;
 
   if (from_file)
     {
@@ -1051,8 +1059,6 @@ static char const * const option_help_msgid[] = {
 static void
 usage (void)
 {
-  char const * const *p;
-
   printf (_("Usage: %s [OPTION]... FILES\n"), program_name);
   printf ("%s\n\n", _("Compare FILES line by line."));
 
@@ -1060,15 +1066,14 @@ usage (void)
 Mandatory arguments to long options are mandatory for short options too.\n\
 "), stdout);
 
-  for (p = option_help_msgid;  *p;  p++)
+  for (char const *const *p = option_help_msgid;  *p;  p++)
     {
       if (!**p)
         putchar ('\n');
       else
         {
           char const *msg = _(*p);
-          char const *nl;
-          while ((nl = strchr (msg, '\n')))
+          for (char const *nl; (nl = strchr (msg, '\n')); )
             {
               int msglen = nl + 1 - msg;
               /* This assertion is solely to avoid a warning from
@@ -1181,13 +1186,6 @@ compare_files (struct comparison const *parent,
                char const *name0,
                char const *name1)
 {
-  struct comparison cmp;
-  register int f;
-  int status = EXIT_SUCCESS;
-  bool same_files;
-  char *free0;
-  char *free1;
-
   /* If this is directory comparison, perhaps we have a file
      that exists only in one of the directories.
      If so, just print a message to that effect.  */
@@ -1207,11 +1205,9 @@ compare_files (struct comparison const *parent,
       return EXIT_FAILURE;
     }
 
-  memset (cmp.file, 0, sizeof cmp.file);
-  cmp.parent = parent;
-
-  cmp.file[0].desc = name0 ? UNOPENED : NONEXISTENT;
-  cmp.file[1].desc = name1 ? UNOPENED : NONEXISTENT;
+  struct comparison cmp = { .file[0].desc = name0 ? UNOPENED : NONEXISTENT,
+			    .file[1].desc = name1 ? UNOPENED : NONEXISTENT,
+			    .parent = parent };
 
   /* Now record the full name of each file, including nonexistent ones.  */
 
@@ -1219,6 +1215,9 @@ compare_files (struct comparison const *parent,
     name0 = name1;
   if (!name1)
     name1 = name0;
+
+  char *free0;
+  char *free1;
 
   if (!parent)
     {
@@ -1237,7 +1236,7 @@ compare_files (struct comparison const *parent,
 
   /* Stat the files.  */
 
-  for (f = 0; f < 2; f++)
+  for (int f = 0; f < 2; f++)
     {
       if (cmp.file[f].desc != NONEXISTENT)
         {
@@ -1283,7 +1282,7 @@ compare_files (struct comparison const *parent,
      creates to indicate nonexistent backups), or if they are
      top-level files that do not exist but their counterparts do
      exist.  */
-  for (f = 0; f < 2; f++)
+  for (int f = 0; f < 2; f++)
     if ((new_file || (f == 0 && unidirectional_new_file))
         && (cmp.file[f].desc == UNOPENED
             ? (S_ISREG (cmp.file[f].stat.st_mode)
@@ -1296,14 +1295,16 @@ compare_files (struct comparison const *parent,
                    || cmp.file[1 - f].desc == STDIN_FILENO))))
       cmp.file[f].desc = NONEXISTENT;
 
-  for (f = 0; f < 2; f++)
+  for (int f = 0; f < 2; f++)
     if (cmp.file[f].desc == NONEXISTENT)
       {
         memset (&cmp.file[f].stat, 0, sizeof cmp.file[f].stat);
         cmp.file[f].stat.st_mode = cmp.file[1 - f].stat.st_mode;
       }
 
-  for (f = 0; f < 2; f++)
+  int status = EXIT_SUCCESS;
+
+  for (int f = 0; f < 2; f++)
     {
       int e = errno_decode (cmp.file[f].desc);
       if (0 <= e)
@@ -1339,6 +1340,8 @@ compare_files (struct comparison const *parent,
           status = EXIT_TROUBLE;
         }
     }
+
+  bool same_files;
 
   if (status != EXIT_SUCCESS)
     {
@@ -1436,7 +1439,7 @@ compare_files (struct comparison const *parent,
           /* Compare the values of the symbolic links.  */
           char *link_value[2] = { nullptr, nullptr };
 
-          for (f = 0; f < 2; f++)
+          for (int f = 0; f < 2; f++)
             {
               link_value[f] = xreadlink (cmp.file[f].name);
               if (link_value[f] == nullptr)
@@ -1456,7 +1459,7 @@ compare_files (struct comparison const *parent,
                   status = EXIT_FAILURE;
                 }
             }
-          for (f = 0; f < 2; f++)
+          for (int f = 0; f < 2; f++)
             free (link_value[f]);
         }
       else
