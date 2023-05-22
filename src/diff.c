@@ -1161,6 +1161,13 @@ errno_decode (int desc)
   return -3 - desc;
 }
 
+/* True if PCMP's file F is a directory.  */
+static bool
+dir_p (struct comparison const *pcmp, int f)
+{
+  return S_ISDIR (pcmp->file[f].stat.st_mode) != 0;
+}
+
 /* Compare two files (or dirs) with parent comparison PARENT
    and names NAME0 and NAME1.
    (If PARENT is null, then the first name is just NAME0, etc.)
@@ -1175,7 +1182,6 @@ compare_files (struct comparison const *parent,
                char const *name1)
 {
   struct comparison cmp;
-#define DIR_P(f) (S_ISDIR (cmp.file[f].stat.st_mode) != 0)
   register int f;
   int status = EXIT_SUCCESS;
   bool same_files;
@@ -1309,12 +1315,12 @@ compare_files (struct comparison const *parent,
     }
 
   if (status == EXIT_SUCCESS && ! parent && !no_directory
-      && DIR_P (0) != DIR_P (1))
+      && dir_p (&cmp, 0) != dir_p (&cmp, 1))
     {
       /* If one is a directory, and it was specified in the command line,
          use the file in that dir with the other file's basename.  */
 
-      int fnm_arg = DIR_P (0);
+      int fnm_arg = dir_p (&cmp, 0);
       int dir_arg = 1 - fnm_arg;
       char const *fnm = cmp.file[fnm_arg].name;
       char const *dir = cmp.file[dir_arg].name;
@@ -1354,7 +1360,7 @@ compare_files (struct comparison const *parent,
       /* The two named files are actually the same physical file.
          We know they are identical without actually reading them.  */
     }
-  else if (DIR_P (0) & DIR_P (1))
+  else if (dir_p (&cmp, 0) & dir_p (&cmp, 1))
     {
       if (output_style == OUTPUT_IFDEF)
         fatal ("-D option not supported with directories");
@@ -1372,7 +1378,7 @@ compare_files (struct comparison const *parent,
       else
         status = diff_dirs (&cmp, compare_files);
     }
-  else if ((DIR_P (0) | DIR_P (1))
+  else if ((dir_p (&cmp, 0) | dir_p (&cmp, 1))
            || (parent
                && !((S_ISREG (cmp.file[0].stat.st_mode)
                      || S_ISLNK (cmp.file[0].stat.st_mode))
@@ -1383,7 +1389,7 @@ compare_files (struct comparison const *parent,
         {
           /* We have a subdirectory that exists only in one directory.  */
 
-          if ((DIR_P (0) | DIR_P (1))
+          if ((dir_p (&cmp, 0) | dir_p (&cmp, 1))
               && recursive
               && (new_file
                   || (unidirectional_new_file
@@ -1530,7 +1536,7 @@ compare_files (struct comparison const *parent,
 
   if (status == EXIT_SUCCESS)
     {
-      if (report_identical_files && !DIR_P (0))
+      if (report_identical_files && !dir_p (&cmp, 0))
         message ("Files %s and %s are identical\n",
                  file_label[0] ? file_label[0] : cmp.file[0].name,
                  file_label[1] ? file_label[1] : cmp.file[1].name);
