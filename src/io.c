@@ -24,16 +24,25 @@
 #include <file-type.h>
 #include <stdckdint.h>
 #include <xalloc.h>
-
-/* Rotate an unsigned value to the left.  */
-#define ROL(v, n) ((v) << (n) | (v) >> (sizeof (v) * CHAR_BIT - (n)))
-
-/* Given a hash value and a new character, return a new hash value.  */
-#define HASH(h, c) ((c) + ROL (h, 7))
 
 /* The type of a hash value.  */
 typedef size_t hash_value;
+enum { HASH_VALUE_WIDTH = SIZE_WIDTH };
 verify (! TYPE_SIGNED (hash_value));
+
+/* Rotate a hash value to the left.  */
+static hash_value
+rol (hash_value v, int n)
+{
+  return v << n | v >> (HASH_VALUE_WIDTH - n);
+}
+
+/* Given a hash value and a new character, return a new hash value.  */
+static hash_value
+hash (hash_value h, unsigned char c)
+{
+  return rol (h, 7) + c;
+}
 
 /* Lines are put into equivalence classes of lines that match in lines_differ.
    Each equivalence class is represented by one of these structures,
@@ -262,7 +271,7 @@ find_and_hash_each_line (struct file_data *current)
         case IGNORE_ALL_SPACE:
           while ((c = *p++) != '\n')
             if (! isspace (c))
-              h = HASH (h, ig_case ? tolower (c) : c);
+              h = hash (h, ig_case ? tolower (c) : c);
           break;
 
         case IGNORE_SPACE_CHANGE:
@@ -275,11 +284,11 @@ find_and_hash_each_line (struct file_data *current)
                       goto hashing_done;
                   while (isspace (c));
 
-                  h = HASH (h, ' ');
+                  h = hash (h, ' ');
                 }
 
               /* C is now the first non-space.  */
-              h = HASH (h, ig_case ? tolower (c) : c);
+              h = hash (h, ig_case ? tolower (c) : c);
             }
           break;
 
@@ -334,7 +343,7 @@ find_and_hash_each_line (struct file_data *current)
                   c = tolower (c);
 
                 do
-                  h = HASH (h, c);
+                  h = hash (h, c);
                 while (--repetitions != 0);
               }
           }
@@ -343,10 +352,10 @@ find_and_hash_each_line (struct file_data *current)
         default:
           if (ig_case)
             while ((c = *p++) != '\n')
-              h = HASH (h, tolower (c));
+              h = hash (h, tolower (c));
           else
             while ((c = *p++) != '\n')
-              h = HASH (h, c);
+              h = hash (h, c);
           break;
         }
 
