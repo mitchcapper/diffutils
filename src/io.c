@@ -139,9 +139,8 @@ sip (struct file_data *current, bool skip_test)
           /* Check first part of file to see if it's a binary file.  */
 
           int prev_mode = set_binary_mode (current->desc, O_BINARY);
-          off_t buffered;
           file_block_read (current, current->bufsize);
-          buffered = current->buffered;
+          off_t buffered = current->buffered;
 
           if (prev_mode != O_BINARY)
             {
@@ -169,8 +168,6 @@ sip (struct file_data *current, bool skip_test)
 static void
 slurp (struct file_data *current)
 {
-  size_t cc;
-
   if (current->desc < 0)
     {
       /* The file is nonexistent.  */
@@ -185,6 +182,7 @@ slurp (struct file_data *current)
          Allocate just enough room for appended newline plus word sentinel,
          plus word-alignment since we want the buffer word-aligned.  */
       off_t file_size = current->stat.st_size;
+      size_t cc;
       if (ckd_add (&cc, 2 * sizeof (word) - file_size % sizeof (word),
                    file_size))
         xalloc_die ();
@@ -225,7 +223,7 @@ slurp (struct file_data *current)
 
       /* Allocate just enough room for appended newline plus word
          sentinel, plus word-alignment.  */
-      cc = current->buffered + 2 * sizeof (word);
+      size_t cc = current->buffered + 2 * sizeof (word);
       current->bufsize = cc - cc % sizeof (word);
       current->buffer = xrealloc (current->buffer, current->bufsize);
     }
@@ -238,8 +236,6 @@ static void
 find_and_hash_each_line (struct file_data *current)
 {
   char const *p = current->prefix_end;
-  lin i, *bucket;
-  size_t length;
 
   /* Cache often-used quantities in local variables to help the compiler.  */
   char const **linbuf = current->linbuf;
@@ -263,19 +259,18 @@ find_and_hash_each_line (struct file_data *current)
     {
       char const *ip = p;
       hash_value h = 0;
-      unsigned char c;
 
       /* Hash this line until we find a newline.  */
       switch (ig_white_space)
         {
         case IGNORE_ALL_SPACE:
-          while ((c = *p++) != '\n')
+          for (unsigned char c; (c = *p++) != '\n'; )
             if (! isspace (c))
               h = hash (h, ig_case ? tolower (c) : c);
           break;
 
         case IGNORE_SPACE_CHANGE:
-          while ((c = *p++) != '\n')
+	  for (unsigned char c; (c = *p++) != '\n'; )
             {
               if (isspace (c))
                 {
@@ -297,7 +292,7 @@ find_and_hash_each_line (struct file_data *current)
         case IGNORE_TRAILING_SPACE:
           {
             size_t column = 0;
-            while ((c = *p++) != '\n')
+            for (unsigned char c; (c = *p++) != '\n'; )
               {
                 if (ig_white_space & IGNORE_TRAILING_SPACE
                     && isspace (c))
@@ -351,18 +346,18 @@ find_and_hash_each_line (struct file_data *current)
 
         default:
           if (ig_case)
-            while ((c = *p++) != '\n')
+            for (unsigned char c; (c = *p++) != '\n'; )
               h = hash (h, tolower (c));
           else
-            while ((c = *p++) != '\n')
+            for (unsigned char c; (c = *p++) != '\n'; )
               h = hash (h, c);
           break;
         }
 
    hashing_done:;
 
-      bucket = &buckets[h % nbuckets];
-      length = p - ip - 1;
+      lin *bucket = &buckets[h % nbuckets];
+      size_t length = p - ip - 1;
 
       if (p == bufend
           && current->missing_newline
@@ -377,6 +372,7 @@ find_and_hash_each_line (struct file_data *current)
             bucket = &buckets[-1];
         }
 
+      lin i;
       for (i = *bucket;  ;  i = eqs[i].next)
         if (!i)
           {
@@ -441,7 +437,7 @@ find_and_hash_each_line (struct file_data *current)
 
   current->buffered_lines = line;
 
-  for (i = 0;  ;  i++)
+  for (lin i = 0;  ;  i++)
     {
       /* Record the line start for lines in the suffix that we care about.
          Record one more line start than lines,
@@ -547,17 +543,6 @@ guess_lines (lin n, size_t s, size_t t)
 static void
 find_identical_ends (struct file_data filevec[])
 {
-  word *w0, *w1;
-  char *p0, *p1, *buffer0, *buffer1;
-  char const *end0, *beg0;
-  char const **linbuf0, **linbuf1;
-  lin i, lines;
-  size_t n0, n1;
-  lin alloc_lines0, alloc_lines1;
-  bool prefix_needed;
-  lin buffered_prefix, prefix_count, prefix_mask;
-  lin middle_guess, suffix_guess;
-
   slurp (&filevec[0]);
   prepare_text (&filevec[0]);
   if (filevec[0].desc != filevec[1].desc)
@@ -575,12 +560,14 @@ find_identical_ends (struct file_data filevec[])
 
   /* Find identical prefix.  */
 
-  w0 = filevec[0].buffer;
-  w1 = filevec[1].buffer;
-  p0 = buffer0 = (char *) w0;
-  p1 = buffer1 = (char *) w1;
-  n0 = filevec[0].buffered;
-  n1 = filevec[1].buffered;
+  word *w0 = filevec[0].buffer;
+  word *w1 = filevec[1].buffer;
+  char *buffer0 = (char *) w0;
+  char *buffer1 = (char *) w1;
+  char *p0 = buffer0;
+  char *p1 = buffer1;
+  size_t n0 = filevec[0].buffered;
+  size_t n1 = filevec[1].buffered;
 
   if (p0 == p1)
     /* The buffers are the same; sentinels won't work.  */
@@ -619,8 +606,8 @@ find_identical_ends (struct file_data filevec[])
 
   /* Skip back to last line-beginning in the prefix,
      and then discard up to HORIZON_LINES lines from the prefix.  */
-  i = horizon_lines;
-  while (p0 != buffer0 && (p0[-1] != '\n' || i--))
+  lin hor = horizon_lines;
+  while (p0 != buffer0 && (p0[-1] != '\n' || hor--))
     p0--, p1--;
 
   /* Record the prefix.  */
@@ -636,12 +623,12 @@ find_identical_ends (struct file_data filevec[])
   if (! robust_output_style (output_style)
       || filevec[0].missing_newline == filevec[1].missing_newline)
     {
-      end0 = p0;	/* Addr of last char in file 0.  */
+      char const *end0 = p0;	/* Addr of last char in file 0.  */
 
       /* Get value of P0 at which we should stop scanning backward:
          this is when either P0 or P1 points just past the last char
          of the identical prefix.  */
-      beg0 = filevec[0].prefix_end + (n0 < n1 ? 0 : n0 - n1);
+      char const *beg0 = filevec[0].prefix_end + (n0 < n1 ? 0 : n0 - n1);
 
       /* Scan back until chars don't match or we reach that point.  */
       while (p0 != beg0)
@@ -657,9 +644,9 @@ find_identical_ends (struct file_data filevec[])
          this line to the main body.  Discard up to HORIZON_LINES lines from
          the identical suffix.  Also, discard one extra line,
          because shift_boundaries may need it.  */
-      i = horizon_lines + !((buffer0 == p0 || p0[-1] == '\n')
-                            &&
-                            (buffer1 == p1 || p1[-1] == '\n'));
+      lin i = horizon_lines + !((buffer0 == p0 || p0[-1] == '\n')
+				&&
+				(buffer1 == p1 || p1[-1] == '\n'));
       while (i-- && p0 != end0)
         while (*p0++ != '\n')
           continue;
@@ -685,11 +672,12 @@ find_identical_ends (struct file_data filevec[])
      Handle 1 more line than the context says (because we count 1 too many),
      rounded up to the next power of 2 to speed index computation.  */
 
+  lin alloc_lines0, prefix_count, middle_guess;
   if (no_diff_means_no_output && ! function_regexp.fastmap
       && context < LIN_MAX / 4 && context < n0)
     {
       middle_guess = guess_lines (0, 0, p0 - filevec[0].prefix_end);
-      suffix_guess = guess_lines (0, 0, buffer0 + n0 - p0);
+      lin suffix_guess = guess_lines (0, 0, buffer0 + n0 - p0);
       for (prefix_count = 1;  prefix_count <= context;  prefix_count *= 2)
         continue;
       alloc_lines0 = (prefix_count + middle_guess
@@ -701,18 +689,18 @@ find_identical_ends (struct file_data filevec[])
       alloc_lines0 = guess_lines (0, 0, n0);
     }
 
-  prefix_mask = prefix_count - 1;
-  lines = 0;
-  linbuf0 = xmalloc (alloc_lines0 * sizeof *linbuf0);
-  prefix_needed = ! (no_diff_means_no_output
-                     && filevec[0].prefix_end == p0
-                     && filevec[1].prefix_end == p1);
+  lin prefix_mask = prefix_count - 1;
+  lin lines = 0;
+  char const **linbuf0 = xmalloc (alloc_lines0 * sizeof *linbuf0);
+  bool prefix_needed = ! (no_diff_means_no_output
+			  && filevec[0].prefix_end == p0
+			  && filevec[1].prefix_end == p1);
   p0 = buffer0;
 
   /* If the prefix is needed, find the prefix lines.  */
   if (prefix_needed)
     {
-      end0 = filevec[0].prefix_end;
+      char const *end0 = filevec[0].prefix_end;
       while (p0 != end0)
         {
           lin l = lines++ & prefix_mask;
@@ -728,28 +716,29 @@ find_identical_ends (struct file_data filevec[])
             continue;
         }
     }
-  buffered_prefix = prefix_count && context < lines ? context : lines;
+  lin buffered_prefix = prefix_count && context < lines ? context : lines;
 
   /* Allocate line buffer 1.  */
 
   middle_guess = guess_lines (lines, p0 - buffer0, p1 - filevec[1].prefix_end);
-  suffix_guess = guess_lines (lines, p0 - buffer0, buffer1 + n1 - p1);
+  lin suffix_guess = guess_lines (lines, p0 - buffer0, buffer1 + n1 - p1);
+  lin alloc_lines1;
   if (ckd_add (&alloc_lines1, buffered_prefix,
                middle_guess + MIN (context, suffix_guess)))
     xalloc_die ();
-  linbuf1 = xnmalloc (alloc_lines1, sizeof *linbuf1);
+  char const **linbuf1 = xnmalloc (alloc_lines1, sizeof *linbuf1);
 
   if (buffered_prefix != lines)
     {
       /* Rotate prefix lines to proper location.  */
-      for (i = 0;  i < buffered_prefix;  i++)
+      for (lin i = 0;  i < buffered_prefix;  i++)
         linbuf1[i] = linbuf0[(lines - context + i) & prefix_mask];
-      for (i = 0;  i < buffered_prefix;  i++)
+      for (lin i = 0;  i < buffered_prefix;  i++)
         linbuf0[i] = linbuf1[i];
     }
 
   /* Initialize line buffer 1 from line buffer 0.  */
-  for (i = 0; i < buffered_prefix; i++)
+  for (lin i = 0; i < buffered_prefix; i++)
     linbuf1[i] = linbuf0[i] - buffer0 + buffer1;
 
   /* Record the line buffer, adjusted so that
@@ -786,7 +775,6 @@ verify (sizeof (size_t) * CHAR_BIT <= sizeof prime_offset);
 bool
 read_files (struct file_data filevec[], bool pretend_binary)
 {
-  int i;
   bool skip_test = text | pretend_binary;
   bool appears_binary = pretend_binary | sip (&filevec[0], skip_test);
 
@@ -816,13 +804,14 @@ read_files (struct file_data filevec[], bool pretend_binary)
   /* Allocate (one plus) a prime number of hash buckets.  Use a prime
      number between 1/3 and 2/3 of the value of equiv_allocs,
      approximately.  */
-  for (i = 9; (size_t) 1 << i < equivs_alloc / 3; i++)
+  int p;
+  for (p = 9; (size_t) 1 << p < equivs_alloc / 3; p++)
     continue;
-  nbuckets = ((size_t) 1 << i) - prime_offset[i];
+  nbuckets = ((size_t) 1 << p) - prime_offset[p];
   buckets = xcalloc (nbuckets + 1, sizeof *buckets);
   buckets++;
 
-  for (i = 0; i < 2; i++)
+  for (int i = 0; i < 2; i++)
     find_and_hash_each_line (&filevec[i]);
 
   filevec[0].equiv_max = filevec[1].equiv_max = equivs_index;
