@@ -178,8 +178,6 @@ static char const * const option_help_msgid[] = {
 static void
 usage (void)
 {
-  char const * const *p;
-
   printf (_("Usage: %s [OPTION]... FILE1 [FILE2 [SKIP1 [SKIP2]]]\n"),
           program_name);
   printf ("%s\n", _("Compare two files byte by byte."));
@@ -190,7 +188,7 @@ _("The optional SKIP1 and SKIP2 specify the number of bytes to skip\n"
   fputs (_("\
 Mandatory arguments to long options are mandatory for short options too.\n\
 "), stdout);
-  for (p = option_help_msgid;  *p;  p++)
+  for (char const *const *p = option_help_msgid;  *p;  p++)
     printf ("  %s\n", _(*p));
   printf ("\n%s\n\n%s\n%s\n",
           _("SKIP values may be followed by the following multiplicative suffixes:\n\
@@ -204,9 +202,6 @@ GB 1,000,000,000, G 1,073,741,824, and so on for T, P, E, Z, Y."),
 int
 main (int argc, char **argv)
 {
-  int c, exit_status;
-  size_t words_per_buffer;
-
   exit_failure = EXIT_TROUBLE;
   initialize_main (&argc, &argv);
   set_program_name (argv[0]);
@@ -218,6 +213,7 @@ main (int argc, char **argv)
 
   /* Parse command line options.  */
 
+  int c;
   while ((c = getopt_long (argc, argv, "bci:ln:sv", long_options, 0))
          != -1)
     switch (c)
@@ -368,11 +364,11 @@ main (int argc, char **argv)
 
   /* Allocate word-aligned buffers, with space for sentinels at the end.  */
 
-  words_per_buffer = (buf_size + 2 * sizeof (word) - 1) / sizeof (word);
+  size_t words_per_buffer = (buf_size + 2 * sizeof (word) - 1) / sizeof (word);
   buffer[0] = xmalloc (2 * sizeof (word) * words_per_buffer);
   buffer[1] = buffer[0] + words_per_buffer;
 
-  exit_status = cmp ();
+  int exit_status = cmp ();
 
   for (int f = 0; f < 2; f++)
     if (close (file_desc[f]) != 0)
@@ -380,7 +376,6 @@ main (int argc, char **argv)
   if (exit_status != EXIT_SUCCESS && comparison_type < type_no_stdout)
     check_stdout ();
   exit (exit_status);
-  return exit_status;
 }
 
 /* Compare the two files already open on 'file_desc[0]' and 'file_desc[1]',
@@ -391,19 +386,10 @@ main (int argc, char **argv)
 static int
 cmp (void)
 {
-  bool at_line_start = true;
-  off_t line_number = 1;	/* Line number (1...) of difference. */
-  off_t byte_number = 1;	/* Byte number (1...) of difference. */
-  intmax_t remaining = bytes;	/* Remaining bytes to compare, or -1.  */
-  size_t read0, read1;		/* Number of bytes read from each file. */
-  size_t first_diff;		/* Offset (0...) in buffers of 1st diff. */
-  size_t smaller;		/* The lesser of 'read0' and 'read1'. */
   word *buffer0 = buffer[0];
   word *buffer1 = buffer[1];
   char *buf0 = (char *) buffer0;
   char *buf1 = (char *) buffer1;
-  int differing = 0;
-  int f;
   int offset_width IF_LINT (= 0); /* IF_LINT due to GCC bug 101768.  */
 
   if (comparison_type == type_all_diffs)
@@ -411,7 +397,7 @@ cmp (void)
       off_t byte_number_max = (0 <= bytes && bytes <= TYPE_MAXIMUM (off_t)
 			       ? bytes : TYPE_MAXIMUM (off_t));
 
-      for (f = 0; f < 2; f++)
+      for (int f = 0; f < 2; f++)
         if (0 <= stat_buf[f].st_size && S_ISREG (stat_buf[f].st_mode))
           {
             off_t file_bytes = stat_buf[f].st_size - file_position (f);
@@ -423,7 +409,7 @@ cmp (void)
         continue;
     }
 
-  for (f = 0; f < 2; f++)
+  for (int f = 0; f < 2; f++)
     {
       off_t ig = ignore_initial[f];
       if (ig && file_position (f) == -1)
@@ -445,7 +431,12 @@ cmp (void)
         }
     }
 
-  do
+  bool at_line_start = true;
+  off_t line_number = 1;	/* Line number (1...) of difference. */
+  off_t byte_number = 1;	/* Byte number (1...) of difference. */
+  intmax_t remaining = bytes;	/* Remaining bytes to compare, or -1.  */
+
+  while (true)
     {
       size_t bytes_to_read = buf_size;
 
@@ -456,14 +447,16 @@ cmp (void)
           remaining -= bytes_to_read;
         }
 
-      read0 = block_read (file_desc[0], buf0, bytes_to_read);
+      ssize_t read0 = block_read (file_desc[0], buf0, bytes_to_read);
       if (read0 == SIZE_MAX)
         die (EXIT_TROUBLE, errno, "%s", file[0]);
-      read1 = block_read (file_desc[1], buf1, bytes_to_read);
+      ssize_t read1 = block_read (file_desc[1], buf1, bytes_to_read);
       if (read1 == SIZE_MAX)
         die (EXIT_TROUBLE, errno, "%s", file[1]);
 
-      smaller = MIN (read0, read1);
+      size_t smaller = MIN (read0, read1);
+
+      size_t first_diff;  /* Offset (0...) in buffers of 1st diff. */
 
       /* Optimize the common case where the buffers are the same.  */
       if (memcmp (buf0, buf1, smaller) == 0)
@@ -492,6 +485,8 @@ cmp (void)
           line_number += count_newlines (buf0, first_diff);
           at_line_start = buf0[first_diff - 1] == '\n';
         }
+
+      int differing = 0;
 
       if (first_diff < smaller)
         {
@@ -619,10 +614,10 @@ cmp (void)
 
           return EXIT_FAILURE;
         }
-    }
-  while (differing <= 0 && read0 == buf_size);
 
-  return differing == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
+      if (0 < differing || read0 != buf_size)
+	return differing == 0 ? EXIT_SUCCESS : EXIT_FAILURE;
+    }
 }
 
 /* Compare two blocks of memory P0 and P1 until they differ.
@@ -660,11 +655,10 @@ static size_t
 count_newlines (char *buf, size_t bufsize)
 {
   size_t count = 0;
-  char *p;
   char *lim = buf + bufsize;
   char ch = *lim;
   *lim = '\n';
-  for (p = buf; (p = rawmemchr (p, '\n')) != lim; p++)
+  for (char *p = buf; (p = rawmemchr (p, '\n')) != lim; p++)
     count++;
   *lim = ch;
   return count;
