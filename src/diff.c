@@ -60,8 +60,8 @@ static char const PROGRAM_NAME[] = "diff";
 struct regexp_list
 {
   char *regexps;	/* chars representing disjunction of the regexps */
-  size_t len;		/* chars used in 'regexps' */
-  size_t size;		/* size malloc'ed for 'regexps'; 0 if not malloc'ed */
+  idx_t len;		/* chars used in 'regexps' */
+  idx_t size;		/* size malloc'ed for 'regexps'; 0 if not malloc'ed */
   bool multiple_regexps;/* Does 'regexps' represent a disjunction?  */
   struct re_pattern_buffer *buf;
 };
@@ -246,7 +246,7 @@ static struct option const longopts[] =
 static char *
 option_list (char **optionvec, int count)
 {
-  size_t size = 1;
+  idx_t size = 1;
 
   for (int i = 0; i < count; i++)
     {
@@ -255,7 +255,7 @@ option_list (char **optionvec, int count)
 	xalloc_die ();
     }
 
-  char *result = xmalloc (size);
+  char *result = ximalloc (size);
   char *p = result;
 
   for (int i = 0; i < count; i++)
@@ -410,12 +410,12 @@ main (int argc, char **argv)
 		 "%>"
 		 "#endif /* @ */\n");
 
-	    size_t alloc = strlen (optarg);
+	    idx_t alloc = strlen (optarg);
             if (ckd_mul (&alloc, 7, alloc)
                 || ckd_add (&alloc, alloc,
                             sizeof C_ifdef_group_formats - 7 /* 7*"@" */))
 	      xalloc_die ();
-	    char *b = xmalloc (alloc);
+	    char *b = ximalloc (alloc);
 	    char *base = b;
 	    int changes = 0;
 
@@ -881,7 +881,7 @@ main (int argc, char **argv)
 static void
 add_regexp (struct regexp_list *reglist, char const *pattern)
 {
-  size_t patlen = strlen (pattern);
+  idx_t patlen = strlen (pattern);
   char const *m = re_compile_pattern (pattern, patlen, reglist->buf);
 
   if (m != 0)
@@ -889,10 +889,10 @@ add_regexp (struct regexp_list *reglist, char const *pattern)
   else
     {
       char *regexps = reglist->regexps;
-      size_t len = reglist->len;
+      idx_t len = reglist->len;
       bool multiple_regexps = reglist->multiple_regexps = regexps != 0;
-      size_t newlen = reglist->len = len + 2 * multiple_regexps + patlen;
-      size_t size = reglist->size;
+      idx_t newlen = reglist->len = len + 2 * multiple_regexps + patlen;
+      idx_t size = reglist->size;
 
       if (size <= newlen)
         {
