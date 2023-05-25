@@ -36,7 +36,6 @@
 #include <progname.h>
 #include <sh-quote.h>
 #include <stat-time.h>
-#include <stdckdint.h>
 #include <timespec.h>
 #include <version-etc.h>
 #include <xalloc.h>

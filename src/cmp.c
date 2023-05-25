@@ -358,9 +358,12 @@ main (int argc, char **argv)
 
   /* Guess a good block size for the files.  */
 
-  buf_size = buffer_lcm (STAT_BLOCKSIZE (stat_buf[0]),
-                         STAT_BLOCKSIZE (stat_buf[1]),
-                         PTRDIFF_MAX - sizeof (word));
+  idx_t blksize[2];
+  for (int f = 0; f < 2; f++)
+    if (STAT_BLOCKSIZE (stat_buf[0]) < 0
+	|| ckd_add (&blksize[f], STAT_BLOCKSIZE (stat_buf[0]), 0))
+      blksize[f] = 0;
+  buf_size = buffer_lcm (blksize[0], blksize[1], IDX_MAX - sizeof (word));
 
   /* Allocate word-aligned buffers, with space for sentinels at the end.  */
 
@@ -418,10 +421,10 @@ cmp (void)
           do
             {
               size_t bytes_to_read = MIN (ig, buf_size);
-              size_t r = block_read (file_desc[f], buf0, bytes_to_read);
+              ptrdiff_t r = block_read (file_desc[f], buf0, bytes_to_read);
               if (r != bytes_to_read)
                 {
-                  if (r == SIZE_MAX)
+                  if (r < 0)
                     die (EXIT_TROUBLE, errno, "%s", file[f]);
                   break;
                 }
@@ -447,11 +450,11 @@ cmp (void)
           remaining -= bytes_to_read;
         }
 
-      ssize_t read0 = block_read (file_desc[0], buf0, bytes_to_read);
-      if (read0 == SIZE_MAX)
+      ptrdiff_t read0 = block_read (file_desc[0], buf0, bytes_to_read);
+      if (read0 < 0)
         die (EXIT_TROUBLE, errno, "%s", file[0]);
-      ssize_t read1 = block_read (file_desc[1], buf1, bytes_to_read);
-      if (read1 == SIZE_MAX)
+      ptrdiff_t read1 = block_read (file_desc[1], buf1, bytes_to_read);
+      if (read1 < 0)
         die (EXIT_TROUBLE, errno, "%s", file[1]);
 
       size_t smaller = MIN (read0, read1);

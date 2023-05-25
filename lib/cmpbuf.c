@@ -36,22 +36,21 @@
 #define MIN(a, b) ((a) <= (b) ? (a) : (b))
 
 /* Read NBYTES bytes from descriptor FD into BUF.
-   NBYTES must not be SIZE_MAX.
    Return the number of characters successfully read.
-   On error, return SIZE_MAX, setting errno.
+   On error, return -1, setting errno.
    The number returned is always NBYTES unless end-of-file or error.  */
 
-size_t
-block_read (int fd, char *buf, size_t nbytes)
+ptrdiff_t
+block_read (int fd, char *buf, idx_t nbytes)
 {
   char *bp = buf;
   char const *buflim = buf + nbytes;
-  size_t readlim = MIN (SSIZE_MAX, SIZE_MAX);
+  idx_t readlim = MIN (IDX_MAX, MIN (SSIZE_MAX, SIZE_MAX));
 
   do
     {
-      size_t bytes_remaining = buflim - bp;
-      size_t bytes_to_read = MIN (bytes_remaining, readlim);
+      idx_t bytes_remaining = buflim - bp;
+      idx_t bytes_to_read = MIN (bytes_remaining, readlim);
       ssize_t nread = read (fd, bp, bytes_to_read);
       if (nread <= 0)
         {
@@ -74,7 +73,7 @@ block_read (int fd, char *buf, size_t nbytes)
           if (! SA_RESTART && errno == EINTR)
             continue;
 
-          return SIZE_MAX;
+          return -1;
         }
       bp += nread;
     }
@@ -87,21 +86,23 @@ block_read (int fd, char *buf, size_t nbytes)
    either A or B is zero, or if the multiple is greater than LCM_MAX,
    return a reasonable buffer size.  */
 
-size_t
-buffer_lcm (size_t a, size_t b, size_t lcm_max)
+idx_t
+buffer_lcm (idx_t a, idx_t b, idx_t lcm_max)
 {
-  /* Yield reasonable values if buffer sizes are zero.  */
-  if (!a)
-    return b ? b : 8 * 1024;
-  if (!b)
+  /* Yield reasonable values if buffer sizes are zero.  Although A and
+     B must be nonnegative, GCC generates better code from (A <= 0)
+     than from (A != 0).  */
+  if (a <= 0)
+    return b <= 0 ? 8 * 1024 : b;
+  if (b <= 0)
     return a;
 
   /* n = gcd (a, b) */
-  size_t m, n, r;
+  idx_t m, n, r;
   for (m = a, n = b;  (r = m % n) != 0;  m = n, n = r)
     continue;
 
   /* Yield a if there is an overflow.  */
-  size_t q = a / n, lcm;
+  idx_t q = a / n, lcm;
   return !ckd_mul (&lcm, b, q) && lcm <= lcm_max ? lcm : a;
 }

@@ -1210,20 +1210,22 @@ read_diff (char const *filea,
 #endif
 
   struct stat pipestat;
-  size_t current_chunk_size = (fstat (fd, &pipestat) == 0
-                               ? MAX (1, STAT_BLOCKSIZE (pipestat))
-                               : 8 * 1024);
-  char *diff_result = xmalloc (current_chunk_size);
+  idx_t current_chunk_size;
+  if (fstat (fd, &pipestat) < 0
+      || STAT_BLOCKSIZE (pipestat) <= 0
+      || ckd_add (&current_chunk_size, STAT_BLOCKSIZE (pipestat), 0))
+    current_chunk_size = 8 * 1024;
+  char *diff_result = ximalloc (current_chunk_size);
   size_t total = 0;
 
   for (;;)
     {
       size_t bytes_to_read = current_chunk_size - total;
-      size_t bytes = block_read (fd, diff_result + total, bytes_to_read);
+      ptrdiff_t bytes = block_read (fd, diff_result + total, bytes_to_read);
       total += bytes;
       if (bytes != bytes_to_read)
         {
-          if (bytes == SIZE_MAX)
+          if (bytes < 0)
             perror_with_exit (_("read failed"));
           break;
         }

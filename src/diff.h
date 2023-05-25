@@ -377,7 +377,7 @@ extern void pr_forward_ed_script (struct change *);
 extern void print_ifdef_script (struct change *);
 
 /* io.c */
-extern void file_block_read (struct file_data *, size_t);
+extern void file_block_read (struct file_data *, idx_t);
 extern bool read_files (struct file_data[], bool);
 
 /* normal.c */

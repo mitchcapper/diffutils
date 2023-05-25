@@ -22,7 +22,6 @@
 #include <binary-io.h>
 #include <cmpbuf.h>
 #include <file-type.h>
-#include <stdckdint.h>
 #include <xalloc.h>
 
 /* The type of a hash value.  */
@@ -86,13 +85,14 @@ file_buffer (struct file_data const *f)
 /* Read a block of data into a file buffer, checking for EOF and error.  */
 
 void
-file_block_read (struct file_data *current, size_t size)
+file_block_read (struct file_data *current, idx_t size)
 {
   if (size && ! current->eof)
     {
-      size_t s = block_read (current->desc,
-                             file_buffer (current) + current->buffered, size);
-      if (s == SIZE_MAX)
+      ptrdiff_t s = block_read (current->desc,
+				file_buffer (current) + current->buffered,
+				size);
+      if (s < 0)
         pfatal_with_name (current->name);
       current->buffered += s;
       current->eof = s < size;
@@ -122,9 +122,12 @@ sip (struct file_data *current, bool skip_test)
     }
   else
     {
-      current->bufsize = buffer_lcm (sizeof (word),
-                                     STAT_BLOCKSIZE (current->stat),
-                                     PTRDIFF_MAX - 2 * sizeof (word));
+      idx_t blksize;
+      if (STAT_BLOCKSIZE (current->stat) < 0
+	  || ckd_add (&blksize, STAT_BLOCKSIZE (current->stat), 0))
+	blksize = 0;
+      current->bufsize = buffer_lcm (sizeof (word), blksize,
+                                     IDX_MAX - 2 * sizeof (word));
       current->buffer = xmalloc (current->bufsize);
 
 #ifdef __KLIBC__
@@ -182,9 +185,10 @@ slurp (struct file_data *current)
          Allocate just enough room for appended newline plus word sentinel,
          plus word-alignment since we want the buffer word-aligned.  */
       off_t file_size = current->stat.st_size;
-      size_t cc;
+      idx_t cc;
       if (ckd_add (&cc, 2 * sizeof (word) - file_size % sizeof (word),
-                   file_size))
+                   file_size)
+	  || SIZE_MAX < cc)
         xalloc_die ();
 
       if (current->bufsize < cc)
@@ -199,7 +203,7 @@ slurp (struct file_data *current)
 
       if (current->buffered <= file_size)
         {
-          file_block_read (current, file_size + 1 - current->buffered);
+          file_block_read (current, file_size - current->buffered + 1);
           if (current->buffered <= file_size)
             return;
         }

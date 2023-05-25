@@ -59,6 +59,7 @@
 
 #include <limits.h>
 #include <locale.h>
+#include <stdckdint.h>
 #include <stddef.h>
 #include <inttypes.h>
 
@@ -109,6 +110,7 @@ int strcasecmp (char const *, char const *);
 #define MAX(a, b) ((a) >= (b) ? (a) : (b))
 
 #include <attribute.h>
+#include <idx.h>
 #include <intprops.h>
 #include <propername.h>
 

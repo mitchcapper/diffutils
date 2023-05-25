@@ -478,12 +478,14 @@ diff_2_files (struct comparison *cmp)
         /* Scan both files, a buffer at a time, looking for a difference.  */
         {
           /* Allocate same-sized buffers for both files.  */
-          size_t lcm_max = PTRDIFF_MAX - 1;
-          size_t buffer_size =
+          idx_t lcm_max = IDX_MAX - 1, blksize[2];
+	  for (int f = 0; f < 2; f++)
+	    if (STAT_BLOCKSIZE (cmp->file[f].stat) < 0
+		|| ckd_add (&blksize[f], STAT_BLOCKSIZE (cmp->file[f].stat), 0))
+	      blksize[f] = 0;
+          idx_t buffer_size =
             buffer_lcm (sizeof (word),
-                        buffer_lcm (STAT_BLOCKSIZE (cmp->file[0].stat),
-                                    STAT_BLOCKSIZE (cmp->file[1].stat),
-                                    lcm_max),
+                        buffer_lcm (blksize[0], blksize[1], lcm_max),
                         lcm_max);
           for (int f = 0; f < 2; f++)
             cmp->file[f].buffer = xrealloc (cmp->file[f].buffer, buffer_size);
