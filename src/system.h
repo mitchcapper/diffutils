@@ -117,11 +117,11 @@ int strcasecmp (char const *, char const *);
 #include "version.h"
 
 /* Type used for fast comparison of several bytes at a time.
-   This used to be uintmax_t, but changing it to size_t
+   This used to be uintmax_t, but changing it to the size of a pointer
    made plain 'cmp' 90% faster (GCC 4.8.1, x86).  */
 
 #ifndef word
-# define word size_t
+typedef void *word;
 #endif
 
 /* The signed integer type of a line number.  Since files are read
