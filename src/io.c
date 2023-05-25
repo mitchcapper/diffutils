@@ -118,7 +118,7 @@ sip (struct file_data *current, bool skip_test)
     {
       /* Leave room for a sentinel.  */
       current->bufsize = sizeof (word);
-      current->buffer = xmalloc (current->bufsize);
+      current->buffer = ximalloc (current->bufsize);
     }
   else
     {
@@ -128,7 +128,7 @@ sip (struct file_data *current, bool skip_test)
 	blksize = 0;
       current->bufsize = buffer_lcm (sizeof (word), blksize,
                                      IDX_MAX - 2 * sizeof (word));
-      current->buffer = xmalloc (current->bufsize);
+      current->buffer = ximalloc (current->bufsize);
 
 #ifdef __KLIBC__
       /* Skip test if seek is not possible */
@@ -187,14 +187,13 @@ slurp (struct file_data *current)
       off_t file_size = current->stat.st_size;
       idx_t cc;
       if (ckd_add (&cc, 2 * sizeof (word) - file_size % sizeof (word),
-                   file_size)
-	  || SIZE_MAX < cc)
+                   file_size))
         xalloc_die ();
 
       if (current->bufsize < cc)
         {
           current->bufsize = cc;
-          current->buffer = xrealloc (current->buffer, cc);
+          current->buffer = xirealloc (current->buffer, cc);
         }
 
       /* Try to read at least 1 more byte than the size indicates, to
@@ -218,7 +217,7 @@ slurp (struct file_data *current)
     {
       while (current->buffered == current->bufsize)
         {
-          if (PTRDIFF_MAX / 2 - sizeof (word) < current->bufsize)
+          if (IDX_MAX / 2 - sizeof (word) < current->bufsize)
             xalloc_die ();
           current->bufsize *= 2;
           current->buffer = xrealloc (current->buffer, current->bufsize);
@@ -227,7 +226,7 @@ slurp (struct file_data *current)
 
       /* Allocate just enough room for appended newline plus word
          sentinel, plus word-alignment.  */
-      size_t cc = current->buffered + 2 * sizeof (word);
+      idx_t cc = current->buffered + 2 * sizeof (word);
       current->bufsize = cc - cc % sizeof (word);
       current->buffer = xrealloc (current->buffer, current->bufsize);
     }
@@ -495,7 +494,7 @@ find_and_hash_each_line (struct file_data *current)
 static void
 prepare_text (struct file_data *current)
 {
-  size_t buffered = current->buffered;
+  idx_t buffered = current->buffered;
   char *p = file_buffer (current);
   if (!p)
     return;
@@ -568,8 +567,8 @@ find_identical_ends (struct file_data filevec[])
   char *buffer1 = (char *) w1;
   char *p0 = buffer0;
   char *p1 = buffer1;
-  size_t n0 = filevec[0].buffered;
-  size_t n1 = filevec[1].buffered;
+  idx_t n0 = filevec[0].buffered;
+  idx_t n1 = filevec[1].buffered;
 
   if (p0 == p1)
     /* The buffers are the same; sentinels won't work.  */

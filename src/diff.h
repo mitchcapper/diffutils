@@ -280,10 +280,10 @@ struct file_data {
 
     /* Allocated size of buffer, in bytes.  Always a multiple of
        sizeof *buffer.  */
-    size_t bufsize;
+    idx_t bufsize;
 
     /* Number of valid bytes now in the buffer.  */
-    size_t buffered;
+    idx_t buffered;
 
     /* Array of pointers to lines in the file.  */
     char const **linbuf;
