@@ -82,7 +82,7 @@ enum diff_type {
 struct diff_block {
   lin ranges[2][2];		/* Ranges are inclusive */
   char **lines[2];		/* The actual lines (may contain nulls) */
-  size_t *lengths[2];		/* Line lengths (including newlines, if any) */
+  idx_t *lengths[2];		/* Line lengths (including newlines, if any) */
   struct diff_block *next;
 #ifdef GCC_LINT
   struct diff_block *n2;	/* Used only when freeing.  */
@@ -95,7 +95,7 @@ struct diff3_block {
   enum diff_type correspond;	/* Type of diff */
   lin ranges[3][2];		/* Ranges are inclusive */
   char **lines[3];		/* The actual lines (may contain nulls) */
-  size_t *lengths[3];		/* Line lengths (including newlines, if any) */
+  idx_t *lengths[3];		/* Line lengths (including newlines, if any) */
   struct diff3_block *next;
 };
 
@@ -179,10 +179,10 @@ static bool finalwrite;
 static bool merge;
 
 static char *read_diff (char const *, char const *, char **);
-static char *scan_diff_line (char *, char **, size_t *, char *, char);
+static char *scan_diff_line (char *, char **, idx_t *, char *, char);
 static enum diff_type process_diff_control (char **, struct diff_block *);
-static bool compare_line_list (char * const[], size_t const[], char * const[], size_t const[], lin);
-static bool copy_stringlist (char * const[], size_t const[], char *[], size_t[], lin);
+static bool compare_line_list (char * const[], idx_t const[], char * const[], idx_t const[], lin);
+static bool copy_stringlist (char * const[], idx_t const[], char *[], idx_t[], lin);
 static bool output_diff3_edscript (FILE *, struct diff3_block *, int const[3], int const[3], char const *, char const *, char const *);
 static bool output_diff3_merge (FILE *, FILE *, struct diff3_block *, int const[3], int const[3], char const *, char const *, char const *);
 static struct diff3_block *create_diff3_block (lin, lin, lin, lin, lin, lin);
@@ -834,14 +834,14 @@ using_to_diff3_block (struct diff_block *using[2],
    incomplete.  Upon successful completion of the copy, return true.  */
 
 static bool
-copy_stringlist (char * const fromptrs[], size_t const fromlengths[],
-                 char *toptrs[], size_t tolengths[],
+copy_stringlist (char * const fromptrs[], idx_t const fromlengths[],
+                 char *toptrs[], idx_t tolengths[],
                  lin copynum)
 {
   register char * const *f = fromptrs;
   register char **t = toptrs;
-  register size_t const *fl = fromlengths;
-  register size_t *tl = tolengths;
+  idx_t const *fl = fromlengths;
+  idx_t *tl = tolengths;
 
   while (copynum--)
     {
@@ -888,8 +888,8 @@ create_diff3_block (lin low0, lin high0,
   lin numlines = D_NUMLINES (result, FILE0);
   if (numlines)
     {
-      D_LINEARRAY (result, FILE0) = xcalloc (numlines, sizeof (char *));
-      D_LENARRAY (result, FILE0) = xcalloc (numlines, sizeof (size_t));
+      D_LINEARRAY (result, FILE0) = xicalloc (numlines, sizeof (char *));
+      D_LENARRAY (result, FILE0) = xicalloc (numlines, sizeof (idx_t));
     }
   else
     {
@@ -900,8 +900,8 @@ create_diff3_block (lin low0, lin high0,
   numlines = D_NUMLINES (result, FILE1);
   if (numlines)
     {
-      D_LINEARRAY (result, FILE1) = xcalloc (numlines, sizeof (char *));
-      D_LENARRAY (result, FILE1) = xcalloc (numlines, sizeof (size_t));
+      D_LINEARRAY (result, FILE1) = xicalloc (numlines, sizeof (char *));
+      D_LENARRAY (result, FILE1) = xicalloc (numlines, sizeof (idx_t));
     }
   else
     {
@@ -912,8 +912,8 @@ create_diff3_block (lin low0, lin high0,
   numlines = D_NUMLINES (result, FILE2);
   if (numlines)
     {
-      D_LINEARRAY (result, FILE2) = xcalloc (numlines, sizeof (char *));
-      D_LENARRAY (result, FILE2) = xcalloc (numlines, sizeof (size_t));
+      D_LINEARRAY (result, FILE2) = xicalloc (numlines, sizeof (char *));
+      D_LENARRAY (result, FILE2) = xicalloc (numlines, sizeof (idx_t));
     }
   else
     {
@@ -929,14 +929,14 @@ create_diff3_block (lin low0, lin high0,
    Return 1 if they are equivalent, 0 if not.  */
 
 static bool
-compare_line_list (char * const list1[], size_t const lengths1[],
-                   char * const list2[], size_t const lengths2[],
+compare_line_list (char * const list1[], idx_t const lengths1[],
+                   char * const list2[], idx_t const lengths2[],
                    lin nl)
 {
   char * const *l1 = list1;
   char * const *l2 = list2;
-  size_t const *lgths1 = lengths1;
-  size_t const *lgths2 = lengths2;
+  idx_t const *lgths1 = lengths1;
+  idx_t const *lgths2 = lengths2;
 
   while (nl--)
     if (!*l1 || !*l2 || *lgths1 != *lgths2++
@@ -998,8 +998,8 @@ process_diff (char const *filea,
       if (dt != DIFF_ADD)
         {
           lin numlines = D_NUMLINES (bptr, 0);
-          bptr->lines[0] = xnmalloc (numlines, sizeof *bptr->lines[0]);
-          bptr->lengths[0] = xnmalloc (numlines, sizeof *bptr->lengths[0]);
+          bptr->lines[0] = xinmalloc (numlines, sizeof *bptr->lines[0]);
+          bptr->lengths[0] = xinmalloc (numlines, sizeof *bptr->lengths[0]);
           for (lin i = 0; i < numlines; i++)
             scan_diff = scan_diff_line (scan_diff,
                                         &(bptr->lines[0][i]),
@@ -1021,8 +1021,8 @@ process_diff (char const *filea,
       if (dt != DIFF_DELETE)
         {
           lin numlines = D_NUMLINES (bptr, 1);
-          bptr->lines[1] = xnmalloc (numlines, sizeof *bptr->lines[1]);
-          bptr->lengths[1] = xnmalloc (numlines, sizeof *bptr->lengths[1]);
+          bptr->lines[1] = xinmalloc (numlines, sizeof *bptr->lines[1]);
+          bptr->lengths[1] = xinmalloc (numlines, sizeof *bptr->lengths[1]);
           for (lin i = 0; i < numlines; i++)
             scan_diff = scan_diff_line (scan_diff,
                                         &(bptr->lines[1][i]),
@@ -1216,11 +1216,11 @@ read_diff (char const *filea,
       || ckd_add (&current_chunk_size, STAT_BLOCKSIZE (pipestat), 0))
     current_chunk_size = 8 * 1024;
   char *diff_result = ximalloc (current_chunk_size);
-  size_t total = 0;
+  idx_t total = 0;
 
   for (;;)
     {
-      size_t bytes_to_read = current_chunk_size - total;
+      idx_t bytes_to_read = current_chunk_size - total;
       ptrdiff_t bytes = block_read (fd, diff_result + total, bytes_to_read);
       total += bytes;
       if (bytes != bytes_to_read)
@@ -1232,7 +1232,7 @@ read_diff (char const *filea,
       if (PTRDIFF_MAX / 2 <= current_chunk_size)
         xalloc_die ();
       current_chunk_size *= 2;
-      diff_result = xrealloc (diff_result, current_chunk_size);
+      diff_result = xirealloc (diff_result, current_chunk_size);
     }
 
   if (total != 0 && diff_result[total-1] != '\n')
@@ -1281,7 +1281,7 @@ read_diff (char const *filea,
    This next routine began life as a macro and many parameters in it
    are used as call-by-reference values.  */
 static char *
-scan_diff_line (char *scan_ptr, char **set_start, size_t *set_length,
+scan_diff_line (char *scan_ptr, char **set_start, idx_t *set_length,
                 char *limit, char leadingchar)
 {
   if (!(scan_ptr[0] == leadingchar
@@ -1387,7 +1387,7 @@ output_diff3 (FILE *outputfile, struct diff3_block *diff,
               {
                 fputs (line_prefix, outputfile);
                 char *cp = D_RELNUM (ptr, realfile, line);
-                size_t length = D_RELLEN (ptr, realfile, line);
+                idx_t length = D_RELLEN (ptr, realfile, line);
                 fwrite (cp, sizeof (char), length, outputfile);
                 if (hight - lowt <= line)
                   {
