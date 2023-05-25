@@ -57,8 +57,8 @@ hard_locale_LC_MESSAGES (void)
 
 static int cmp (void);
 static off_t file_position (int);
-static size_t block_compare (word const *, word const *) ATTRIBUTE_PURE;
-static size_t count_newlines (char *, size_t);
+static idx_t block_compare (word const *, word const *) ATTRIBUTE_PURE;
+static idx_t count_newlines (char *, idx_t);
 static void sprintc (char *, unsigned char);
 
 /* Filenames of the compared files.  */
@@ -75,7 +75,7 @@ static struct stat stat_buf[2];
 static word *buffer[2];
 
 /* Optimal block size for the files.  */
-static size_t buf_size;
+static idx_t buf_size;
 
 /* Initial prefix to ignore for each file.  */
 static off_t ignore_initial[2];
@@ -367,7 +367,7 @@ main (int argc, char **argv)
 
   /* Allocate word-aligned buffers, with space for sentinels at the end.  */
 
-  size_t words_per_buffer = (buf_size + 2 * sizeof (word) - 1) / sizeof (word);
+  idx_t words_per_buffer = (buf_size + 2 * sizeof (word) - 1) / sizeof (word);
   buffer[0] = xmalloc (2 * sizeof (word) * words_per_buffer);
   buffer[1] = buffer[0] + words_per_buffer;
 
@@ -420,7 +420,7 @@ cmp (void)
           /* lseek failed; read and discard the ignored initial prefix.  */
           do
             {
-              size_t bytes_to_read = MIN (ig, buf_size);
+              idx_t bytes_to_read = MIN (ig, buf_size);
               ptrdiff_t r = block_read (file_desc[f], buf0, bytes_to_read);
               if (r != bytes_to_read)
                 {
@@ -441,7 +441,7 @@ cmp (void)
 
   while (true)
     {
-      size_t bytes_to_read = buf_size;
+      idx_t bytes_to_read = buf_size;
 
       if (0 <= remaining)
         {
@@ -457,9 +457,9 @@ cmp (void)
       if (read1 < 0)
         die (EXIT_TROUBLE, errno, "%s", file[1]);
 
-      size_t smaller = MIN (read0, read1);
+      idx_t smaller = MIN (read0, read1);
 
-      size_t first_diff;  /* Offset (0...) in buffers of 1st diff. */
+      idx_t first_diff;  /* Offset (0...) in buffers of 1st diff. */
 
       /* Optimize the common case where the buffers are the same.  */
       if (memcmp (buf0, buf1, smaller) == 0)
@@ -629,7 +629,7 @@ cmp (void)
 
    Return the offset of the first byte that differs.  */
 
-static size_t
+static idx_t
 block_compare (word const *p0, word const *p1)
 {
   word const *l0, *l1;
@@ -654,10 +654,10 @@ block_compare (word const *p0, word const *p1)
 /* Return the number of newlines in BUF, of size BUFSIZE,
    where BUF[NBYTES] is available for use as a sentinel.  */
 
-static size_t
-count_newlines (char *buf, size_t bufsize)
+static idx_t
+count_newlines (char *buf, idx_t bufsize)
 {
-  size_t count = 0;
+  idx_t count = 0;
   char *lim = buf + bufsize;
   char ch = *lim;
   *lim = '\n';
