@@ -57,8 +57,8 @@ block_read (int fd, char *buf, idx_t nbytes)
           if (nread == 0)
             break;
 
-          /* Accommodate Tru64 5.1, which can't read more than INT_MAX
-             bytes at a time.  They call that a 64-bit OS?  */
+          /* Accommodate FreeBSD 13, which can't read more than INT_MAX bytes
+	     when debug.iosize_max_clamp is nonzero.  */
           if (errno == EINVAL && INT_MAX < bytes_to_read)
             {
               readlim = INT_MAX;
