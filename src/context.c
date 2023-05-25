@@ -492,7 +492,7 @@ find_function (char const * const *linbuf, lin linenum)
     {
       /* See if this line is what we want.  */
       char const *line = linbuf[i];
-      size_t linelen = linbuf[i + 1] - line - 1;
+      idx_t linelen = linbuf[i + 1] - line - 1;
 
       /* This line is for documentation; in practice it's equivalent
 	 to LEN = LINELEN and no machine code is generated.  */
