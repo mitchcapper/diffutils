@@ -84,15 +84,15 @@ discard_confusing_lines (struct file_data filevec[])
 
   for (int f = 0; f < 2; f++)
     {
-      size_t end = filevec[f].buffered_lines;
+      lin end = filevec[f].buffered_lines;
       char *discards = discarded[f];
       lin *counts = equiv_count[1 - f];
       lin *equivs = filevec[f].equivs;
-      size_t many = 5;
+      lin many = 5;
 
       /* Multiply MANY by approximate square root of number of lines.
          That is the threshold for provisionally discardable lines.  */
-      for (size_t tem = end / 64; (tem = tem >> 2) > 0; )
+      for (lin tem = end >> 6; (tem = tem >> 2) > 0; )
         many *= 2;
 
       for (lin i = 0; i < end; i++)
@@ -526,8 +526,8 @@ diff_2_files (struct comparison *cmp)
          is an insertion or deletion.
          Allocate an extra element, always 0, at each end of each vector.  */
 
-      size_t s = cmp->file[0].buffered_lines + cmp->file[1].buffered_lines + 4;
-      char *flag_space = xzalloc (s);
+      char *flag_space = xizalloc (cmp->file[0].buffered_lines
+				   + cmp->file[1].buffered_lines + 4);
       cmp->file[0].changed = flag_space + 1;
       cmp->file[1].changed = flag_space + cmp->file[0].buffered_lines + 3;
 
