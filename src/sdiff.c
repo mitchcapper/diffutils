@@ -305,17 +305,17 @@ ck_fclose (FILE *f)
     perror_fatal ("fclose");
 }
 
-static size_t
-ck_fread (char *buf, size_t size, FILE *f)
+static idx_t
+ck_fread (char *buf, idx_t size, FILE *f)
 {
-  size_t r = fread (buf, sizeof (char), size, f);
+  idx_t r = fread (buf, sizeof (char), size, f);
   if (r == 0 && ferror (f))
     perror_fatal (_("read failed"));
   return r;
 }
 
 static void
-ck_fwrite (char const *buf, size_t size, FILE *f)
+ck_fwrite (char const *buf, idx_t size, FILE *f)
 {
   if (fwrite (buf, sizeof (char), size, f) != size)
     perror_fatal (_("write failed"));
@@ -339,9 +339,9 @@ expand_name (char *name, bool is_dir, char const *other_name)
     {
       /* Yield NAME/BASE, where BASE is OTHER_NAME's basename.  */
       char const *base = last_component (other_name);
-      size_t namelen = strlen (name), baselen = base_len (base);
+      idx_t namelen = strlen (name), baselen = base_len (base);
       bool insert_slash = *last_component (name) && name[namelen - 1] != '/';
-      char *r = xmalloc (namelen + insert_slash + baselen + 1);
+      char *r = ximalloc (namelen + insert_slash + baselen + 1);
       char *p = stpcpy (r, name);
       *p = '/';
       p = mempcpy (p + insert_slash, base, baselen);
@@ -366,10 +366,10 @@ lf_init (struct line_filter *lf, FILE *infile)
 }
 
 /* Fill an exhausted line_filter buffer from its INFILE */
-static size_t
+static idx_t
 lf_refill (struct line_filter *lf)
 {
-  size_t s = ck_fread (lf->buffer, SDIFF_BUFSIZE, lf->infile);
+  idx_t s = ck_fread (lf->buffer, SDIFF_BUFSIZE, lf->infile);
   lf->bufpos = lf->buffer;
   lf->buflim = lf->buffer + s;
   lf->buflim[0] = '\n';
@@ -425,13 +425,13 @@ lf_skip (struct line_filter *lf, lin lines)
 
 /* Snarf a line into a buffer.  Return EOF if EOF, 0 if error, 1 if OK.  */
 static int
-lf_snarf (struct line_filter *lf, char *buffer, size_t bufsize)
+lf_snarf (struct line_filter *lf, char *buffer, idx_t bufsize)
 {
   for (;;)
     {
       char *start = lf->bufpos;
       char *next = rawmemchr (start, '\n');
-      size_t s = next - start;
+      idx_t s = next - start;
       if (bufsize <= s)
         return 0;
       buffer = mempcpy (buffer, start, s);
@@ -706,7 +706,7 @@ main (int argc, char *argv[])
 static void
 diffarg (char const *a)
 {
-  static size_t diffargs, diffarglim;
+  static idx_t diffargs, diffarglim;
 
   if (diffargs == diffarglim)
     {
@@ -1041,7 +1041,7 @@ edit (struct line_filter *left, char const *lname, lin lline, lin llen,
 
           char buf[SDIFF_BUFSIZE];
           tmp = ck_fopen (tmpname, "r");
-          for (size_t size;
+          for (idx_t size;
                (size = ck_fread (buf, SDIFF_BUFSIZE, tmp)) != 0; )
             {
               checksigs ();
