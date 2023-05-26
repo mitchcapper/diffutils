@@ -58,7 +58,7 @@ struct msg
   char const *msgid;
 
   /* Number of bytes in ARGS.  */
-  size_t argbytes;
+  idx_t argbytes;
 
   /* Arg strings, each '\0' terminated, concatenated.  */
   char args[FLEXIBLE_ARRAY_MEMBER];
@@ -112,7 +112,7 @@ message (char const *format_msgid, ...)
 
   if (paginate)
     {
-      size_t argbytes = 0;
+      idx_t argbytes = 0;
 
       for (char const *m = format_msgid; *m; m++)
 	if (*m == '%')
@@ -407,7 +407,7 @@ static struct color_ext_type *color_ext_list = nullptr;
 
 struct bin_str
   {
-    size_t len;			/* Number of bytes */
+    idx_t len;			/* Number of bytes */
     const char *string;		/* Pointer to the same */
   };
 
@@ -433,7 +433,7 @@ struct color_ext_type
 
 static bool
 get_funky_string (char **dest, const char **src, bool equals_end,
-                  size_t *output_count)
+                  idx_t *output_count)
 {
   enum {
     ST_GND, ST_BACKSLASH, ST_OCTAL, ST_HEX, ST_CARET, ST_END, ST_ERROR
@@ -442,7 +442,7 @@ get_funky_string (char **dest, const char **src, bool equals_end,
   char const *p = *src;		/* We don't want to double-indirect */
   char *q = *dest;		/* the whole darn time.  */
 
-  size_t count = 0;		/* No characters counted in yet.  */
+  idx_t count = 0;		/* No characters counted in yet.  */
   char num = 0;			/* For numerical codes.  */
 
   while (state < ST_END)
@@ -842,7 +842,7 @@ static char *
 c_escape (char const *str)
 {
   char const *s;
-  size_t plus = 0;
+  idx_t plus = 0;
   bool must_quote = false;
 
   for (s = str; *s; s++)
@@ -869,8 +869,7 @@ c_escape (char const *str)
 
   if (must_quote || plus)
     {
-      size_t s_len = s - str;
-      char *buffer = xmalloc (s_len + plus + 3);
+      char *buffer = ximalloc (s - str + plus + 3);
       char *b = buffer;
 
       *b++ = '"';
@@ -1351,11 +1350,11 @@ output_1_line (char const *base, char const *limit, char const *flag_format,
   enum { MAX_CHUNK = 1024 };
   if (!expand_tabs)
     {
-      size_t left = limit - base;
+      idx_t left = limit - base;
       while (left)
         {
-          size_t to_write = MIN (left, MAX_CHUNK);
-          size_t written = fwrite (base, sizeof (char), to_write, outfile);
+          idx_t to_write = MIN (left, MAX_CHUNK);
+          idx_t written = fwrite (base, sizeof (char), to_write, outfile);
           if (written < to_write)
             return;
           base += written;
@@ -1368,7 +1367,7 @@ output_1_line (char const *base, char const *limit, char const *flag_format,
       register FILE *out = outfile;
       register char const *t = base;
       intmax_t tab = 0, column = 0, tab_size = tabsize;
-      size_t counter_proc_signals = 0;
+      int counter_proc_signals = 0;
 
       while (t < limit)
         {
@@ -1543,9 +1542,9 @@ analyze_hunk (struct change *hunk,
               lin *first1, lin *last1)
 {
   bool trivial = ignore_blank_lines || ignore_regexp.fastmap;
-  size_t trivial_length = ignore_blank_lines - 1;
+  int trivial_length = ignore_blank_lines - 1;
     /* If 0, ignore zero-length lines;
-       if SIZE_MAX, do not ignore lines just because of their length.  */
+       if -1, do not ignore lines just because of their length.  */
 
   bool skip_white_space =
     ignore_blank_lines && IGNORE_TRAILING_SPACE <= ignore_white_space;
@@ -1574,7 +1573,7 @@ analyze_hunk (struct change *hunk,
           char const *line = linbuf0[i];
           char const *lastbyte = linbuf0[i + 1] - 1;
           char const *newline = lastbyte + (*lastbyte != '\n');
-          size_t len = newline - line;
+          idx_t len = newline - line;
           char const *p = line;
           if (skip_white_space)
             for (; *p != '\n'; p++)
@@ -1595,7 +1594,7 @@ analyze_hunk (struct change *hunk,
           char const *line = linbuf1[i];
           char const *lastbyte = linbuf1[i + 1] - 1;
           char const *newline = lastbyte + (*lastbyte != '\n');
-          size_t len = newline - line;
+          idx_t len = newline - line;
           char const *p = line;
           if (skip_white_space)
             for (; *p != '\n'; p++)
