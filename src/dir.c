@@ -32,7 +32,7 @@
 
 struct dirdata
 {
-  size_t nnames;	/* Number of names.  */
+  idx_t nnames;	/* Number of names.  */
   char const **names;	/* Sorted names of files in dir, followed by 0.  */
   char *data;	/* Allocated storage for file names.  */
 };
@@ -53,7 +53,7 @@ static bool
 dir_read (struct file_data const *dir, struct dirdata *dirdata)
 {
   /* Number of files in directory.  */
-  size_t nnames = 0;
+  idx_t nnames = 0;
 
   /* Allocated and used storage for file name data.  */
   char *data;
@@ -70,9 +70,9 @@ dir_read (struct file_data const *dir, struct dirdata *dirdata)
 
       /* Initialize the table of filenames.  */
 
-      size_t data_alloc = 512;
-      size_t data_used = 0;
-      dirdata->data = data = xmalloc (data_alloc);
+      idx_t data_alloc = 512;
+      idx_t data_used = 0;
+      dirdata->data = data = ximalloc (data_alloc);
 
       /* Read the directory entries, and insert the subfiles
          into the 'data' table.  */
@@ -85,7 +85,7 @@ dir_read (struct file_data const *dir, struct dirdata *dirdata)
 	    break;
 
           char *d_name = next->d_name;
-          size_t d_size = _D_EXACT_NAMLEN (next) + 1;
+          idx_t d_size = _D_EXACT_NAMLEN (next) + 1;
 
           /* Ignore "." and "..".  */
           if (d_name[0] == '.'
@@ -95,11 +95,11 @@ dir_read (struct file_data const *dir, struct dirdata *dirdata)
           if (excluded_file_name (excluded, d_name))
             continue;
 
-          while (data_alloc < data_used + d_size)
+          while (data_alloc - data_used < d_size)
             {
               if (PTRDIFF_MAX / 2 <= data_alloc)
                 xalloc_die ();
-              dirdata->data = data = xrealloc (data, data_alloc *= 2);
+              dirdata->data = data = xirealloc (data, data_alloc *= 2);
             }
 
           memcpy (data + data_used, d_name, d_size);
@@ -122,10 +122,10 @@ dir_read (struct file_data const *dir, struct dirdata *dirdata)
     }
 
   /* Create the 'names' table from the 'data' table.  */
-  char const **names = xnmalloc (nnames + 1, sizeof *names);
+  char const **names = xinmalloc (nnames + 1, sizeof *names);
   dirdata->names = names;
   dirdata->nnames = nnames;
-  for (size_t i = 0;  i < nnames;  i++)
+  for (idx_t i = 0; i < nnames; i++)
     {
       names[i] = data;
       data += strlen (data) + 1;
