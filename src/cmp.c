@@ -368,7 +368,7 @@ main (int argc, char **argv)
   /* Allocate word-aligned buffers, with space for sentinels at the end.  */
 
   idx_t words_per_buffer = (buf_size + 2 * sizeof (word) - 1) / sizeof (word);
-  buffer[0] = xmalloc (2 * sizeof (word) * words_per_buffer);
+  buffer[0] = xinmalloc (words_per_buffer, 2 * sizeof (word));
   buffer[1] = buffer[0] + words_per_buffer;
 
   int exit_status = cmp ();

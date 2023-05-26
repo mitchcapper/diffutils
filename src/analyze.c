@@ -51,8 +51,8 @@ static void
 discard_confusing_lines (struct file_data filevec[])
 {
   /* Allocate our results.  */
-  lin *p = xmalloc ((filevec[0].buffered_lines + filevec[1].buffered_lines)
-		    * (2 * sizeof *p));
+  lin *p = xinmalloc (filevec[0].buffered_lines + filevec[1].buffered_lines,
+		      2 * sizeof *p);
   for (int f = 0; f < 2; f++)
     {
       filevec[f].undiscarded = p;  p += filevec[f].buffered_lines;
@@ -62,7 +62,7 @@ discard_confusing_lines (struct file_data filevec[])
   /* Set up equiv_count[F][I] as the number of lines in file F
      that fall in equivalence class I.  */
 
-  p = xcalloc (filevec[0].equiv_max, 2 * sizeof *p);
+  p = xicalloc (filevec[0].equiv_max, 2 * sizeof *p);
   lin *equiv_count[2];
   equiv_count[0] = p;
   equiv_count[1] = p + filevec[0].equiv_max;
@@ -75,8 +75,8 @@ discard_confusing_lines (struct file_data filevec[])
   /* Set up tables of which lines are going to be discarded.  */
 
   char *discarded[2];
-  discarded[0] = xzalloc (filevec[0].buffered_lines
-			  + filevec[1].buffered_lines);
+  discarded[0] = xizalloc (filevec[0].buffered_lines
+			   + filevec[1].buffered_lines);
   discarded[1] = discarded[0] + filevec[0].buffered_lines;
 
   /* Mark to be discarded each line that matches no line of the other file.
@@ -488,7 +488,7 @@ diff_2_files (struct comparison *cmp)
                         buffer_lcm (blksize[0], blksize[1], lcm_max),
                         lcm_max);
           for (int f = 0; f < 2; f++)
-            cmp->file[f].buffer = xrealloc (cmp->file[f].buffer, buffer_size);
+            cmp->file[f].buffer = xirealloc (cmp->file[f].buffer, buffer_size);
 
           for (;; cmp->file[0].buffered = cmp->file[1].buffered = 0)
             {
@@ -545,7 +545,7 @@ diff_2_files (struct comparison *cmp)
       ctxt.yvec = cmp->file[1].undiscarded;
       lin diags = (cmp->file[0].nondiscarded_lines
 		   + cmp->file[1].nondiscarded_lines + 3);
-      ctxt.fdiag = xmalloc (diags * (2 * sizeof *ctxt.fdiag));
+      ctxt.fdiag = xinmalloc (diags, 2 * sizeof *ctxt.fdiag);
       ctxt.bdiag = ctxt.fdiag + diags;
       ctxt.fdiag += cmp->file[1].nondiscarded_lines + 1;
       ctxt.bdiag += cmp->file[1].nondiscarded_lines + 1;

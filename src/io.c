@@ -220,7 +220,7 @@ slurp (struct file_data *current)
           if (IDX_MAX / 2 - sizeof (word) < current->bufsize)
             xalloc_die ();
           current->bufsize *= 2;
-          current->buffer = xrealloc (current->buffer, current->bufsize);
+          current->buffer = xirealloc (current->buffer, current->bufsize);
           file_block_read (current, current->bufsize - current->buffered);
         }
 
@@ -228,7 +228,7 @@ slurp (struct file_data *current)
          sentinel, plus word-alignment.  */
       idx_t cc = current->buffered + 2 * sizeof (word);
       current->bufsize = cc - cc % sizeof (word);
-      current->buffer = xrealloc (current->buffer, current->bufsize);
+      current->buffer = xirealloc (current->buffer, current->bufsize);
     }
 }
 
@@ -245,7 +245,7 @@ find_and_hash_each_line (struct file_data *current)
   lin alloc_lines = current->alloc_lines;
   lin line = 0;
   lin linbuf_base = current->linbuf_base;
-  lin *cureqs = xmalloc (alloc_lines * sizeof *cureqs);
+  lin *cureqs = xinmalloc (alloc_lines, sizeof *cureqs);
   struct equivclass *eqs = equivs;
   lin eqs_index = equivs_index;
   lin eqs_alloc = equivs_alloc;
@@ -381,10 +381,10 @@ find_and_hash_each_line (struct file_data *current)
             i = eqs_index++;
             if (i == eqs_alloc)
               {
-                if (PTRDIFF_MAX / (2 * sizeof *eqs) <= eqs_alloc)
+                if (IDX_MAX / (2 * sizeof *eqs) <= eqs_alloc)
                   xalloc_die ();
                 eqs_alloc *= 2;
-                eqs = xrealloc (eqs, eqs_alloc * sizeof *eqs);
+                eqs = xirealloc (eqs, eqs_alloc * sizeof *eqs);
               }
             eqs[i].next = *bucket;
             eqs[i].hash = h;
@@ -420,15 +420,15 @@ find_and_hash_each_line (struct file_data *current)
       if (line == alloc_lines)
         {
           /* Double (alloc_lines - linbuf_base) by adding to alloc_lines.  */
-          if (PTRDIFF_MAX / 3 <= alloc_lines
-              || PTRDIFF_MAX / sizeof *cureqs <= 2 * alloc_lines - linbuf_base
-              || PTRDIFF_MAX / sizeof *linbuf <= alloc_lines - linbuf_base)
+          if (IDX_MAX / 3 <= alloc_lines
+              || IDX_MAX / sizeof *cureqs <= 2 * alloc_lines - linbuf_base
+              || IDX_MAX / sizeof *linbuf <= alloc_lines - linbuf_base)
             xalloc_die ();
           alloc_lines = 2 * alloc_lines - linbuf_base;
-          cureqs = xrealloc (cureqs, alloc_lines * sizeof *cureqs);
+          cureqs = xirealloc (cureqs, alloc_lines * sizeof *cureqs);
           linbuf += linbuf_base;
-          linbuf = xrealloc (linbuf,
-                             (alloc_lines - linbuf_base) * sizeof *linbuf);
+          linbuf = xirealloc (linbuf,
+			      (alloc_lines - linbuf_base) * sizeof *linbuf);
           linbuf -= linbuf_base;
         }
       linbuf[line] = ip;
@@ -446,14 +446,14 @@ find_and_hash_each_line (struct file_data *current)
       if (line == alloc_lines)
         {
           /* Double (alloc_lines - linbuf_base) by adding to alloc_lines.  */
-          if (PTRDIFF_MAX / 3 <= alloc_lines
-              || PTRDIFF_MAX / sizeof *cureqs <= 2 * alloc_lines - linbuf_base
-              || PTRDIFF_MAX / sizeof *linbuf <= alloc_lines - linbuf_base)
+          if (IDX_MAX / 3 <= alloc_lines
+              || IDX_MAX / sizeof *cureqs <= 2 * alloc_lines - linbuf_base
+              || IDX_MAX / sizeof *linbuf <= alloc_lines - linbuf_base)
             xalloc_die ();
           alloc_lines = 2 * alloc_lines - linbuf_base;
           linbuf += linbuf_base;
-          linbuf = xrealloc (linbuf,
-                             (alloc_lines - linbuf_base) * sizeof *linbuf);
+          linbuf = xirealloc (linbuf,
+			      (alloc_lines - linbuf_base) * sizeof *linbuf);
           linbuf -= linbuf_base;
         }
       linbuf[line] = p;
@@ -692,7 +692,7 @@ find_identical_ends (struct file_data filevec[])
 
   lin prefix_mask = prefix_count - 1;
   lin lines = 0;
-  char const **linbuf0 = xmalloc (alloc_lines0 * sizeof *linbuf0);
+  char const **linbuf0 = xinmalloc (alloc_lines0, sizeof *linbuf0);
   bool prefix_needed = ! (no_diff_means_no_output
 			  && filevec[0].prefix_end == p0
 			  && filevec[1].prefix_end == p1);
@@ -707,10 +707,10 @@ find_identical_ends (struct file_data filevec[])
           lin l = lines++ & prefix_mask;
           if (l == alloc_lines0)
             {
-              if (PTRDIFF_MAX / (2 * sizeof *linbuf0) <= alloc_lines0)
+              if (IDX_MAX / (2 * sizeof *linbuf0) <= alloc_lines0)
                 xalloc_die ();
               alloc_lines0 *= 2;
-              linbuf0 = xrealloc (linbuf0, alloc_lines0 * sizeof *linbuf0);
+              linbuf0 = xirealloc (linbuf0, alloc_lines0 * sizeof *linbuf0);
             }
           linbuf0[l] = p0;
           while (*p0++ != '\n')

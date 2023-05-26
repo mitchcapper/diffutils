@@ -97,7 +97,7 @@ dir_read (struct file_data const *dir, struct dirdata *dirdata)
 
           while (data_alloc - data_used < d_size)
             {
-              if (PTRDIFF_MAX / 2 <= data_alloc)
+              if (IDX_MAX / 2 <= data_alloc)
                 xalloc_die ();
               dirdata->data = data = xirealloc (data, data_alloc *= 2);
             }

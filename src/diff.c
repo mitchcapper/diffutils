@@ -409,13 +409,11 @@ main (int argc, char **argv)
 		 "#else /* @ */\n"
 		 "%>"
 		 "#endif /* @ */\n");
+	    int nats = 7; /* 7 "@"s are in C_ifdef_group_formats.  */
 
-	    idx_t alloc = strlen (optarg);
-            if (ckd_mul (&alloc, 7, alloc)
-                || ckd_add (&alloc, alloc,
-                            sizeof C_ifdef_group_formats - 7 /* 7*"@" */))
-	      xalloc_die ();
-	    char *b = ximalloc (alloc);
+	    char *b = xinmalloc (((sizeof C_ifdef_group_formats + 1) / nats
+				  + strlen (optarg)),
+				 nats);
 	    char *base = b;
 	    int changes = 0;
 
@@ -903,7 +901,7 @@ add_regexp (struct regexp_list *reglist, char const *pattern)
           while (size <= newlen);
 
           reglist->size = size;
-          reglist->regexps = regexps = xrealloc (regexps, size);
+          reglist->regexps = regexps = xirealloc (regexps, size);
         }
       if (multiple_regexps)
         {

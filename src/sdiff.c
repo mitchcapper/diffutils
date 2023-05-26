@@ -361,7 +361,7 @@ static void
 lf_init (struct line_filter *lf, FILE *infile)
 {
   lf->infile = infile;
-  lf->bufpos = lf->buffer = lf->buflim = xmalloc (SDIFF_BUFSIZE + 1);
+  lf->bufpos = lf->buffer = lf->buflim = ximalloc (SDIFF_BUFSIZE + 1);
   lf->buflim[0] = '\n';
 }
 
@@ -712,11 +712,11 @@ diffarg (char const *a)
     {
       if (! diffarglim)
         diffarglim = 16;
-      else if (PTRDIFF_MAX / (2 * sizeof *diffargv) <= diffarglim)
+      else if (IDX_MAX / (2 * sizeof *diffargv) <= diffarglim)
         xalloc_die ();
       else
         diffarglim *= 2;
-      diffargv = xrealloc (diffargv, diffarglim * sizeof *diffargv);
+      diffargv = xirealloc (diffargv, diffarglim * sizeof *diffargv);
     }
   diffargv[diffargs++] = a;
 }
