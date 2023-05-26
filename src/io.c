@@ -52,7 +52,7 @@ struct equivclass
   lin next;		/* Next item in this bucket.  */
   hash_value hash;	/* Hash of lines in this class.  */
   char const *line;	/* A line that fits this class.  */
-  size_t length;	/* That line's length, not counting its newline.  */
+  idx_t length;		/* That line's length, not counting its newline.  */
 };
 
 /* Hash-table: array of buckets, each being a chain of equivalence classes.
@@ -60,7 +60,7 @@ struct equivclass
 static lin *buckets;
 
 /* Number of buckets in the hash table array, not counting buckets[-1].  */
-static size_t nbuckets;
+static idx_t nbuckets;
 
 /* Array in which the equivalence classes are allocated.
    The bucket-chains go through the elements in this array.
@@ -358,7 +358,7 @@ find_and_hash_each_line (struct file_data *current)
    hashing_done:;
 
       lin *bucket = &buckets[h % nbuckets];
-      size_t length = p - ip - 1;
+      idx_t length = p - ip - 1;
 
       if (p == bufend
           && current->missing_newline
@@ -531,11 +531,11 @@ prepare_text (struct file_data *current)
    size T.  However, do not guess a number of lines so large that the
    resulting line table might cause overflow in size calculations.  */
 static lin
-guess_lines (lin n, size_t s, size_t t)
+guess_lines (lin n, idx_t s, idx_t t)
 {
-  size_t guessed_bytes_per_line = n < 10 ? 32 : s / (n - 1);
+  idx_t guessed_bytes_per_line = n < 10 ? 32 : s / (n - 1);
   lin guessed_lines = MAX (1, t / guessed_bytes_per_line);
-  return MIN (guessed_lines, PTRDIFF_MAX / (2 * sizeof (char *) + 1) - 5) + 5;
+  return MIN (guessed_lines, LIN_MAX / (2 * sizeof (char *) + 1) - 5) + 5;
 }
 
 /* Given a vector of two file_data objects, find the identical
@@ -764,9 +764,9 @@ static unsigned char const prime_offset[] =
   55, 93, 1, 57, 25
 };
 
-/* Verify that this host's size_t is not too wide for the above table.  */
+/* Verify that this host's idx_t is not too wide for the above table.  */
 
-verify (sizeof (size_t) * CHAR_BIT <= sizeof prime_offset);
+verify (PTRDIFF_WIDTH - 1 <= sizeof prime_offset);
 
 /* Given a vector of two file_data objects, read the file associated
    with each one, and build the table of equivalence classes.
@@ -806,10 +806,10 @@ read_files (struct file_data filevec[], bool pretend_binary)
      number between 1/3 and 2/3 of the value of equiv_allocs,
      approximately.  */
   int p;
-  for (p = 9; (size_t) 1 << p < equivs_alloc / 3; p++)
+  for (p = 9; (idx_t) 1 << p < equivs_alloc / 3; p++)
     continue;
-  nbuckets = ((size_t) 1 << p) - prime_offset[p];
-  buckets = xcalloc (nbuckets + 1, sizeof *buckets);
+  nbuckets = ((idx_t) 1 << p) - prime_offset[p];
+  buckets = xicalloc (nbuckets + 1, sizeof *buckets);
   buckets++;
 
   for (int i = 0; i < 2; i++)
