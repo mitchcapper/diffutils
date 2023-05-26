@@ -349,8 +349,8 @@ do_printf_spec (FILE *out, char const *spec,
           {
             /* For example, if the spec is "%3xn" and pI is "l", use the printf
                format spec "%3lx".  Here the spec prefix is "%3".  */
-            size_t spec_prefix_len = f - spec - 2;
-            size_t pI_len = sizeof pI - 1;
+            idx_t spec_prefix_len = f - spec - 2;
+            idx_t pI_len = sizeof pI - 1;
             char *format = xmalloca (spec_prefix_len + pI_len + 2);
             char *p = mempcpy (format, spec, spec_prefix_len);
             p = stpcpy (p, pI);
