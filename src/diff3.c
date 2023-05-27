@@ -1229,10 +1229,7 @@ read_diff (char const *filea,
             perror_with_exit (_("read failed"));
           break;
         }
-      if (IDX_MAX / 2 <= current_chunk_size)
-        xalloc_die ();
-      current_chunk_size *= 2;
-      diff_result = xirealloc (diff_result, current_chunk_size);
+      diff_result = xpalloc (diff_result, &current_chunk_size, 1, -1, 1);
     }
 
   if (total != 0 && diff_result[total-1] != '\n')

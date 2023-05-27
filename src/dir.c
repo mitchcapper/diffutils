@@ -95,13 +95,9 @@ dir_read (struct file_data const *dir, struct dirdata *dirdata)
           if (excluded_file_name (excluded, d_name))
             continue;
 
-          while (data_alloc - data_used < d_size)
-            {
-              if (IDX_MAX / 2 <= data_alloc)
-                xalloc_die ();
-              dirdata->data = data = xirealloc (data, data_alloc *= 2);
-            }
-
+          if (data_alloc - data_used < d_size)
+	    dirdata->data = xpalloc (dirdata->data, &data_alloc,
+				     d_size - (data_alloc - data_used), -1, 1);
           memcpy (data + data_used, d_name, d_size);
           data_used += d_size;
           nnames++;

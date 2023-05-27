@@ -893,16 +893,8 @@ add_regexp (struct regexp_list *reglist, char const *pattern)
       idx_t size = reglist->size;
 
       if (size <= newlen)
-        {
-          if (!size)
-            size = 1;
-
-          do size *= 2;
-          while (size <= newlen);
-
-          reglist->size = size;
-          reglist->regexps = regexps = xirealloc (regexps, size);
-        }
+	regexps = reglist->regexps = xpalloc (regexps, &reglist->size,
+					      newlen - size + 1, -1, 1);
       if (multiple_regexps)
         {
           regexps[len++] = '\\';

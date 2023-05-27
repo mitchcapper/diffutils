@@ -22,6 +22,7 @@
 #include <binary-io.h>
 #include <cmpbuf.h>
 #include <file-type.h>
+#include <ialloc.h>
 #include <xalloc.h>
 
 /* The type of a hash value.  */
@@ -71,7 +72,7 @@ static struct equivclass *equivs;
 static lin equivs_index;
 
 /* Number of elements allocated in the array 'equivs'.  */
-static lin equivs_alloc;
+static idx_t equivs_alloc;
 
 /* The file buffer, considered as an array of bytes rather than
    as an array of words.  */
@@ -126,8 +127,7 @@ sip (struct file_data *current, bool skip_test)
       if (STAT_BLOCKSIZE (current->stat) < 0
 	  || ckd_add (&blksize, STAT_BLOCKSIZE (current->stat), 0))
 	blksize = 0;
-      current->bufsize = buffer_lcm (sizeof (word), blksize,
-                                     IDX_MAX - 2 * sizeof (word));
+      current->bufsize = buffer_lcm (sizeof (word), blksize, IDX_MAX);
       current->buffer = ximalloc (current->bufsize);
 
 #ifdef __KLIBC__
@@ -177,57 +177,52 @@ slurp (struct file_data *current)
       return;
     }
 
+  /* Upper bound on the room needed for an appended newline, word
+     sentinel, and worst-case word alignment.  */
+  enum { extra_room = 2 * sizeof (word) };
+
   if (S_ISREG (current->stat.st_mode))
     {
-      /* It's a regular file; slurp in the rest all at once.  */
-
-      /* Get the size out of the stat block.
-         Allocate just enough room for appended newline plus word sentinel,
-         plus word-alignment since we want the buffer word-aligned.  */
+      /* It's a regular file; try to allocate a big enough buffer so
+	 that it can be slurped in all at once, along with appended
+	 newline plus word sentinel plus word-alignment.  */
       off_t file_size = current->stat.st_size;
       idx_t cc;
-      if (ckd_add (&cc, 2 * sizeof (word) - file_size % sizeof (word),
-                   file_size))
-        xalloc_die ();
+      if (0 <= file_size
+	  && !ckd_add (&cc, file_size - file_size % sizeof (word), extra_room)
+	  && current->bufsize < cc)
+	{
+	  #if 13 <= __GNUC__
+	    /* Work around GCC bug 110014.  */
+	    #pragma GCC diagnostic push
+	    #pragma GCC diagnostic ignored "-Wanalyzer-allocation-size"
+	  #endif
 
-      if (current->bufsize < cc)
-        {
-          current->bufsize = cc;
-          current->buffer = xirealloc (current->buffer, cc);
-        }
+	  word *buffer = irealloc (current->buffer, cc);
 
-      /* Try to read at least 1 more byte than the size indicates, to
-         detect whether the file is growing.  This is a nicety for
-         users who run 'diff' on files while they are changing.  */
+	  if (buffer)
+	    {
+	      current->buffer = buffer;
+	      current->bufsize = cc;
+	    }
 
-      if (current->buffered <= file_size)
-        {
-          file_block_read (current, file_size - current->buffered + 1);
-          if (current->buffered <= file_size)
-            return;
-        }
+	  #if 13 <= __GNUC__
+	    #pragma GCC diagnostic pop
+	  #endif
+	}
     }
 
-  /* It's not a regular file, or it's a growing regular file; read it,
-     growing the buffer as needed.  */
+  /* Read the file, growing the buffer as needed.  */
 
-  file_block_read (current, current->bufsize - current->buffered);
+  while (file_block_read (current, current->bufsize - current->buffered),
+	 !current->eof)
+    current->buffer = xpalloc (current->buffer, &current->bufsize,
+			       extra_room, -1, 1);
 
-  if (current->buffered)
+  if (current->bufsize - current->buffered < extra_room)
     {
-      while (current->buffered == current->bufsize)
-        {
-          if (IDX_MAX / 2 - sizeof (word) < current->bufsize)
-            xalloc_die ();
-          current->bufsize *= 2;
-          current->buffer = xirealloc (current->buffer, current->bufsize);
-          file_block_read (current, current->bufsize - current->buffered);
-        }
-
-      /* Allocate just enough room for appended newline plus word
-         sentinel, plus word-alignment.  */
-      idx_t cc = current->buffered + 2 * sizeof (word);
-      current->bufsize = cc - cc % sizeof (word);
+      if (ckd_add (&current->bufsize, current->buffered, extra_room))
+	xalloc_die ();
       current->buffer = xirealloc (current->buffer, current->bufsize);
     }
 }
@@ -248,7 +243,7 @@ find_and_hash_each_line (struct file_data *current)
   lin *cureqs = xinmalloc (alloc_lines, sizeof *cureqs);
   struct equivclass *eqs = equivs;
   lin eqs_index = equivs_index;
-  lin eqs_alloc = equivs_alloc;
+  idx_t eqs_alloc = equivs_alloc;
   char const *suffix_begin = current->suffix_begin;
   char const *bufend = file_buffer (current) + current->buffered;
   bool ig_case = ignore_case;
@@ -380,12 +375,9 @@ find_and_hash_each_line (struct file_data *current)
             /* Create a new equivalence class in this bucket.  */
             i = eqs_index++;
             if (i == eqs_alloc)
-              {
-                if (IDX_MAX / (2 * sizeof *eqs) <= eqs_alloc)
-                  xalloc_die ();
-                eqs_alloc *= 2;
-                eqs = xirealloc (eqs, eqs_alloc * sizeof *eqs);
-              }
+	      eqs = xpalloc (eqs, &eqs_alloc, 1,
+			     LIN_MAX < PTRDIFF_MAX ? LIN_MAX : -1,
+			     sizeof *eqs);
             eqs[i].next = *bucket;
             eqs[i].hash = h;
             eqs[i].line = ip;
@@ -419,17 +411,16 @@ find_and_hash_each_line (struct file_data *current)
       /* Maybe increase the size of the line table.  */
       if (line == alloc_lines)
         {
-          /* Double (alloc_lines - linbuf_base) by adding to alloc_lines.  */
-          if (IDX_MAX / 3 <= alloc_lines
-              || IDX_MAX / sizeof *cureqs <= 2 * alloc_lines - linbuf_base
-              || IDX_MAX / sizeof *linbuf <= alloc_lines - linbuf_base)
-            xalloc_die ();
-          alloc_lines = 2 * alloc_lines - linbuf_base;
-          cureqs = xirealloc (cureqs, alloc_lines * sizeof *cureqs);
+	  idx_t eqs_max = MIN (LIN_MAX, IDX_MAX / sizeof *cureqs);
+
+	  /* Grow (alloc_lines - linbuf_base) by adding to alloc_lines.  */
+	  idx_t n = alloc_lines - linbuf_base;
           linbuf += linbuf_base;
-          linbuf = xirealloc (linbuf,
-			      (alloc_lines - linbuf_base) * sizeof *linbuf);
+	  linbuf = xpalloc (linbuf, &n, 1, eqs_max - linbuf_base,
+			    sizeof *linbuf);
           linbuf -= linbuf_base;
+	  alloc_lines = linbuf_base + n;
+          cureqs = xirealloc (cureqs, alloc_lines * sizeof *cureqs);
         }
       linbuf[line] = ip;
       cureqs[line] = i;
@@ -445,16 +436,13 @@ find_and_hash_each_line (struct file_data *current)
          so that we can compute the length of any buffered line.  */
       if (line == alloc_lines)
         {
-          /* Double (alloc_lines - linbuf_base) by adding to alloc_lines.  */
-          if (IDX_MAX / 3 <= alloc_lines
-              || IDX_MAX / sizeof *cureqs <= 2 * alloc_lines - linbuf_base
-              || IDX_MAX / sizeof *linbuf <= alloc_lines - linbuf_base)
-            xalloc_die ();
-          alloc_lines = 2 * alloc_lines - linbuf_base;
-          linbuf += linbuf_base;
-          linbuf = xirealloc (linbuf,
-			      (alloc_lines - linbuf_base) * sizeof *linbuf);
-          linbuf -= linbuf_base;
+	  /* Grow (alloc_lines - linbuf_base) by adding to alloc_lines.  */
+	  idx_t n = alloc_lines - linbuf_base;
+	  linbuf += linbuf_base;
+	  linbuf = xpalloc (linbuf, &n, 1, MAX (0, IDX_MAX - linbuf_base),
+			    sizeof *linbuf);
+	  linbuf -= linbuf_base;
+	  alloc_lines = n - linbuf_base;
         }
       linbuf[line] = p;
 
@@ -706,12 +694,7 @@ find_identical_ends (struct file_data filevec[])
         {
           lin l = lines++ & prefix_mask;
           if (l == alloc_lines0)
-            {
-              if (IDX_MAX / (2 * sizeof *linbuf0) <= alloc_lines0)
-                xalloc_die ();
-              alloc_lines0 *= 2;
-              linbuf0 = xirealloc (linbuf0, alloc_lines0 * sizeof *linbuf0);
-            }
+	    linbuf0 = xpalloc (linbuf0, &alloc_lines0, 1, -1, sizeof *linbuf0);
           linbuf0[l] = p0;
           while (*p0++ != '\n')
             continue;

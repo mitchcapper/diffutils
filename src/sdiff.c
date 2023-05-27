@@ -709,15 +709,7 @@ diffarg (char const *a)
   static idx_t diffargs, diffarglim;
 
   if (diffargs == diffarglim)
-    {
-      if (! diffarglim)
-        diffarglim = 16;
-      else if (IDX_MAX / (2 * sizeof *diffargv) <= diffarglim)
-        xalloc_die ();
-      else
-        diffarglim *= 2;
-      diffargv = xirealloc (diffargv, diffarglim * sizeof *diffargv);
-    }
+    diffargv = xpalloc (diffargv, &diffarglim, 1, -1, sizeof *diffargv);
   diffargv[diffargs++] = a;
 }
 
