@@ -24,6 +24,7 @@
 # pragma GCC diagnostic ignored "-Wanalyzer-null-dereference"
 #endif
 
+#define SYSTEM_INLINE _GL_EXTERN_INLINE
 #include "system.h"
 #include "paths.h"
 

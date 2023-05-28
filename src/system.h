@@ -27,6 +27,7 @@
 # define IF_LINT(Code) /* empty */
 #endif
 
+#include <count-leading-zeros.h>
 #include <verify.h>
 
 #include <sys/types.h>
@@ -116,6 +117,12 @@ int strcasecmp (char const *, char const *);
 
 #include "version.h"
 
+_GL_INLINE_HEADER_BEGIN
+
+#ifndef SYSTEM_INLINE
+# define SYSTEM_INLINE _GL_INLINE
+#endif
+
 /* Type used for fast comparison of several bytes at a time.
    This used to be uintmax_t, but changing it to the size of a pointer
    made plain 'cmp' 90% faster (GCC 4.8.1, x86).  */
@@ -131,6 +138,7 @@ typedef void *word;
 typedef ptrdiff_t lin;
 #define LIN_MAX PTRDIFF_MAX
 #define pI "t"
+verify (LIN_MAX <= IDX_MAX);
 
 /* Limit so that 2 * CONTEXT + 1 does not overflow.  */
 
@@ -208,3 +216,13 @@ typedef ptrdiff_t lin;
 #endif
 
 #define STREQ(a, b) (strcmp (a, b) == 0)
+
+/* Return the floor of the log base 2 of N.  N must be positive.  */
+SYSTEM_INLINE int
+floor_log2 (idx_t n)
+{
+  verify (IDX_MAX <= ULLONG_MAX);
+  return ULLONG_WIDTH - 1 - count_leading_zeros_ll (n);
+}
+
+_GL_INLINE_HEADER_END

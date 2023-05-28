@@ -788,9 +788,7 @@ read_files (struct file_data filevec[], bool pretend_binary)
   /* Allocate (one plus) a prime number of hash buckets.  Use a prime
      number between 1/3 and 2/3 of the value of equiv_allocs,
      approximately.  */
-  int p;
-  for (p = 9; (idx_t) 1 << p < equivs_alloc / 3; p++)
-    continue;
+  int p = equivs_alloc <= 256 * 3 ? 9 : floor_log2 (equivs_alloc / 3) + 1;
   nbuckets = ((idx_t) 1 << p) - prime_offset[p];
   buckets = xicalloc (nbuckets + 1, sizeof *buckets);
   buckets++;

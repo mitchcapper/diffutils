@@ -92,8 +92,7 @@ discard_confusing_lines (struct file_data filevec[])
 
       /* Multiply MANY by approximate square root of number of lines.
          That is the threshold for provisionally discardable lines.  */
-      for (lin tem = end >> 6; (tem = tem >> 2) > 0; )
-        many *= 2;
+      many <<= end < 64 ? 0 : (floor_log2 (end) >> 1) - 3;
 
       for (lin i = 0; i < end; i++)
         {
@@ -155,15 +154,13 @@ discard_confusing_lines (struct file_data filevec[])
                 }
               else
                 {
-                  lin minimum = 1;
-
                   /* MINIMUM is approximate square root of LENGTH/4.
                      A subrun of two or more provisionals can stand
                      when LENGTH is at least 16.
                      A subrun of 4 or more can stand when LENGTH >= 64.  */
-                  for (lin tem = length >> 2; 0 < (tem >>= 2); )
-                    minimum <<= 1;
-                  minimum++;
+		  lin minimum =
+		    (length < 4 ? 2
+		     : ((lin) 1 << ((floor_log2 (length) >> 1) - 1)) + 1);
 
                   /* Cancel any subrun of MINIMUM or more provisionals
                      within the larger run.  */
@@ -555,9 +552,7 @@ diff_2_files (struct comparison *cmp)
       /* Set TOO_EXPENSIVE to be the approximate square root of the
          input size, bounded below by 4096.  4096 seems to be good for
          circa-2016 CPUs; see Bug#16848 and Bug#24715.  */
-      lin too_expensive = 1;
-      for (;  diags != 0;  diags >>= 2)
-        too_expensive <<= 1;
+      lin too_expensive = (lin) 1 << ((floor_log2 (diags) >> 1) + 1);
       ctxt.too_expensive = MAX (4096, too_expensive);
 
       files[0] = cmp->file[0];

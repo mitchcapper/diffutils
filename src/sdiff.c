@@ -18,6 +18,7 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
 
+#define SYSTEM_INLINE _GL_EXTERN_INLINE
 #include "system.h"
 #include "paths.h"
 

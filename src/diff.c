@@ -19,6 +19,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
 
 #define GDIFF_MAIN
+#define SYSTEM_INLINE _GL_EXTERN_INLINE
 #include "diff.h"
 #include "die.h"
 #include <assert.h>
