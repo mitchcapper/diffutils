@@ -1551,8 +1551,8 @@ analyze_hunk (struct change *hunk,
   bool skip_leading_white_space =
     skip_white_space && IGNORE_SPACE_CHANGE <= ignore_white_space;
 
-  char const * const *linbuf0 = files[0].linbuf;  /* Help the compiler.  */
-  char const * const *linbuf1 = files[1].linbuf;
+  char const *const *linbuf0 = files[0].linbuf;  /* Help the compiler.  */
+  char const *const *linbuf1 = files[1].linbuf;
 
   lin show_from = 0, show_to = 0;
 

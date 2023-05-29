@@ -232,7 +232,7 @@ print_ifdef_lines (register FILE *out, char const *format,
     return;
 
   struct file_data const *file = group->file;
-  char const * const *linbuf = file->linbuf;
+  char const *const *linbuf = file->linbuf;
   lin from = group->from, upto = group->upto;
 
   /* If possible, use a single fwrite; it's faster.  */

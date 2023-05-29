@@ -23,7 +23,7 @@
 #include <stat-time.h>
 #include <strftime.h>
 
-static char const *find_function (char const * const *, lin);
+static char const *find_function (char const *const *, lin);
 static struct change *find_hunk (struct change *);
 static void mark_ignorable (struct change *);
 static void pr_context_hunk (struct change *);
@@ -376,7 +376,7 @@ pr_unidiff_hunk (struct change *hunk)
 
           while (k--)
             {
-              char const * const *line = &files[0].linbuf[i++];
+              char const *const *line = &files[0].linbuf[i++];
               set_color_context (DELETE_CONTEXT);
               putc ('-', out);
               if (initial_tab && ! (suppress_blank_empty && **line == '\n'))
@@ -395,7 +395,7 @@ pr_unidiff_hunk (struct change *hunk)
 
           while (k--)
             {
-              char const * const *line = &files[1].linbuf[j++];
+              char const *const *line = &files[1].linbuf[j++];
               set_color_context (ADD_CONTEXT);
               putc ('+', out);
               if (initial_tab && ! (suppress_blank_empty && **line == '\n'))
@@ -482,7 +482,7 @@ mark_ignorable (struct change *script)
    Return the address of the text, or null if no function-header is found.  */
 
 static char const *
-find_function (char const * const *linbuf, lin linenum)
+find_function (char const *const *linbuf, lin linenum)
 {
   lin i = linenum;
   lin last = find_function_last_search;

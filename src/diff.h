@@ -358,7 +358,8 @@ XTERN FILE *outfile;
 extern int diff_2_files (struct comparison *);
 
 /* context.c */
-extern void print_context_header (struct file_data[], char const * const *, bool);
+extern void print_context_header (struct file_data[],
+				  char const *const *, bool);
 extern void print_context_script (struct change *, bool);
 
 /* dir.c */
@@ -407,8 +408,8 @@ extern void output_1_line (char const *, char const *, char const *,
                            char const *);
 extern void perror_with_name (char const *);
 extern _Noreturn void pfatal_with_name (char const *);
-extern void print_1_line (char const *, char const * const *);
-extern void print_1_line_nl (char const *, char const * const *, bool);
+extern void print_1_line (char const *, char const *const *);
+extern void print_1_line_nl (char const *, char const *const *, bool);
 extern void print_message_queue (void);
 extern void print_number_range (char, struct file_data *, lin, lin);
 extern void print_script (struct change *, struct change * (*) (struct change *),

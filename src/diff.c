@@ -945,7 +945,7 @@ check_stdout (void)
     pfatal_with_name (_("standard output"));
 }
 
-static char const * const option_help_msgid[] = {
+static char const *const option_help_msgid[] = {
   N_("    --normal                  output a normal diff (the default)"),
   N_("-q, --brief                   report only when files differ"),
   N_("-s, --report-identical-files  report when two files are the same"),

@@ -323,7 +323,7 @@ char *
 find_dir_file_pathname (char const *dir, char const *file)
 {
   /* IF_LINT due to GCC bug 21161.  */
-  char const * IF_LINT (volatile) match = file;
+  char const *IF_LINT (volatile) match = file;
 
   struct dirdata dirdata;
   dirdata.names = nullptr;

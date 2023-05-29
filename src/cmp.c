@@ -163,7 +163,7 @@ check_stdout (void)
     die (EXIT_TROUBLE, errno, "%s", _("standard output"));
 }
 
-static char const * const option_help_msgid[] = {
+static char const *const option_help_msgid[] = {
   N_("-b, --print-bytes          print differing bytes"),
   N_("-i, --ignore-initial=SKIP         skip first SKIP bytes of both inputs"),
   N_("-i, --ignore-initial=SKIP1:SKIP2  skip first SKIP1 bytes of FILE1 and\n"

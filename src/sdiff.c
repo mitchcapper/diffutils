@@ -50,7 +50,7 @@ enum { SDIFF_BUFSIZE = 65536 };
 static char const *editor_program = DEFAULT_EDITOR_PROGRAM;
 static char const **diffargv;
 
-static char * volatile tmpname;
+static char *volatile tmpname;
 static FILE *tmp;
 
 #if HAVE_WORKING_FORK
@@ -179,7 +179,7 @@ check_stdout (void)
     perror_fatal (_("standard output"));
 }
 
-static char const * const option_help_msgid[] = {
+static char const *const option_help_msgid[] = {
   N_("-o, --output=FILE            operate interactively, sending output to FILE"),
   "",
   N_("-i, --ignore-case            consider upper- and lower-case to be the same"),

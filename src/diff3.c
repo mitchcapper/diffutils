@@ -182,8 +182,9 @@ static bool merge;
 static char *read_diff (char const *, char const *, char **);
 static char *scan_diff_line (char *, char **, idx_t *, char *, char);
 static enum diff_type process_diff_control (char **, struct diff_block *);
-static bool compare_line_list (char * const[], idx_t const[], char * const[], idx_t const[], lin);
-static bool copy_stringlist (char * const[], idx_t const[], char *[], idx_t[], lin);
+static bool compare_line_list (char *const[], idx_t const[],
+			       char *const[], idx_t const[], lin);
+static bool copy_stringlist (char *const[], idx_t const[], char *[], idx_t[], lin);
 static bool output_diff3_edscript (FILE *, struct diff3_block *, int const[3], int const[3], char const *, char const *, char const *);
 static bool output_diff3_merge (FILE *, FILE *, struct diff3_block *, int const[3], int const[3], char const *, char const *, char const *);
 static struct diff3_block *create_diff3_block (lin, lin, lin, lin, lin, lin);
@@ -468,7 +469,7 @@ check_stdout (void)
     perror_with_exit (_("standard output"));
 }
 
-static char const * const option_help_msgid[] = {
+static char const *const option_help_msgid[] = {
   N_("-A, --show-all              output all changes, bracketing conflicts"),
   "",
   N_("-e, --ed                    output ed script incorporating changes\n"
@@ -835,11 +836,11 @@ using_to_diff3_block (struct diff_block *using[2],
    incomplete.  Upon successful completion of the copy, return true.  */
 
 static bool
-copy_stringlist (char * const fromptrs[], idx_t const fromlengths[],
+copy_stringlist (char *const fromptrs[], idx_t const fromlengths[],
                  char *toptrs[], idx_t tolengths[],
                  lin copynum)
 {
-  register char * const *f = fromptrs;
+  register char *const *f = fromptrs;
   register char **t = toptrs;
   idx_t const *fl = fromlengths;
   idx_t *tl = tolengths;
@@ -930,12 +931,12 @@ create_diff3_block (lin low0, lin high0,
    Return 1 if they are equivalent, 0 if not.  */
 
 static bool
-compare_line_list (char * const list1[], idx_t const lengths1[],
-                   char * const list2[], idx_t const lengths2[],
+compare_line_list (char *const list1[], idx_t const lengths1[],
+                   char *const list2[], idx_t const lengths2[],
                    lin nl)
 {
-  char * const *l1 = list1;
-  char * const *l2 = list2;
+  char *const *l1 = list1;
+  char *const *l2 = list2;
   idx_t const *lgths1 = lengths1;
   idx_t const *lgths2 = lengths2;
 
