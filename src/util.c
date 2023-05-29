@@ -1063,7 +1063,7 @@ lines_differ (char const *s1, char const *s2)
 {
   register char const *t1 = s1;
   register char const *t2 = s2;
-  size_t column = 0;
+  intmax_t tab = 0, column = 0;
 
   while (1)
     {
@@ -1169,26 +1169,32 @@ lines_differ (char const *s1, char const *s2)
               if ((c1 == ' ' && c2 == '\t')
                   || (c1 == '\t' && c2 == ' '))
                 {
-                  size_t column2 = column;
+		  intmax_t tab2 = tab, column2 = column;
                   for (;; c1 = *t1++)
                     {
-                      if (c1 == ' ')
+		      if (c1 == '\t' || (c1 == ' ' && column == tabsize - 1))
+			{
+			  tab++;
+			  column = 0;
+			}
+		      else if (c1 == ' ')
                         column++;
-                      else if (c1 == '\t')
-                        column += tabsize - column % tabsize;
                       else
                         break;
                     }
                   for (;; c2 = *t2++)
                     {
-                      if (c2 == ' ')
+		      if (c2 == '\t' || (c2 == ' ' && column2 == tabsize - 1))
+			{
+			  tab2++;
+			  column2 = 0;
+			}
+		      else if (c2 == ' ')
                         column2++;
-                      else if (c2 == '\t')
-                        column2 += tabsize - column2 % tabsize;
                       else
                         break;
                     }
-                  if (column != column2)
+		  if (tab != tab2 || column != column2)
                     return true;
                 }
               break;
@@ -1211,7 +1217,12 @@ lines_differ (char const *s1, char const *s2)
       if (c1 == '\n')
         return false;
 
-      column += c1 == '\t' ? tabsize - column % tabsize : 1;
+      column++;
+      if (c1 == '\t' || column == tabsize)
+	{
+	  tab++;
+	  column = 0;
+	}
     }
 
   return true;
@@ -1337,7 +1348,7 @@ void
 output_1_line (char const *base, char const *limit, char const *flag_format,
                char const *line_flag)
 {
-  const size_t MAX_CHUNK = 1024;
+  enum { MAX_CHUNK = 1024 };
   if (!expand_tabs)
     {
       size_t left = limit - base;
@@ -1356,8 +1367,7 @@ output_1_line (char const *base, char const *limit, char const *flag_format,
     {
       register FILE *out = outfile;
       register char const *t = base;
-      register size_t column = 0;
-      size_t tab_size = tabsize;
+      intmax_t tab = 0, column = 0, tab_size = tabsize;
       size_t counter_proc_signals = 0;
 
       while (t < limit)
@@ -1373,31 +1383,41 @@ output_1_line (char const *base, char const *limit, char const *flag_format,
           switch (c)
             {
             case '\t':
-              {
-                size_t spaces = tab_size - column % tab_size;
-                column += spaces;
-                do
-                  putc (' ', out);
-                while (--spaces);
-              }
+	      do
+		putc (' ', out);
+	      while (++column < tab_size);
+
+	      tab++;
+	      column = 0;
               break;
 
             case '\r':
               putc (c, out);
               if (flag_format && t < limit && *t != '\n')
                 fprintf (out, flag_format, line_flag);
-              column = 0;
+              tab = column = 0;
               break;
 
             case '\b':
-              if (column == 0)
-                continue;
               column--;
+	      if (column < 0)
+		{
+		  tab--;
+		  column = tab_size - 1;
+		}
               putc (c, out);
               break;
 
             default:
-              column += isprint (c) != 0;
+	      if (isprint (c))
+		{
+		  column++;
+		  if (column == tab_size)
+		    {
+		      tab++;
+		      column = 0;
+		    }
+		}
               putc (c, out);
               break;
             }

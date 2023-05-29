@@ -45,15 +45,15 @@ print_sdiff_script (struct change *script)
 
 /* Tab from column FROM to column TO, where FROM <= TO.  Yield TO.  */
 
-static size_t
-tab_from_to (size_t from, size_t to)
+static intmax_t
+tab_from_to (intmax_t from, intmax_t to)
 {
   FILE *out = outfile;
 
   if (!expand_tabs)
     {
-      size_t tab_size = tabsize;
-      for (size_t tab = from + tab_size - from % tab_size;
+      intmax_t tab_size = tabsize;
+      for (intmax_t tab = from + tab_size - from % tab_size;
 	   tab <= to;  tab += tab_size)
 	{
 	  putc ('\t', out);
@@ -69,12 +69,12 @@ tab_from_to (size_t from, size_t to)
    width observing tabs, and trim a trailing newline.  Return the
    last column written (not the number of chars).  */
 
-static size_t
-print_half_line (char const *const *line, size_t indent, size_t out_bound)
+static intmax_t
+print_half_line (char const *const *line, intmax_t indent, intmax_t out_bound)
 {
   FILE *out = outfile;
-  register size_t in_position = 0;
-  register size_t out_position = 0;
+  intmax_t in_position = 0;
+  intmax_t out_position = 0;
   register char const *text_pointer = line[0];
   register char const *text_limit = line[1];
   mbstate_t mbstate = { 0 };
@@ -88,10 +88,10 @@ print_half_line (char const *const *line, size_t indent, size_t out_bound)
         {
         case '\t':
           {
-            size_t spaces = tabsize - in_position % tabsize;
+            intmax_t spaces = tabsize - in_position % tabsize;
             if (in_position == out_position)
               {
-                size_t tabstop = out_position + spaces;
+                intmax_t tabstop = out_position + spaces;
                 if (expand_tabs)
                   {
                     if (out_bound < tabstop)
@@ -204,9 +204,9 @@ print_1sdiff_line (char const *const *left, char sep,
                    char const *const *right)
 {
   FILE *out = outfile;
-  size_t hw = sdiff_half_width;
-  size_t c2o = sdiff_column2_offset;
-  size_t col = 0;
+  intmax_t hw = sdiff_half_width;
+  intmax_t c2o = sdiff_column2_offset;
+  intmax_t col = 0;
   bool put_newline = false;
   bool color_to_reset = false;
 
@@ -229,7 +229,7 @@ print_1sdiff_line (char const *const *left, char sep,
 
   if (sep != ' ')
     {
-      col = tab_from_to (col, (hw + c2o - 1) / 2) + 1;
+      col = tab_from_to (col, (hw + c2o - 1) >> 1) + 1;
       if (sep == '|' && put_newline != (right[1][-1] == '\n'))
         sep = put_newline ? '/' : '\\';
       putc (sep, out);

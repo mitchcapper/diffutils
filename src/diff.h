@@ -186,7 +186,7 @@ XTERN bool brief;
 XTERN bool expand_tabs;
 
 /* Number of columns between tab stops.  */
-XTERN size_t tabsize;
+XTERN intmax_t tabsize;
 
 /* Use a tab in the output, rather than a space, before the text of an
    input line, so as to keep the proper alignment in the input line
@@ -223,8 +223,8 @@ XTERN bool left_column;
 XTERN bool suppress_common_lines;
 
 /* The half line width and column 2 offset for OUTPUT_SDIFF.  */
-XTERN size_t sdiff_half_width;
-XTERN size_t sdiff_column2_offset;
+XTERN intmax_t sdiff_half_width;
+XTERN intmax_t sdiff_column2_offset;
 
 /* String containing all the command options diff received,
    with spaces between and at the beginning but none at the end.
