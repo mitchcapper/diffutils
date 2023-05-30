@@ -124,11 +124,13 @@ _GL_INLINE_HEADER_BEGIN
 #endif
 
 /* Type used for fast comparison of several bytes at a time.
+   The type is a pointer to an incomplete struct,
+   so that its values are less likely to be misused.
    This used to be uintmax_t, but changing it to the size of a pointer
    made plain 'cmp' 90% faster (GCC 4.8.1, x86).  */
 
 #ifndef word
-typedef void *word;
+typedef struct incomplete *word;
 #endif
 
 /* The signed integer type of a line number.  Since files are read
