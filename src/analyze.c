@@ -146,7 +146,7 @@ discard_confusing_lines (struct file_data filevec[])
 
               /* If 1/4 of the lines in the run are provisional,
                  cancel discarding of all provisional lines in the run.  */
-              if (provisional * 4 > length)
+	      if (length >> 2 < provisional)
                 {
                   while (j > i)
                     if (discards[--j] == 2)
