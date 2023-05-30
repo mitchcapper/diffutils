@@ -283,7 +283,9 @@ process_signals (void)
       if (stops)
         {
           stop_signal_count = stops - 1;
+#ifndef _WIN32
           sig = SIGSTOP;
+#endif
         }
       else
 	{
