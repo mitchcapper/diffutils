@@ -840,8 +840,8 @@ copy_stringlist (char *const fromptrs[], idx_t const fromlengths[],
                  char *toptrs[], idx_t tolengths[],
                  lin copynum)
 {
-  register char *const *f = fromptrs;
-  register char **t = toptrs;
+  char *const *f = fromptrs;
+  char **t = toptrs;
   idx_t const *fl = fromlengths;
   idx_t *tl = tolengths;
 

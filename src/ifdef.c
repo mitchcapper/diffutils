@@ -110,10 +110,10 @@ format_ifdef (char const *format, lin beg0, lin end0, lin beg1, lin end1)
    If OUT is zero, do not actually print anything; just scan the format.  */
 
 static char const *
-format_group (register FILE *out, char const *format, char endchar,
+format_group (FILE *out, char const *format, char endchar,
               struct group const *groups)
 {
-  register char const *f = format;
+  char const *f = format;
 
   for (char c; (c = *f) != endchar && c != 0; )
     {
@@ -225,7 +225,7 @@ groups_letter_value (struct group const *g, char letter)
 /* Print to file OUT, using FORMAT to print the line group GROUP.
    But do nothing if OUT is zero.  */
 static void
-print_ifdef_lines (register FILE *out, char const *format,
+print_ifdef_lines (FILE *out, char const *format,
                    struct group const *group)
 {
   if (!out)
@@ -255,8 +255,8 @@ print_ifdef_lines (register FILE *out, char const *format,
 
   for (;  from < upto;  from++)
     {
-      register char c;
-      register char const *f = format;
+      char c;
+      char const *f = format;
 
       while ((c = *f++) != 0)
         {
@@ -376,7 +376,7 @@ do_printf_spec (FILE *out, char const *spec,
 static char const *
 scan_char_literal (char const *lit, char *valptr)
 {
-  register char const *p = lit;
+  char const *p = lit;
   char value;
   char c = *p++;
 

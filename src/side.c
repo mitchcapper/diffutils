@@ -75,14 +75,14 @@ print_half_line (char const *const *line, intmax_t indent, intmax_t out_bound)
   FILE *out = outfile;
   intmax_t in_position = 0;
   intmax_t out_position = 0;
-  register char const *text_pointer = line[0];
-  register char const *text_limit = line[1];
+  char const *text_pointer = line[0];
+  char const *text_limit = line[1];
   mbstate_t mbstate = { 0 };
 
   while (text_pointer < text_limit)
     {
       char const *tp0 = text_pointer;
-      register char c = *text_pointer++;
+      char c = *text_pointer++;
 
       switch (c)
         {

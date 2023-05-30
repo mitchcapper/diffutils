@@ -64,7 +64,7 @@ dir_read (struct file_data const *dir, struct dirdata *dirdata)
   if (dir->desc != -1)
     {
       /* Open the directory and check for errors.  */
-      register DIR *reading = opendir (dir->name);
+      DIR *reading = opendir (dir->name);
       if (!reading)
         return false;
 

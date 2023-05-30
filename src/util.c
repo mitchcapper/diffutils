@@ -1060,14 +1060,14 @@ finish_output (void)
 bool
 lines_differ (char const *s1, char const *s2)
 {
-  register char const *t1 = s1;
-  register char const *t2 = s2;
+  char const *t1 = s1;
+  char const *t2 = s2;
   intmax_t tab = 0, column = 0;
 
   while (1)
     {
-      register unsigned char c1 = *t1++;
-      register unsigned char c2 = *t2++;
+      unsigned char c1 = *t1++;
+      unsigned char c2 = *t2++;
 
       /* Test for exact char equality first, since it's a common case.  */
       if (c1 != c2)
@@ -1364,8 +1364,8 @@ output_1_line (char const *base, char const *limit, char const *flag_format,
     }
   else
     {
-      register FILE *out = outfile;
-      register char const *t = base;
+      FILE *out = outfile;
+      char const *t = base;
       intmax_t tab = 0, column = 0, tab_size = tabsize;
       int counter_proc_signals = 0;
 
