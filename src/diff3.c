@@ -33,7 +33,6 @@
 
 #include <c-stack.h>
 #include <cmpbuf.h>
-#include "die.h"
 #include <error.h>
 #include <exitfail.h>
 #include <file-type.h>
@@ -456,7 +455,7 @@ try_help (char const *reason_msgid, char const *operand)
 {
   if (reason_msgid)
     error (0, 0, _(reason_msgid), operand);
-  die (EXIT_TROUBLE, 0,
+  error (EXIT_TROUBLE, 0,
          _("Try '%s --help' for more information."), program_name);
 }
 
@@ -1260,7 +1259,7 @@ read_diff (char const *filea,
                 ? WEXITSTATUS (wstatus) : INT_MAX);
 
   if (EXIT_TROUBLE <= status)
-    die (EXIT_TROUBLE, werrno,
+    error (EXIT_TROUBLE, werrno,
            _(status == 126
              ? "subsidiary program '%s' could not be invoked"
              : status == 127
@@ -1707,11 +1706,11 @@ reverse_diff3_blocklist (struct diff3_block *diff)
 static void
 fatal (char const *msgid)
 {
-  die (EXIT_TROUBLE, 0, "%s", _(msgid));
+  error (EXIT_TROUBLE, 0, "%s", _(msgid));
 }
 
 static void
 perror_with_exit (char const *string)
 {
-  die (EXIT_TROUBLE, errno, "%s", string);
+  error (EXIT_TROUBLE, errno, "%s", string);
 }

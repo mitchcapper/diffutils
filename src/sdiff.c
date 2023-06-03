@@ -27,7 +27,6 @@
 
 #include <c-stack.h>
 #include <dirname.h>
-#include "die.h"
 #include <error.h>
 #include <exitfail.h>
 #include <file-type.h>
@@ -166,7 +165,7 @@ try_help (char const *reason_msgid, char const *operand)
 {
   if (reason_msgid)
     error (0, 0, _(reason_msgid), operand);
-  die (EXIT_TROUBLE, 0, _("Try '%s --help' for more information."),
+  error (EXIT_TROUBLE, 0, _("Try '%s --help' for more information."),
          program_name);
 }
 

@@ -21,7 +21,6 @@
 #define GDIFF_MAIN
 #define SYSTEM_INLINE _GL_EXTERN_INLINE
 #include "diff.h"
-#include "die.h"
 #include <assert.h>
 #include "paths.h"
 #include <c-stack.h>
@@ -919,7 +918,7 @@ summarize_regexp_list (struct regexp_list *reglist)
           char const *m = re_compile_pattern (reglist->regexps, reglist->len,
                                               reglist->buf);
           if (m)
-            die (EXIT_TROUBLE, 0, "%s: %s", reglist->regexps, m);
+            error (EXIT_TROUBLE, 0, "%s: %s", reglist->regexps, m);
         }
     }
 }
@@ -929,7 +928,7 @@ try_help (char const *reason_msgid, char const *operand)
 {
   if (reason_msgid)
     error (0, 0, _(reason_msgid), operand);
-  die (EXIT_TROUBLE, 0, _("Try '%s --help' for more information."),
+  error (EXIT_TROUBLE, 0, _("Try '%s --help' for more information."),
          program_name);
 }
 

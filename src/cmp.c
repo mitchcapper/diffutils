@@ -24,7 +24,6 @@
 
 #include <c-stack.h>
 #include <cmpbuf.h>
-#include "die.h"
 #include <error.h>
 #include <exitfail.h>
 #include <file-type.h>
@@ -121,7 +120,7 @@ try_help (char const *reason_msgid, char const *operand)
 {
   if (reason_msgid)
     error (0, 0, _(reason_msgid), operand);
-  die (EXIT_TROUBLE, 0,
+  error (EXIT_TROUBLE, 0,
          _("Try '%s --help' for more information."), program_name);
 }
 
@@ -158,9 +157,9 @@ static void
 check_stdout (void)
 {
   if (ferror (stdout))
-    die (EXIT_TROUBLE, 0, "%s", _("write failed"));
+    error (EXIT_TROUBLE, 0, "%s", _("write failed"));
   else if (fclose (stdout) != 0)
-    die (EXIT_TROUBLE, errno, "%s", _("standard output"));
+    error (EXIT_TROUBLE, errno, "%s", _("standard output"));
 }
 
 static char const *const option_help_msgid[] = {
@@ -376,7 +375,7 @@ main (int argc, char **argv)
 
   for (int f = 0; f < 2; f++)
     if (close (file_desc[f]) != 0)
-      die (EXIT_TROUBLE, errno, "%s", file[f]);
+      error (EXIT_TROUBLE, errno, "%s", file[f]);
   if (exit_status != EXIT_SUCCESS && comparison_type < type_no_stdout)
     check_stdout ();
   exit (exit_status);
@@ -426,7 +425,7 @@ cmp (void)
               if (r != bytes_to_read)
                 {
                   if (r < 0)
-                    die (EXIT_TROUBLE, errno, "%s", file[f]);
+                    error (EXIT_TROUBLE, errno, "%s", file[f]);
                   break;
                 }
               ig -= r;
@@ -453,10 +452,10 @@ cmp (void)
 
       ptrdiff_t read0 = block_read (file_desc[0], buf0, bytes_to_read);
       if (read0 < 0)
-        die (EXIT_TROUBLE, errno, "%s", file[0]);
+        error (EXIT_TROUBLE, errno, "%s", file[0]);
       ptrdiff_t read1 = block_read (file_desc[1], buf1, bytes_to_read);
       if (read1 < 0)
-        die (EXIT_TROUBLE, errno, "%s", file[1]);
+        error (EXIT_TROUBLE, errno, "%s", file[1]);
 
       idx_t smaller = MIN (read0, read1);
 
