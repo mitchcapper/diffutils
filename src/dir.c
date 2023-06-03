@@ -102,19 +102,14 @@ dir_read (struct file_data const *dir, struct dirdata *dirdata)
           data_used += d_size;
           nnames++;
         }
-      if (errno)
-        {
-          int e = errno;
-          closedir (reading);
-          errno = e;
+
+      int readdir_errno = errno;
+      if (closedir (reading) < 0 || readdir_errno)
+	{
+	  if (readdir_errno)
+	    errno = readdir_errno;
           return false;
         }
-#if CLOSEDIR_VOID
-      closedir (reading);
-#else
-      if (closedir (reading) != 0)
-        return false;
-#endif
     }
 
   /* Create the 'names' table from the 'data' table.  */

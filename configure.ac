@@ -119,7 +119,6 @@ AC_CHECK_FUNCS_ONCE([sigaction sigprocmask strcasecoll stricoll])
 if test $ac_cv_func_sigprocmask = no; then
   AC_CHECK_FUNCS([sigblock])
 fi
-AC_FUNC_CLOSEDIR_VOID
 AC_FUNC_FORK
 
 # When .tarball-version exists, we're building from a tarball
