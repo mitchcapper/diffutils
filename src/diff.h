@@ -323,7 +323,7 @@ struct file_data {
     /* Vector, indexed by real origin-0 line number,
        containing true for a line that is an insertion or a deletion.
        The results of comparison are stored here.  */
-    char *changed;
+    bool *changed;
 
     /* 1 if file ends in a line with no final newline.  */
     bool missing_newline;

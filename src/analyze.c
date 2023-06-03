@@ -249,8 +249,8 @@ shift_boundaries (struct file_data filevec[])
 {
   for (int f = 0; f < 2; f++)
     {
-      char *changed = filevec[f].changed;
-      char *other_changed = filevec[1 - f].changed;
+      bool *changed = filevec[f].changed;
+      bool *other_changed = filevec[1 - f].changed;
       lin const *equivs = filevec[f].equivs;
       lin i = 0;
       lin j = 0;
@@ -368,8 +368,8 @@ static struct change *
 build_reverse_script (struct file_data const filevec[])
 {
   struct change *script = nullptr;
-  char *changed0 = filevec[0].changed;
-  char *changed1 = filevec[1].changed;
+  bool *changed0 = filevec[0].changed;
+  bool *changed1 = filevec[1].changed;
   lin len0 = filevec[0].buffered_lines;
   lin len1 = filevec[1].buffered_lines;
 
@@ -405,8 +405,8 @@ static struct change *
 build_script (struct file_data const filevec[])
 {
   struct change *script = nullptr;
-  char *changed0 = filevec[0].changed;
-  char *changed1 = filevec[1].changed;
+  bool *changed0 = filevec[0].changed;
+  bool *changed1 = filevec[1].changed;
   lin i0 = filevec[0].buffered_lines, i1 = filevec[1].buffered_lines;
 
   /* Note that changedN[-1] does exist, and is 0.  */
@@ -520,9 +520,9 @@ diff_2_files (struct comparison *cmp)
       /* Allocate vectors for the results of comparison:
          a flag for each line of each file, saying whether that line
          is an insertion or deletion.
-         Allocate an extra element, always 0, at each end of each vector.  */
+         Allocate an extra false element at each end of each vector.  */
 
-      char *flag_space = xizalloc (cmp->file[0].buffered_lines
+      bool *flag_space = xizalloc (cmp->file[0].buffered_lines
 				   + cmp->file[1].buffered_lines + 4);
       cmp->file[0].changed = flag_space + 1;
       cmp->file[1].changed = flag_space + cmp->file[0].buffered_lines + 3;
