@@ -105,14 +105,10 @@ int strcasecmp (char const *, char const *);
 # define SIGCHLD SIGCLD
 #endif
 
-#undef MIN
-#undef MAX
-#define MIN(a, b) ((a) <= (b) ? (a) : (b))
-#define MAX(a, b) ((a) >= (b) ? (a) : (b))
-
 #include <attribute.h>
 #include <idx.h>
 #include <intprops.h>
+#include <minmax.h>
 #include <propername.h>
 
 #include "version.h"
