@@ -324,12 +324,11 @@ main (int argc, char **argv)
         case '7':
         case '8':
         case '9':
-          ocontext = (! ISDIGIT (prev)
-                      ? c - '0'
-                      : (ocontext - (c - '0' <= CONTEXT_MAX % 10)
-                         < CONTEXT_MAX / 10)
-                      ? 10 * ocontext + (c - '0')
-                      : CONTEXT_MAX);
+	  if (! ISDIGIT (prev))
+	    ocontext = 0;
+	  if (ckd_mul (&ocontext, ocontext, 10)
+	      || ckd_add (&ocontext, ocontext, c - '0'))
+	    ocontext = LIN_MAX;
           break;
 
         case 'a':
@@ -361,15 +360,13 @@ main (int argc, char **argv)
 		numval = strtoimax (optarg, &numend, 10);
                 if (*numend || numval < 0)
                   try_help ("invalid context length '%s'", optarg);
-                if (CONTEXT_MAX < numval)
-                  numval = CONTEXT_MAX;
               }
             else
               numval = 3;
 
             specify_style (c == 'U' ? OUTPUT_UNIFIED : OUTPUT_CONTEXT);
             if (context < numval)
-              context = numval;
+              context = MIN (numval, LIN_MAX);
             explicit_context = true;
           }
           break;
