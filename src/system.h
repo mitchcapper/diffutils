@@ -110,6 +110,7 @@ int strcasecmp (char const *, char const *);
 #include <intprops.h>
 #include <minmax.h>
 #include <propername.h>
+#include <same-inode.h>
 
 #include "version.h"
 
@@ -173,7 +174,7 @@ verify (LIN_MAX <= IDX_MAX);
 /* Do struct stat *S, *T describe the same file?  Answer -1 if unknown.  */
 #ifndef same_file
 # define same_file(s, t) \
-    ((((s)->st_ino == (t)->st_ino) && ((s)->st_dev == (t)->st_dev)) \
+    (SAME_INODE (*s, *t) \
      || same_special_file (s, t))
 #endif
 
