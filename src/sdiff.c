@@ -42,7 +42,7 @@
 static char const PROGRAM_NAME[] = "sdiff";
 
 #define AUTHORS \
-  proper_name ("Thomas Lord")
+  _("Thomas Lord")
 
 /* Size of chunks read from files which must be parsed into lines.  */
 enum { SDIFF_BUFSIZE = 65536 };

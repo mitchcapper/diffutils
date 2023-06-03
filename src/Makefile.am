@@ -26,14 +26,13 @@ AM_CFLAGS = $(WARN_CFLAGS) $(WERROR_CFLAGS)
 LDADD = \
   libver.a \
   ../lib/libdiffutils.a \
-  $(LIBCSTACK) \
-  $(LIBINTL) \
-  $(LIBICONV) \
-  $(LIBSIGSEGV) \
-  $(LIBTHREAD) \
-  $(LIBUNISTRING) \
   $(CLOCK_TIME_LIB) \
   $(HARD_LOCALE_LIB) \
+  $(LIBTHREAD) \
+  $(LIBCSTACK) \
+  $(LIBINTL) \
+  $(LIBSIGSEGV) \
+  $(LIBUNISTRING) \
   $(MBRTOWC_LIB) \
   $(SETLOCALE_NULL_LIB)
 

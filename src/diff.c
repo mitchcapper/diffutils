@@ -48,11 +48,11 @@
 static char const PROGRAM_NAME[] = "diff";
 
 #define AUTHORS \
-  proper_name ("Paul Eggert"), \
-  proper_name ("Mike Haertel"), \
-  proper_name ("David Hayes"), \
-  proper_name ("Richard Stallman"), \
-  proper_name ("Len Tower")
+  _("Paul Eggert"), \
+  _("Mike Haertel"), \
+  _("David Hayes"), \
+  _("Richard Stallman"), \
+  _("Len Tower")
 
 #ifndef GUTTER_WIDTH_MINIMUM
 # define GUTTER_WIDTH_MINIMUM 3

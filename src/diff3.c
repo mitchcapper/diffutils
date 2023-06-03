@@ -49,7 +49,7 @@
 static char const PROGRAM_NAME[] = "diff3";
 
 #define AUTHORS \
-  proper_name ("Randy Smith")
+  _("Randy Smith")
 
 /* Internal data structures and macros for the diff3 program; includes
    data structures for both diff3 diffs and normal diffs.  */

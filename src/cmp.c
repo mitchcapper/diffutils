@@ -43,8 +43,8 @@
 static char const PROGRAM_NAME[] = "cmp";
 
 #define AUTHORS \
-  proper_name_utf8 ("Torbjorn Granlund", "Torbj\303\266rn Granlund"), \
-  proper_name ("David MacKenzie")
+  proper_name_lite ("Torbjorn Granlund", "Torbj\303\266rn Granlund"), \
+  _("David MacKenzie")
 
 static bool
 hard_locale_LC_MESSAGES (void)
