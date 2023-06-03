@@ -30,9 +30,9 @@
 #define OFFSET lin
 #define OFFSET_MAX LIN_MAX
 #define EXTRA_CONTEXT_FIELDS /* none */
-#define NOTE_DELETE(c, xoff) (files[0].changed[files[0].realindexes[xoff]] = 1)
-#define NOTE_INSERT(c, yoff) (files[1].changed[files[1].realindexes[yoff]] = 1)
-#define USE_HEURISTIC 1
+#define NOTE_DELETE(c, x) (files[0].changed[files[0].realindexes[x]] = true)
+#define NOTE_INSERT(c, y) (files[1].changed[files[1].realindexes[y]] = true)
+#define USE_HEURISTIC
 #include <diffseq.h>
 
 /* Discard lines from one file that have no matches in the other file.
@@ -226,7 +226,7 @@ discard_confusing_lines (struct file_data filevec[])
             filevec[f].realindexes[j++] = i;
           }
         else
-          filevec[f].changed[i] = 1;
+          filevec[f].changed[i] = true;
       filevec[f].nondiscarded_lines = j;
     }
 
@@ -256,7 +256,7 @@ shift_boundaries (struct file_data filevec[])
       lin j = 0;
       lin i_end = filevec[f].buffered_lines;
 
-      while (1)
+      while (true)
         {
           /* Scan forwards to find beginning of another run of changes.
              Also keep track of the corresponding point in the other file.  */
@@ -294,8 +294,8 @@ shift_boundaries (struct file_data filevec[])
 
               while (start && equivs[start - 1] == equivs[i - 1])
                 {
-                  changed[--start] = 1;
-                  changed[--i] = 0;
+                  changed[--start] = true;
+                  changed[--i] = false;
                   while (changed[start - 1])
                     start--;
                   while (other_changed[--j])
@@ -315,8 +315,8 @@ shift_boundaries (struct file_data filevec[])
 
               while (i != i_end && equivs[start] == equivs[i])
                 {
-                  changed[start++] = 0;
-                  changed[i++] = 1;
+                  changed[start++] = false;
+                  changed[i++] = true;
                   while (changed[i])
                     i++;
                   while (other_changed[++j])
@@ -330,8 +330,8 @@ shift_boundaries (struct file_data filevec[])
 
           while (corresponding < i)
             {
-              changed[--start] = 1;
-              changed[--i] = 0;
+              changed[--start] = true;
+              changed[--i] = false;
               while (other_changed[--j])
                 continue;
             }
@@ -367,7 +367,7 @@ add_change (lin line0, lin line1, lin deleted, lin inserted,
 static struct change *
 build_reverse_script (struct file_data const filevec[])
 {
-  struct change *script = 0;
+  struct change *script = nullptr;
   char *changed0 = filevec[0].changed;
   char *changed1 = filevec[1].changed;
   lin len0 = filevec[0].buffered_lines;
@@ -404,7 +404,7 @@ build_reverse_script (struct file_data const filevec[])
 static struct change *
 build_script (struct file_data const filevec[])
 {
-  struct change *script = 0;
+  struct change *script = nullptr;
   char *changed0 = filevec[0].changed;
   char *changed1 = filevec[1].changed;
   lin i0 = filevec[0].buffered_lines, i1 = filevec[1].buffered_lines;
@@ -613,7 +613,7 @@ diff_2_files (struct comparison *cmp)
                  to be used if and when we have some output to print.  */
               setup_output (file_label[0] ? file_label[0] : cmp->file[0].name,
                             file_label[1] ? file_label[1] : cmp->file[1].name,
-                            cmp->parent != 0);
+                            !!cmp->parent);
 
               switch (output_style)
                 {

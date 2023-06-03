@@ -268,7 +268,7 @@ main (int argc, char **argv)
   setlocale (LC_ALL, "");
   bindtextdomain (PACKAGE, LOCALEDIR);
   textdomain (PACKAGE);
-  c_stack_action (0);
+  c_stack_action (nullptr);
   xstdopen ();
 
   int incompat = 0;
@@ -339,9 +339,9 @@ main (int argc, char **argv)
               tag_strings[tag_count++] = optarg;
               break;
             }
-          try_help ("too many file label options", 0);
+          try_help ("too many file label options", nullptr);
         default:
-          try_help (0, 0);
+          try_help (nullptr, nullptr);
         }
     }
 
@@ -354,7 +354,7 @@ main (int argc, char **argv)
   if (incompat & (incompat - 1)  /* Ensure at most one of -AeExX3.  */
       || finalwrite & merge /* -i -m would rewrite input file.  */
       || (tag_count && ! flagging)) /* -L requires one of -AEX.  */
-    try_help ("incompatible options", 0);
+    try_help ("incompatible options", nullptr);
 
   if (argc - optind != 3)
     {
@@ -492,7 +492,7 @@ static char const *const option_help_msgid[] = {
   "",
   N_("    --help                  display this help and exit"),
   N_("-v, --version               output version information and exit"),
-  0
+  nullptr
 };
 
 static void
@@ -641,7 +641,7 @@ make_3way_diff (struct diff_block *thread0, struct diff_block *thread1)
         = last_using[high_water_thread]
         = high_water_diff;
       current[high_water_thread] = high_water_diff->next;
-      last_using[high_water_thread]->next = 0;
+      last_using[high_water_thread]->next = nullptr;
 
       /* And mark the other diff */
       int other_thread = high_water_thread ^ 0x1;
@@ -664,7 +664,7 @@ make_3way_diff (struct diff_block *thread0, struct diff_block *thread1)
              code assumes that other_diff enters it equal to
              current[high_water_thread ^ 0x1] */
           current[other_thread] = current[other_thread]->next;
-          other_diff->next = 0;
+          other_diff->next = nullptr;
 
           /* Set the high_water stuff
              If this comparison is equal, then this is the last pass
@@ -751,7 +751,7 @@ using_to_diff3_block (struct diff_block *using[2],
     = create_diff3_block (low[0], high[0], low[1], high[1], lowc, highc);
 
   /* Copy information for the common file.
-     Return with a zero if any of the compares failed.  */
+     Return a null pointer if any of the compares failed.  */
 
   for (int d = 0; d < 2; d++)
     for (struct diff_block *ptr = using[d]; ptr; ptr = D_NEXT (ptr))
@@ -763,7 +763,7 @@ using_to_diff3_block (struct diff_block *using[2],
                               D_LINEARRAY (result, FILEC) + result_offset,
                               D_LENARRAY (result, FILEC) + result_offset,
                               D_NUMLINES (ptr, FC)))
-          return 0;
+          return nullptr;
       }
 
   /* Copy information for file d.  First deal with anything that might be
@@ -791,7 +791,7 @@ using_to_diff3_block (struct diff_block *using[2],
                                 D_LINEARRAY (result, FILE0 + d) + result_offset,
                                 D_LENARRAY (result, FILE0 + d) + result_offset,
                                 D_NUMLINES (ptr, FO)))
-            return 0;
+            return nullptr;
 
           /* Catch the lines between here and the next diff */
           lin linec = D_HIGHLINE (ptr, FC) + 1 - lowc;
@@ -876,7 +876,7 @@ create_diff3_block (lin low0, lin high0,
   struct diff3_block *result = xmalloc (sizeof *result);
 
   D3_TYPE (result) = DIFF_ERROR;
-  D_NEXT (result) = 0;
+  D_NEXT (result) = nullptr;
 
   /* Assign ranges */
   D_LOWLINE (result, FILE0) = low0;
@@ -895,8 +895,8 @@ create_diff3_block (lin low0, lin high0,
     }
   else
     {
-      D_LINEARRAY (result, FILE0) = 0;
-      D_LENARRAY (result, FILE0) = 0;
+      D_LINEARRAY (result, FILE0) = nullptr;
+      D_LENARRAY (result, FILE0) = nullptr;
     }
 
   numlines = D_NUMLINES (result, FILE1);
@@ -907,8 +907,8 @@ create_diff3_block (lin low0, lin high0,
     }
   else
     {
-      D_LINEARRAY (result, FILE1) = 0;
-      D_LENARRAY (result, FILE1) = 0;
+      D_LINEARRAY (result, FILE1) = nullptr;
+      D_LENARRAY (result, FILE1) = nullptr;
     }
 
   numlines = D_NUMLINES (result, FILE2);
@@ -919,8 +919,8 @@ create_diff3_block (lin low0, lin high0,
     }
   else
     {
-      D_LINEARRAY (result, FILE2) = 0;
-      D_LENARRAY (result, FILE2) = 0;
+      D_LINEARRAY (result, FILE2) = nullptr;
+      D_LENARRAY (result, FILE2) = nullptr;
     }
 
   /* Return */
@@ -928,7 +928,7 @@ create_diff3_block (lin low0, lin high0,
 }
 
 /* Compare two lists of lines of text.
-   Return 1 if they are equivalent, 0 if not.  */
+   Return true if they are equivalent, false if not.  */
 
 static bool
 compare_line_list (char *const list1[], idx_t const lengths1[],
@@ -963,8 +963,8 @@ process_diff (char const *filea,
   while (scan_diff < diff_limit)
     {
       struct diff_block *bptr = xmalloc (sizeof *bptr);
-      bptr->lines[0] = bptr->lines[1] = 0;
-      bptr->lengths[0] = bptr->lengths[1] = 0;
+      bptr->lines[0] = bptr->lines[1] = nullptr;
+      bptr->lengths[0] = bptr->lengths[1] = nullptr;
 
       enum diff_type dt = process_diff_control (&scan_diff, bptr);
       if (dt == DIFF_ERROR || *scan_diff != '\n')
@@ -1053,8 +1053,8 @@ skipwhite (char *s)
 }
 
 /* Read a nonnegative line number from S, returning the address of the
-   first character after the line number, and storing the number into
-   *PNUM.  Return 0 if S does not point to a valid line number.  */
+   first character after the line number, and storing the number into *PNUM.
+   Return a null pointer if S does not point to a valid line number.  */
 
 static char *
 readnum (char *s, lin *pnum)
@@ -1063,7 +1063,7 @@ readnum (char *s, lin *pnum)
   lin num = 0;
 
   if (! ISDIGIT (c))
-    return 0;
+    return nullptr;
 
   do
     {
@@ -1460,7 +1460,7 @@ undotlines (FILE *outputfile, bool leading_dot, lin start, lin num)
    three files.  These may be the actual names, or may be the
    arguments specified with -L.
 
-   Return 1 if conflicts were found.  */
+   Return true if conflicts were found.  */
 
 static bool
 output_diff3_edscript (FILE *outputfile, struct diff3_block *diff,
@@ -1573,7 +1573,7 @@ output_diff3_edscript (FILE *outputfile, struct diff3_block *diff,
    number, REV_MAPPING is its inverse, and FILE0, FILE1, and FILE2 are
    the names of the files.
 
-   Return 1 if conflicts were found.  */
+   Return true if conflicts were found.  */
 
 static bool
 output_diff3_merge (FILE *infile, FILE *outputfile, struct diff3_block *diff,

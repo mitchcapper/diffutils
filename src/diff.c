@@ -288,7 +288,7 @@ main (int argc, char **argv)
   setlocale (LC_ALL, "");
   bindtextdomain (PACKAGE, LOCALEDIR);
   textdomain (PACKAGE);
-  c_stack_action (0);
+  c_stack_action (nullptr);
   function_regexp_list.buf = &function_regexp;
   ignore_regexp_list.buf = &ignore_regexp;
   re_set_syntax (RE_SYNTAX_GREP | RE_NO_POSIX_BACKTRACKING);
@@ -1038,7 +1038,7 @@ static char const *const option_help_msgid[] = {
   N_("If --from-file or --to-file is given, there are no restrictions on FILE(s)."),
   N_("If a FILE is '-', read standard input."),
   N_("Exit status is 0 if inputs are the same, 1 if different, 2 if trouble."),
-  0
+  nullptr
 };
 
 static void

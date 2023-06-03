@@ -150,7 +150,7 @@ static void
 specify_comparison_type (enum comparison_type t)
 {
   if (comparison_type && comparison_type != t)
-    try_help ("options -l and -s are incompatible", 0);
+    try_help ("options -l and -s are incompatible", nullptr);
   comparison_type = t;
 }
 
@@ -173,7 +173,7 @@ static char const *const option_help_msgid[] = {
   N_("-s, --quiet, --silent      suppress all normal output"),
   N_("    --help                 display this help and exit"),
   N_("-v, --version              output version information and exit"),
-  0
+  nullptr
 };
 
 static void
@@ -209,13 +209,13 @@ main (int argc, char **argv)
   setlocale (LC_ALL, "");
   bindtextdomain (PACKAGE, LOCALEDIR);
   textdomain (PACKAGE);
-  c_stack_action (0);
+  c_stack_action (nullptr);
   xstdopen ();
 
   /* Parse command line options.  */
 
   int c;
-  while ((c = getopt_long (argc, argv, "bci:ln:sv", long_options, 0))
+  while ((c = getopt_long (argc, argv, "bci:ln:sv", long_options, nullptr))
          != -1)
     switch (c)
       {
@@ -239,7 +239,7 @@ main (int argc, char **argv)
       case 'n':
         {
           intmax_t n;
-          if (xstrtoimax (optarg, 0, 0, &n, valid_suffixes) != LONGINT_OK
+          if (xstrtoimax (optarg, nullptr, 0, &n, valid_suffixes) != LONGINT_OK
               || n < 0)
             try_help ("invalid --bytes value '%s'", optarg);
           if (! (0 <= bytes && bytes < n))
@@ -263,7 +263,7 @@ main (int argc, char **argv)
         return EXIT_SUCCESS;
 
       default:
-        try_help (0, 0);
+        try_help (nullptr, nullptr);
       }
 
   if (optind == argc)

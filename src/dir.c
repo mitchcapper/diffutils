@@ -58,8 +58,8 @@ dir_read (struct file_data const *dir, struct dirdata *dirdata)
   /* Allocated and used storage for file name data.  */
   char *data;
 
-  dirdata->names = 0;
-  dirdata->data = 0;
+  dirdata->names = nullptr;
+  dirdata->data = nullptr;
 
   if (dir->desc != -1)
     {
@@ -121,7 +121,7 @@ dir_read (struct file_data const *dir, struct dirdata *dirdata)
       names[i] = data;
       data += strlen (data) + 1;
     }
-  names[nnames] = 0;
+  names[nnames] = nullptr;
   return true;
 }
 

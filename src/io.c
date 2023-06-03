@@ -102,10 +102,10 @@ file_block_read (struct file_data *current, idx_t size)
 
 /* Check for binary files and compare them for exact identity.  */
 
-/* Return 1 if BUF contains a non text character.
+/* Return true if BUF contains a non text character.
    SIZE is the number of characters in BUF.  */
 
-#define binary_file_p(buf, size) (memchr (buf, 0, size) != 0)
+#define binary_file_p(buf, size) (!! memchr (buf, 0, size))
 
 /* Get ready to read the current file.
    Return nonzero if SKIP_TEST is zero,

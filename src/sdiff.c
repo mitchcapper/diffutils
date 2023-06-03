@@ -205,7 +205,7 @@ static char const *const option_help_msgid[] = {
   "",
   N_("    --help                   display this help and exit"),
   N_("-v, --version                output version information and exit"),
-  0
+  nullptr
 };
 
 static void
@@ -439,7 +439,7 @@ lf_snarf (struct line_filter *lf, char *buffer, idx_t bufsize)
       bufsize -= s;
       if (next < lf->buflim)
         {
-          *buffer = 0;
+          *buffer = '\0';
           lf->bufpos = next + 1;
           return 1;
         }
@@ -560,7 +560,7 @@ main (int argc, char *argv[])
           break;
 
         default:
-          try_help (0, 0);
+          try_help (nullptr, nullptr);
         }
     }
 
@@ -581,7 +581,7 @@ main (int argc, char *argv[])
       diffarg ("--");
       diffarg (argv[optind]);
       diffarg (argv[optind + 1]);
-      diffarg (0);
+      diffarg (nullptr);
       execvp (diffargv[0], (char **) diffargv);
       perror_fatal (diffargv[0]);
     }
@@ -605,7 +605,7 @@ main (int argc, char *argv[])
       diffarg ("--");
       diffarg (argv[optind]);
       diffarg (argv[optind + 1]);
-      diffarg (0);
+      diffarg (nullptr);
 
       trapsigs ();
 
@@ -689,7 +689,7 @@ main (int argc, char *argv[])
         if (tmpname)
           {
             unlink (tmpname);
-            tmpname = 0;
+            tmpname = nullptr;
           }
 
         if (! interact_ok)
@@ -758,7 +758,7 @@ trapsigs (void)
   for (int i = 0;  i < NUM_SIGS;  i++)
     {
 #if HAVE_SIGACTION
-      sigaction (sigs[i], 0, &initial_action[i]);
+      sigaction (sigs[i], nullptr, &initial_action[i]);
 #else
       initial_action[i] = signal (sigs[i], SIG_IGN);
 #endif
@@ -783,7 +783,7 @@ untrapsig (int s)
       if ((! s || sigs[i] == s)  &&  initial_handler (i) != SIG_IGN)
         {
 #if HAVE_SIGACTION
-          sigaction (sigs[i], &initial_action[i], 0);
+          sigaction (sigs[i], &initial_action[i], nullptr);
 #else
           signal (sigs[i], initial_action[i]);
 #endif
