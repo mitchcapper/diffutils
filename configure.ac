@@ -34,7 +34,6 @@ AC_CONFIG_HEADERS([lib/config.h:lib/config.hin])
 
 AC_PROG_AWK
 AC_PROG_CC
-AM_PROG_CC_C_O
 AM_MISSING_PROG([HELP2MAN], [help2man])
 AC_PROG_RANLIB
 gl_EARLY
