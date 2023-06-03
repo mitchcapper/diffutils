@@ -216,7 +216,7 @@ verify (LIN_MAX <= IDX_MAX);
 
 #define STREQ(a, b) (strcmp (a, b) == 0)
 
-/* Return the floor of the log base 2 of N.  N must be positive.  */
+/* Return the floor of the log base 2 of N.  Return -1 if N is zero.  */
 SYSTEM_INLINE int
 floor_log2 (idx_t n)
 {
