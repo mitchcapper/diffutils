@@ -18,6 +18,8 @@
 
 #include <config.h>
 
+#include "cmpbuf.h"
+
 #include <errno.h>
 #include <limits.h>
 #include <signal.h>
@@ -26,7 +28,6 @@
 #include <stdint.h>
 #include <inttypes.h>
 #include <sys/types.h>
-#include "cmpbuf.h"
 
 #include "minmax.h"
 
