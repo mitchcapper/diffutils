@@ -101,7 +101,8 @@ enum
   HELP_OPTION = CHAR_MAX + 1
 };
 
-static struct option const long_options[] =
+static char const shortopts[] = "bci:ln:sv";
+static struct option const longopts[] =
 {
   {"print-bytes", 0, 0, 'b'},
   {"print-chars", 0, 0, 'c'}, /* obsolescent as of diffutils 2.7.3 */
@@ -213,9 +214,8 @@ main (int argc, char **argv)
 
   /* Parse command line options.  */
 
-  int c;
-  while ((c = getopt_long (argc, argv, "bci:ln:sv", long_options, nullptr))
-         != -1)
+  for (int c;
+       0 <= (c = getopt_long (argc, argv, shortopts, longopts, nullptr)); )
     switch (c)
       {
       case 'b':

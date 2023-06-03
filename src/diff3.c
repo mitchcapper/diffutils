@@ -208,6 +208,7 @@ enum
   STRIP_TRAILING_CR_OPTION
 };
 
+static char const shortopts[] = "aeimvx3AEL:TX";
 static struct option const longopts[] =
 {
   {"diff-program", 1, 0, DIFF_PROGRAM_OPTION},
@@ -270,79 +271,79 @@ main (int argc, char **argv)
   c_stack_action (nullptr);
   xstdopen ();
 
+  /* Parse command line options.  */
+
   int incompat = 0;
   enum { OPTION_3, OPTION_A, OPTION_E, OPTION_X, OPTION_e, OPTION_x };
   int tag_count = 0;
   char *tag_strings[3];
 
   for (int c;
-       (c = getopt_long (argc, argv, "aeimvx3AEL:TX", longopts, 0)) != -1; )
-    {
-      switch (c)
-        {
-        case 'a':
-          text = true;
-          break;
-        case 'A':
-          show_2nd = true;
-          flagging = true;
-          incompat |= 1 << OPTION_A;
-          break;
-        case 'x':
-          overlap_only = true;
-          incompat |= 1 << OPTION_x;
-          break;
-        case '3':
-          simple_only = true;
-          incompat |= 1 << OPTION_3;
-          break;
-        case 'i':
-          finalwrite = true;
-          break;
-        case 'm':
-          merge = true;
-          break;
-        case 'X':
-          overlap_only = true;
-          incompat |= 1 << OPTION_X;
-          break;
-        case 'E':
-          flagging = true;
-          incompat |= 1 << OPTION_E;
-          break;
-        case 'e':
-          incompat |= 1 << OPTION_e;
-          break;
-        case 'T':
-          initial_tab = true;
-          break;
-        case STRIP_TRAILING_CR_OPTION:
-          strip_trailing_cr = true;
-          break;
-        case 'v':
-          version_etc (stdout, PROGRAM_NAME, PACKAGE_NAME, Version,
-                       AUTHORS, nullptr);
-          check_stdout ();
-          return EXIT_SUCCESS;
-        case DIFF_PROGRAM_OPTION:
-          diff_program = optarg;
-          break;
-        case HELP_OPTION:
-          usage ();
-          check_stdout ();
-          return EXIT_SUCCESS;
-        case 'L':
-          /* Handle up to three -L options.  */
-          if (tag_count < 3)
-            {
-              tag_strings[tag_count++] = optarg;
-              break;
-            }
-          try_help ("too many file label options", nullptr);
-        default:
-          try_help (nullptr, nullptr);
-        }
-    }
+       0 <= (c = getopt_long (argc, argv, shortopts, longopts, 0)); )
+    switch (c)
+      {
+      case 'a':
+	text = true;
+	break;
+      case 'A':
+	show_2nd = true;
+	flagging = true;
+	incompat |= 1 << OPTION_A;
+	break;
+      case 'x':
+	overlap_only = true;
+	incompat |= 1 << OPTION_x;
+	break;
+      case '3':
+	simple_only = true;
+	incompat |= 1 << OPTION_3;
+	break;
+      case 'i':
+	finalwrite = true;
+	break;
+      case 'm':
+	merge = true;
+	break;
+      case 'X':
+	overlap_only = true;
+	incompat |= 1 << OPTION_X;
+	break;
+      case 'E':
+	flagging = true;
+	incompat |= 1 << OPTION_E;
+	break;
+      case 'e':
+	incompat |= 1 << OPTION_e;
+	break;
+      case 'T':
+	initial_tab = true;
+	break;
+      case STRIP_TRAILING_CR_OPTION:
+	strip_trailing_cr = true;
+	break;
+      case 'v':
+	version_etc (stdout, PROGRAM_NAME, PACKAGE_NAME, Version,
+		     AUTHORS, nullptr);
+	check_stdout ();
+	return EXIT_SUCCESS;
+      case DIFF_PROGRAM_OPTION:
+	diff_program = optarg;
+	break;
+      case HELP_OPTION:
+	usage ();
+	check_stdout ();
+	return EXIT_SUCCESS;
+      case 'L':
+	/* Handle up to three -L options.  */
+	if (tag_count < 3)
+	  {
+	    tag_strings[tag_count++] = optarg;
+	    break;
+	  }
+	try_help ("too many file label options", nullptr);
+      default:
+	try_help (nullptr, nullptr);
+      }
 
   /* -AeExX3 without -m implies ed script.  */
   edscript = !!incompat & !merge;

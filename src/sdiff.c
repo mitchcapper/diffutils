@@ -135,6 +135,7 @@ enum
   TABSIZE_OPTION
 };
 
+static char const shortopts[] = "abBdEHiI:lo:stvw:WZ";
 static struct option const longopts[] =
 {
   {"diff-program", 1, 0, DIFF_PROGRAM_OPTION},
@@ -465,103 +466,101 @@ main (int argc, char *argv[])
 
   diffarg (DEFAULT_DIFF_PROGRAM);
 
-  /* parse command line args */
-  for (int opt;
-       ((opt = getopt_long (argc, argv, "abBdEHiI:lo:stvw:WZ", longopts, 0))
-        != -1); )
-    {
-      switch (opt)
-        {
-        case 'a':
-          diffarg ("-a");
-          break;
+  /* Parse command line options.  */
 
-        case 'b':
-          diffarg ("-b");
-          break;
+  for (int c;
+       0 <= (c = getopt_long (argc, argv, shortopts, longopts, 0)); )
+    switch (c)
+      {
+      case 'a':
+	diffarg ("-a");
+	break;
 
-        case 'B':
-          diffarg ("-B");
-          break;
+      case 'b':
+	diffarg ("-b");
+	break;
 
-        case 'd':
-          diffarg ("-d");
-          break;
+      case 'B':
+	diffarg ("-B");
+	break;
 
-        case 'E':
-          diffarg ("-E");
-          break;
+      case 'd':
+	diffarg ("-d");
+	break;
 
-        case 'H':
-          diffarg ("-H");
-          break;
+      case 'E':
+	diffarg ("-E");
+	break;
 
-        case 'i':
-          diffarg ("-i");
-          break;
+      case 'H':
+	diffarg ("-H");
+	break;
 
-        case 'I':
-          diffarg ("-I");
-          diffarg (optarg);
-          break;
+      case 'i':
+	diffarg ("-i");
+	break;
 
-        case 'l':
-          diffarg ("--left-column");
-          break;
+      case 'I':
+	diffarg ("-I");
+	diffarg (optarg);
+	break;
 
-        case 'o':
-          output = optarg;
-          break;
+      case 'l':
+	diffarg ("--left-column");
+	break;
 
-        case 's':
-          suppress_common_lines = true;
-          break;
+      case 'o':
+	output = optarg;
+	break;
 
-        case 't':
-          diffarg ("-t");
-          break;
+      case 's':
+	suppress_common_lines = true;
+	break;
 
-        case 'v':
-          version_etc (stdout, PROGRAM_NAME, PACKAGE_NAME, Version,
-                       AUTHORS, nullptr);
-          check_stdout ();
-          return EXIT_SUCCESS;
+      case 't':
+	diffarg ("-t");
+	break;
 
-        case 'w':
-          diffarg ("-W");
-          diffarg (optarg);
-          break;
+      case 'v':
+	version_etc (stdout, PROGRAM_NAME, PACKAGE_NAME, Version,
+		     AUTHORS, nullptr);
+	check_stdout ();
+	return EXIT_SUCCESS;
 
-        case 'W':
-          diffarg ("-w");
-          break;
+      case 'w':
+	diffarg ("-W");
+	diffarg (optarg);
+	break;
 
-        case 'Z':
-          diffarg ("-Z");
-          break;
+      case 'W':
+	diffarg ("-w");
+	break;
 
-        case DIFF_PROGRAM_OPTION:
-          diffargv[0] = optarg;
-          break;
+      case 'Z':
+	diffarg ("-Z");
+	break;
 
-        case HELP_OPTION:
-          usage ();
-          check_stdout ();
-          return EXIT_SUCCESS;
+      case DIFF_PROGRAM_OPTION:
+	diffargv[0] = optarg;
+	break;
 
-        case STRIP_TRAILING_CR_OPTION:
-          diffarg ("--strip-trailing-cr");
-          break;
+      case HELP_OPTION:
+	usage ();
+	check_stdout ();
+	return EXIT_SUCCESS;
 
-        case TABSIZE_OPTION:
-          diffarg ("--tabsize");
-          diffarg (optarg);
-          break;
+      case STRIP_TRAILING_CR_OPTION:
+	diffarg ("--strip-trailing-cr");
+	break;
 
-        default:
-          try_help (nullptr, nullptr);
-        }
-    }
+      case TABSIZE_OPTION:
+	diffarg ("--tabsize");
+	diffarg (optarg);
+	break;
+
+      default:
+	try_help (nullptr, nullptr);
+      }
 
   if (argc - optind != 2)
     {
