@@ -46,6 +46,16 @@ gl_INIT
 # Note -Wvla is implicitly added by gl_MANYWARN_ALL_GCC
 AC_DEFINE([GNULIB_NO_VLA], [1], [Define to 1 to disable use of VLAs])
 
+# diffutils is single-threaded; optimize for this.
+AC_DEFINE([GNULIB_EXCLUDE_SINGLE_THREAD], [1],
+  ['exclude' code is called only from 1 thread.])
+AC_DEFINE([GNULIB_MBRTOWC_SINGLE_THREAD], [1],
+  ['mbrtowc', 'mbrtoc32', 'regex' code is called only from 1 thread.])
+AC_DEFINE([GNULIB_REGEX_SINGLE_THREAD], [1],
+  ['regex' code is called only from 1 thread.])
+AC_DEFINE([GNULIB_WCHAR_SINGLE_LOCALE], [1],
+  [Locale-sensitive functions are called only after locale is set.])
+
 # gl_GCC_VERSION_IFELSE([major], [minor], [run-if-found], [run-if-not-found])
 # ------------------------------------------------
 # If $CPP is gcc-MAJOR.MINOR or newer, then run RUN-IF-FOUND.
