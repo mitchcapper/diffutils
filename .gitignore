@@ -85,6 +85,7 @@ lib/uniwidth.h
 lib/warn-on-use.h
 lib/wchar.h
 lib/wctype.h
+lib/uchar.h
 man/*.1
 po/*.gmo
 po/*.po
