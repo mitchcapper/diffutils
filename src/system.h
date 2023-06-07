@@ -212,8 +212,7 @@ verify (LIN_MAX <= IDX_MAX);
 #define STREQ(a, b) (strcmp (a, b) == 0)
 
 /* Return the floor of the log base 2 of N.  Return -1 if N is zero.  */
-SYSTEM_INLINE int
-floor_log2 (idx_t n)
+SYSTEM_INLINE int floor_log2 (idx_t n)
 {
   verify (IDX_MAX <= ULLONG_MAX);
   return ULLONG_WIDTH - 1 - count_leading_zeros_ll (n);
