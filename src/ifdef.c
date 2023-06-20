@@ -131,7 +131,7 @@ format_group (FILE *out, char const *format, char endchar,
 
               for (int i = 0; i < 2; i++)
                 {
-                  if (ISDIGIT (*f))
+                  if (c_isdigit (*f))
                     {
                       char *fend;
                       errno = 0;
@@ -306,10 +306,10 @@ do_printf_spec (FILE *out, char const *spec,
   f++;
   while ((c = *f++) == '-' || c == '\'' || c == '0')
     continue;
-  while (ISDIGIT (c))
+  while (c_isdigit (c))
     c = *f++;
   if (c == '.')
-    while (ISDIGIT (c = *f++))
+    while (c_isdigit (c = *f++))
       continue;
   char c1 = *f++;
 

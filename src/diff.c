@@ -321,7 +321,7 @@ main (int argc, char **argv)
       case '7':
       case '8':
       case '9':
-	if (! ISDIGIT (prev))
+	if (! c_isdigit (prev))
 	  ocontext = 0;
 	if (ckd_mul (&ocontext, ocontext, 10)
 	    || ckd_add (&ocontext, ocontext, c - '0'))
