@@ -338,13 +338,14 @@ main (int argc, char **argv)
     }
 
   /* If only a return code is needed,
-     and if both input descriptors are associated with plain files,
+     and both input descriptors are associated with plain files,
+     and the file sizes are nonzero so they are not Linux /proc files,
      conclude that the files differ if they have different sizes
      and if more bytes will be compared than are in the smaller file.  */
 
   if (comparison_type == type_status
-      && 0 <= stat_buf[0].st_size && S_ISREG (stat_buf[0].st_mode)
-      && 0 <= stat_buf[1].st_size && S_ISREG (stat_buf[1].st_mode))
+      && 0 < stat_buf[0].st_size && S_ISREG (stat_buf[0].st_mode)
+      && 0 < stat_buf[1].st_size && S_ISREG (stat_buf[1].st_mode))
     {
       off_t s0 = stat_buf[0].st_size - file_position (0);
       off_t s1 = stat_buf[1].st_size - file_position (1);
@@ -401,7 +402,7 @@ cmp (void)
 			       ? bytes : TYPE_MAXIMUM (off_t));
 
       for (int f = 0; f < 2; f++)
-        if (0 <= stat_buf[f].st_size && S_ISREG (stat_buf[f].st_mode))
+        if (0 < stat_buf[f].st_size && S_ISREG (stat_buf[f].st_mode))
           {
             off_t file_bytes = stat_buf[f].st_size - file_position (f);
             if (file_bytes < byte_number_max)
