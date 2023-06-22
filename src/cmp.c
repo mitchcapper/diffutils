@@ -320,9 +320,12 @@ main (int argc, char **argv)
 
   if (0 <= stat_buf[0].st_size && 0 <= stat_buf[1].st_size
       && 0 < same_file (&stat_buf[0], &stat_buf[1])
-      && same_file_attributes (&stat_buf[0], &stat_buf[1])
-      && file_position (0) == file_position (1))
-    return EXIT_SUCCESS;
+      && same_file_attributes (&stat_buf[0], &stat_buf[1]))
+    {
+      off_t pos = file_position (0);
+      if (0 <= pos && pos == file_position (1))
+	return EXIT_SUCCESS;
+    }
 
   /* If output is redirected to the null device, we can avoid some of
      the work.  */
@@ -347,14 +350,22 @@ main (int argc, char **argv)
       && 0 < stat_buf[0].st_size && S_ISREG (stat_buf[0].st_mode)
       && 0 < stat_buf[1].st_size && S_ISREG (stat_buf[1].st_mode))
     {
-      off_t s0 = stat_buf[0].st_size - file_position (0);
-      off_t s1 = stat_buf[1].st_size - file_position (1);
-      if (s0 < 0)
-        s0 = 0;
-      if (s1 < 0)
-        s1 = 0;
-      if (s0 != s1 && (bytes < 0 || MIN (s0, s1) < bytes))
-        exit (EXIT_FAILURE);
+      off_t pos0 = file_position (0);
+      if (0 <= pos0)
+	{
+	  off_t pos1 = file_position (1);
+	  if (0 <= pos1)
+	    {
+	      off_t s0 = stat_buf[0].st_size - pos0;
+	      off_t s1 = stat_buf[1].st_size - pos1;
+	      if (s0 < 0)
+		s0 = 0;
+	      if (s1 < 0)
+		s1 = 0;
+	      if (s0 != s1 && (bytes < 0 || MIN (s0, s1) < bytes))
+		exit (EXIT_FAILURE);
+	    }
+	}
     }
 
   /* Guess a good block size for the files.  */
@@ -403,11 +414,15 @@ cmp (void)
 
       for (int f = 0; f < 2; f++)
         if (0 < stat_buf[f].st_size && S_ISREG (stat_buf[f].st_mode))
-          {
-            off_t file_bytes = stat_buf[f].st_size - file_position (f);
-            if (file_bytes < byte_number_max)
-              byte_number_max = file_bytes;
-          }
+	  {
+	    int pos = file_position (f);
+	    if (0 <= pos)
+	      {
+		off_t file_bytes = stat_buf[f].st_size - pos;
+		if (file_bytes < byte_number_max)
+		  byte_number_max = file_bytes;
+	      }
+	  }
 
       for (offset_width = 1; (byte_number_max /= 10) != 0; offset_width++)
         continue;
@@ -416,7 +431,7 @@ cmp (void)
   for (int f = 0; f < 2; f++)
     {
       off_t ig = ignore_initial[f];
-      if (ig && file_position (f) == -1)
+      if (ig && file_position (f) < 0)
         {
           /* lseek failed; read and discard the ignored initial prefix.  */
           do
@@ -699,7 +714,8 @@ sprintc (char *buf, unsigned char c)
 }
 
 /* Position file F to ignore_initial[F] bytes from its initial position,
-   and yield its new position.  Don't try more than once.  */
+   and yield its new position.  Return a negative value on failure.
+   Don't try more than once.  */
 
 static off_t
 file_position (int f)
