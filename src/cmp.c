@@ -77,10 +77,11 @@ static word *buffer[2];
 /* Optimal block size for the files.  */
 static idx_t buf_size;
 
-/* Initial prefix to ignore for each file.  */
+/* Initial prefix to ignore for each file, or negative if the user
+   requested to ignore more than TYPE_MAXIMUM (off_t) bytes.  */
 static off_t ignore_initial[2];
 
-/* Number of bytes to compare, or -1 if there is no limit.  */
+/* Number of bytes to compare, or negative if there is no limit.  */
 static intmax_t bytes = -1;
 
 /* Output format.  */
@@ -136,13 +137,14 @@ specify_ignore_initial (int f, char **argptr, char delimiter)
 {
   intmax_t val;
   char const *arg = *argptr;
-  strtol_error e = xstrtoimax (arg, argptr, 0, &val, valid_suffixes);
+  strtol_error d = xstrtoimax (arg, argptr, 0, &val, valid_suffixes);
+  strtol_error e = d & ~LONGINT_OVERFLOW;
   if (! ((e == LONGINT_OK
           || (e == LONGINT_INVALID_SUFFIX_CHAR && **argptr == delimiter))
-         && 0 <= val && val <= TYPE_MAXIMUM (off_t)))
+         && 0 <= val))
     try_help ("invalid --ignore-initial value '%s'", arg);
-  if (ignore_initial[f] < val)
-    ignore_initial[f] = val;
+  if (0 <= ignore_initial[f] && ignore_initial[f] < val)
+    ignore_initial[f] = d == e && val <= TYPE_MAXIMUM (off_t) ? val : -1;
 }
 
 /* Specify the output format.  */
@@ -227,7 +229,7 @@ main (int argc, char **argv)
         specify_ignore_initial (0, &optarg, ':');
         if (*optarg++ == ':')
           specify_ignore_initial (1, &optarg, 0);
-        else if (ignore_initial[1] < ignore_initial[0])
+	else if (ignore_initial[1] < ignore_initial[0] || ignore_initial[0] < 0)
           ignore_initial[1] = ignore_initial[0];
         break;
 
@@ -284,7 +286,7 @@ main (int argc, char **argv)
     {
       /* Two files with the same name and offset are identical.
          But wait until we open the file once, for proper diagnostics.  */
-      if (f && ignore_initial[0] == ignore_initial[1]
+      if (f && 0 <= ignore_initial[0] && ignore_initial[0] == ignore_initial[1]
           && file_name_cmp (file[0], file[1]) == 0)
         return EXIT_SUCCESS;
 
@@ -431,8 +433,15 @@ cmp (void)
   for (int f = 0; f < 2; f++)
     {
       off_t ig = ignore_initial[f];
-      if (ig && file_position (f) < 0)
+      if (ig == 0)
+	continue;
+
+      off_t pos = file_position (f);
+      if (pos < 0)
         {
+	  if (pos == -EOVERFLOW)
+	    error (EXIT_TROUBLE, EOVERFLOW, "%s", file[f]);
+
           /* lseek failed; read and discard the ignored initial prefix.  */
           do
             {
@@ -714,7 +723,8 @@ sprintc (char *buf, unsigned char c)
 }
 
 /* Position file F to ignore_initial[F] bytes from its initial position,
-   and yield its new position.  Return a negative value on failure.
+   and yield its new position.
+   Return the negation of an error value if there is an error.
    Don't try more than once.  */
 
 static off_t
@@ -726,7 +736,22 @@ file_position (int f)
   if (! positioned[f])
     {
       positioned[f] = true;
-      position[f] = lseek (file_desc[f], ignore_initial[f], SEEK_CUR);
+      off_t pos = ignore_initial[f];
+
+      /* Simulate ignoring more than TYPE_MAXIMUM (off_t) bytes by
+	 positioning to the greatest possible off_t value, but only if
+	 it is a regular file since this might not work on other files.  */
+      if (pos < 0
+	  && ! (0 <= stat_buf[f].st_size && S_ISREG (stat_buf[f].st_mode)))
+	pos = -EOVERFLOW;
+      else
+	{
+	  pos = lseek (file_desc[f], pos < 0 ? TYPE_MAXIMUM (off_t) : pos,
+		       SEEK_CUR);
+	  if (pos < 0)
+	    pos = -errno;
+	}
+      position[f] = pos;
     }
   return position[f];
 }

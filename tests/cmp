@@ -228,4 +228,6 @@ cmp -bl j1 j2 > out2
 test $? -eq 1 || fail=1
 compare exp2 out2 || fail=1
 
+cmp -i 99999999999999999999999999999999999999999999999999 j1 j2 || fail=1
+
 Exit $fail
