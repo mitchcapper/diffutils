@@ -746,8 +746,9 @@ file_position (int f)
 	pos = -EOVERFLOW;
       else
 	{
-	  pos = lseek (file_desc[f], pos < 0 ? TYPE_MAXIMUM (off_t) : pos,
-		       SEEK_CUR);
+	  pos = (pos < 0
+                 ? lseek (file_desc[f], 0, SEEK_END)
+                 : lseek (file_desc[f], pos, SEEK_CUR));
 	  if (pos < 0)
 	    pos = -errno;
 	}
