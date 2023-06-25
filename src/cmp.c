@@ -439,7 +439,7 @@ cmp (void)
       off_t pos = file_position (f);
       if (pos < 0)
         {
-	  if (pos == -EOVERFLOW)
+	  if (ig < 0)
 	    error (EXIT_TROUBLE, EOVERFLOW, "%s", file[f]);
 
           /* lseek failed; read and discard the ignored initial prefix.  */
