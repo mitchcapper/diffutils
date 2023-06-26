@@ -78,8 +78,8 @@ static word *buffer[2];
 static idx_t buf_size;
 
 /* Initial prefix to ignore for each file, or negative if the user
-   requested to ignore more than TYPE_MAXIMUM (off_t) bytes.  */
-static off_t ignore_initial[2];
+   requested to ignore more than TYPE_MAXIMUM (intmax_t) bytes.  */
+static intmax_t ignore_initial[2];
 
 /* Number of bytes to compare, or negative if there is no limit.  */
 static intmax_t bytes = -1;
@@ -144,7 +144,7 @@ specify_ignore_initial (int f, char **argptr, char delimiter)
          && 0 <= val))
     try_help ("invalid --ignore-initial value '%s'", arg);
   if (0 <= ignore_initial[f] && ignore_initial[f] < val)
-    ignore_initial[f] = d == e && val <= TYPE_MAXIMUM (off_t) ? val : -1;
+    ignore_initial[f] = d == e ? val : -1;
 }
 
 /* Specify the output format.  */
@@ -430,19 +430,36 @@ cmp (void)
         continue;
     }
 
+  bool eof[2] = { false, false };
+
   for (int f = 0; f < 2; f++)
     {
-      off_t ig = ignore_initial[f];
+      intmax_t ig = ignore_initial[f];
       if (ig == 0)
 	continue;
 
-      off_t pos = file_position (f);
-      if (pos < 0)
-        {
-	  if (ig < 0)
-	    error (EXIT_TROUBLE, EOVERFLOW, "%s", file[f]);
+      if (0 <= file_position (f))
+	continue;  /* lseek sufficed.  */
 
-          /* lseek failed; read and discard the ignored initial prefix.  */
+      if (! (0 <= ig && ig < TYPE_MAXIMUM (off_t))
+	  && 0 <= stat_buf[f].st_size && S_ISREG (stat_buf[f].st_mode))
+        {
+	  /* When ignoring at least TYPE_MAXIMUM (off_t) bytes
+	     of a regular file, pretend to be at end of file,
+	     as lseeking to TYPE_MAXIMUM (off_t) might tickle a kernel bug,
+	     and lseeking to file end would race with a growing file.  */
+	  eof[f] = true;
+	}
+      else if (ig < 0)
+	{
+	  /* Report an error if asked to ignore more than
+	     INTMAX_MAX bytes of a non-regular file,
+	     as the actual number of bytes to ignore is not known.  */
+	  error (EXIT_TROUBLE, EOVERFLOW, "%s", file[f]);
+	}
+      else
+	{
+	  /* Read and discard the ignored initial prefix.  */
           do
             {
               idx_t bytes_to_read = MIN (ig, buf_size);
@@ -455,7 +472,7 @@ cmp (void)
                 }
               ig -= r;
             }
-          while (ig);
+	  while (0 < ig);
         }
     }
 
@@ -475,10 +492,12 @@ cmp (void)
           remaining -= bytes_to_read;
         }
 
-      ptrdiff_t read0 = block_read (file_desc[0], buf0, bytes_to_read);
+      ptrdiff_t read0 = (eof[0] ? 0
+			 : block_read (file_desc[0], buf0, bytes_to_read));
       if (read0 < 0)
         error (EXIT_TROUBLE, errno, "%s", file[0]);
-      ptrdiff_t read1 = block_read (file_desc[1], buf1, bytes_to_read);
+      ptrdiff_t read1 = (eof[1] ? 0
+			 : block_read (file_desc[1], buf1, bytes_to_read));
       if (read1 < 0)
         error (EXIT_TROUBLE, errno, "%s", file[1]);
 
@@ -723,13 +742,14 @@ sprintc (char *buf, unsigned char c)
 }
 
 /* Position file F to ignore_initial[F] bytes from its initial position,
-   and yield its new position.
-   Return the negation of an error value if there is an error.
+   and yield its new position.  Return -1 on failure.
    Don't try more than once.  */
 
 static off_t
 file_position (int f)
 {
+  /* The initial position of input file F, and whether that position has
+     been determined.  The position is -1 if it could not be determined.  */
   static bool positioned[2];
   static off_t position[2];
 
@@ -737,22 +757,9 @@ file_position (int f)
     {
       positioned[f] = true;
       off_t pos = ignore_initial[f];
-
-      /* Simulate ignoring more than TYPE_MAXIMUM (off_t) bytes by
-	 positioning to the greatest possible off_t value, but only if
-	 it is a regular file since this might not work on other files.  */
-      if (pos < 0
-	  && ! (0 <= stat_buf[f].st_size && S_ISREG (stat_buf[f].st_mode)))
-	pos = -EOVERFLOW;
-      else
-	{
-	  pos = (pos < 0
-                 ? lseek (file_desc[f], 0, SEEK_END)
-                 : lseek (file_desc[f], pos, SEEK_CUR));
-	  if (pos < 0)
-	    pos = -errno;
-	}
-      position[f] = pos;
+      position[f] = (0 <= pos && pos <= TYPE_MAXIMUM (off_t)
+		     ? lseek (file_desc[f], pos, SEEK_CUR)
+		     : -1);
     }
   return position[f];
 }
