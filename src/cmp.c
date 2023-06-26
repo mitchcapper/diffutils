@@ -346,13 +346,13 @@ main (int argc, char **argv)
         comparison_type = type_no_stdout;
     }
 
-  /* If only a return code is needed,
+  /* If no output is needed,
      and both input descriptors are associated with plain files,
      and the file sizes are nonzero so they are not Linux /proc files,
      conclude that the files differ if they have different sizes
      and if more bytes will be compared than are in the smaller file.  */
 
-  if (comparison_type == type_status
+  if (type_no_stdout <= comparison_type
       && 0 < stat_buf[0].st_size && S_ISREG (stat_buf[0].st_mode)
       && 0 < stat_buf[1].st_size && S_ISREG (stat_buf[1].st_mode))
     {
