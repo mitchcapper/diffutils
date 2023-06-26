@@ -119,7 +119,9 @@ format_group (FILE *out, char const *format, char endchar,
     {
       char const *f1 = ++f;
       if (c == '%')
-        switch ((c = *f++))
+       {
+	c = *f++;
+	switch (c)
           {
           case '%':
             break;
@@ -189,6 +191,7 @@ format_group (FILE *out, char const *format, char endchar,
             f = f1;
             break;
           }
+       }
 
       if (out)
         putc (c, out);
@@ -262,7 +265,9 @@ print_ifdef_lines (FILE *out, char const *format,
         {
           char const *f1 = f;
           if (c == '%')
-            switch ((c = *f++))
+	   {
+	    c = *f++;
+	    switch (c)
               {
               case '%':
                 break;
@@ -287,6 +292,7 @@ print_ifdef_lines (FILE *out, char const *format,
                 f = f1;
                 break;
               }
+	   }
 
           putc (c, out);
         }
