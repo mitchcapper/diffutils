@@ -81,8 +81,12 @@ static idx_t buf_size;
    requested to ignore more than TYPE_MAXIMUM (intmax_t) bytes.  */
 static intmax_t ignore_initial[2];
 
-/* Number of bytes to compare, or negative if there is no limit.  */
-static intmax_t bytes = -1;
+/* Number of bytes to compare.  INTMAX_MAX is effectively infinity,
+   since there's no practical way on current computers to compare so
+   many bytes.  Even if cmp added SEEK_HOLE and SEEK_DATA optimization,
+   regular files can't have more than TYPE_MAXIMUM (off_t) bytes
+   and special files are unlikely to support this optimization.  */
+static intmax_t bytes = INTMAX_MAX;
 
 /* Output format.  */
 static enum comparison_type
@@ -240,11 +244,10 @@ main (int argc, char **argv)
       case 'n':
         {
           intmax_t n;
-          if (xstrtoimax (optarg, nullptr, 0, &n, valid_suffixes) != LONGINT_OK
-              || n < 0)
+	  strtol_error e = xstrtoimax (optarg, nullptr, 0, &n, valid_suffixes);
+	  if ((e & ~LONGINT_OVERFLOW) != LONGINT_OK || n < 0)
             try_help ("invalid --bytes value '%s'", optarg);
-          if (! (0 <= bytes && bytes < n))
-            bytes = n;
+	  bytes = MIN (bytes, n);
         }
         break;
 
@@ -365,7 +368,7 @@ main (int argc, char **argv)
 		s0 = 0;
 	      if (s1 < 0)
 		s1 = 0;
-	      if (s0 != s1 && (bytes < 0 || MIN (s0, s1) < bytes))
+	      if (s0 != s1 && MIN (s0, s1) < bytes)
 		exit (EXIT_FAILURE);
 	    }
 	}
@@ -412,19 +415,14 @@ cmp (void)
 
   if (comparison_type == type_all_diffs)
     {
-      off_t byte_number_max = (0 <= bytes && bytes <= TYPE_MAXIMUM (off_t)
-			       ? bytes : TYPE_MAXIMUM (off_t));
+      intmax_t byte_number_max = bytes;
 
       for (int f = 0; f < 2; f++)
         if (0 < stat_buf[f].st_size && S_ISREG (stat_buf[f].st_mode))
 	  {
 	    off_t pos = file_position (f);
-	    if (0 <= pos)
-	      {
-		off_t file_bytes = MAX (0, stat_buf[f].st_size - pos);
-		if (file_bytes < byte_number_max)
-		  byte_number_max = file_bytes;
-	      }
+	    off_t after_pos = stat_buf[f].st_size - MAX (0, pos);
+	    byte_number_max = MIN (byte_number_max, after_pos);
 	  }
 
       for (offset_width = 1; (byte_number_max /= 10) != 0; offset_width++)
@@ -484,14 +482,8 @@ cmp (void)
 
   while (true)
     {
-      idx_t bytes_to_read = buf_size;
-
-      if (0 <= remaining)
-        {
-          if (remaining < bytes_to_read)
-            bytes_to_read = remaining;
-          remaining -= bytes_to_read;
-        }
+      idx_t bytes_to_read = MIN (buf_size, remaining);
+      remaining -= bytes_to_read;
 
       ptrdiff_t read0 = (eof[0] ? 0
 			 : block_read (file_desc[0], buf0, bytes_to_read));

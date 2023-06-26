@@ -4,9 +4,7 @@ GNU diffutils NEWS                                    -*- outline -*-
 
 ** Bug fixes
 
-  cmp -i N no longer fails merely if N exceeds the maximum off_t value,
-  and no longer mishandles Linux tmpfs files when N is slightly less
-  than the maximum off_t value.
+  cmp -i N and -n N no longer fail merely because N is enormous.
   [bug present since "the beginning"]
 
   cmp -s no longer mishandles /proc files, for which the Linux kernel
