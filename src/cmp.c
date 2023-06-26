@@ -337,6 +337,7 @@ main (int argc, char **argv)
       struct stat outstat, nullstat;
 
       if (fstat (STDOUT_FILENO, &outstat) == 0
+	  && S_ISCHR (outstat.st_mode)
           && stat (NULL_DEVICE, &nullstat) == 0
           && 0 < same_file (&outstat, &nullstat))
         comparison_type = type_no_stdout;
