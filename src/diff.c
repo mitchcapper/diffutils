@@ -1479,7 +1479,7 @@ compare_files (struct comparison const *parent,
 
       if (cmp.file[0].desc == UNOPENED)
 	{
-	  cmp.file[0].desc = open (cmp.file[0].name, oflags, 0);
+	  cmp.file[0].desc = open (cmp.file[0].name, oflags);
 	  if (cmp.file[0].desc < 0)
 	    {
 	      perror_with_name (cmp.file[0].name);
@@ -1492,7 +1492,7 @@ compare_files (struct comparison const *parent,
             cmp.file[1].desc = cmp.file[0].desc;
 	  else
 	    {
-	      cmp.file[1].desc = open (cmp.file[1].name, oflags, 0);
+	      cmp.file[1].desc = open (cmp.file[1].name, oflags);
 	      if (cmp.file[1].desc < 0)
 		{
 		  perror_with_name (cmp.file[1].name);
