@@ -417,10 +417,10 @@ cmp (void)
       for (int f = 0; f < 2; f++)
         if (0 < stat_buf[f].st_size && S_ISREG (stat_buf[f].st_mode))
 	  {
-	    int pos = file_position (f);
+	    off_t pos = file_position (f);
 	    if (0 <= pos)
 	      {
-		off_t file_bytes = stat_buf[f].st_size - pos;
+		off_t file_bytes = MAX (0, stat_buf[f].st_size - pos);
 		if (file_bytes < byte_number_max)
 		  byte_number_max = file_bytes;
 	      }
