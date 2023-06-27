@@ -710,7 +710,7 @@ count_newlines (char *buf, idx_t bufsize)
 static void
 sprintc (char *buf, unsigned char c)
 {
-  if (! isprint (c))
+  if (! c_isprint (c))
     {
       if (c >= 128)
         {

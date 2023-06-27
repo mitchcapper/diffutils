@@ -3543,9 +3543,12 @@ line word: @option{-bl} is equivalent to @option{-b -l}.
 @table @option
 @item -b
 @itemx --print-bytes
-Print the differing bytes.  Display control bytes as a
-@samp{^} followed by a letter of the alphabet and precede bytes
-that have the high bit set with @samp{M-} (which stands for ``meta'').
+Print the differing bytes.  Display each control byte as a @samp{^}
+followed by an ASCII letter, @samp{@@}, @samp{[}, @samp{\}, @samp{]},
+@samp{^} or @samp{_}.  Precede each byte with the high bit set with
+@samp{M-}, which stands for ``meta''.  A control byte is any byte
+with the high bit clear that does not represent a printable ASCII
+character including space.
 
 @item --help
 Output a summary of usage and then exit.
