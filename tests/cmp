@@ -238,7 +238,7 @@ if (LC_ALL=en_US.iso8859-1 locale charmap) >/dev/null 2>&1; then
 EOF
   LC_ALL=en_US.iso8859-1 cmp -bl j3 j4 >out3
   test $? -eq 1 || fail=1
-  compare out3 exp3 || fail=1
+  compare exp3 out3 || fail=1
 fi
 
 big=99999999999999999999999999999999999999999999999999999999999
