@@ -138,7 +138,7 @@ print_half_line (char const *const *line, intmax_t indent, intmax_t out_bound)
             char32_t wc;
             size_t bytes = mbrtoc32 (&wc, tp0, text_limit - tp0, &mbstate);
 
-            if (0 < bytes && bytes < (size_t) -2)
+            if (0 < bytes && bytes <= MB_LEN_MAX)
               {
                 int width = c32width (wc);
                 if (0 < width)
