@@ -381,9 +381,7 @@ find_and_hash_each_line (struct file_data *current)
             /* Create a new equivalence class in this bucket.  */
             i = eqs_index++;
             if (i == eqs_alloc)
-	      eqs = xpalloc (eqs, &eqs_alloc, 1,
-			     LIN_MAX < PTRDIFF_MAX ? LIN_MAX : -1,
-			     sizeof *eqs);
+	      eqs = xpalloc (eqs, &eqs_alloc, 1, -1, sizeof *eqs);
             eqs[i].next = *bucket;
             eqs[i].hash = h;
             eqs[i].line = ip;
@@ -417,13 +415,10 @@ find_and_hash_each_line (struct file_data *current)
       /* Maybe increase the size of the line table.  */
       if (line == alloc_lines)
         {
-	  idx_t eqs_max = MIN (LIN_MAX, IDX_MAX / sizeof *cureqs);
-
 	  /* Grow (alloc_lines - linbuf_base) by adding to alloc_lines.  */
 	  idx_t n = alloc_lines - linbuf_base;
           linbuf += linbuf_base;
-	  linbuf = xpalloc (linbuf, &n, 1, eqs_max - linbuf_base,
-			    sizeof *linbuf);
+	  linbuf = xpalloc (linbuf, &n, 1, -1, sizeof *linbuf);
           linbuf -= linbuf_base;
 	  alloc_lines = linbuf_base + n;
           cureqs = xirealloc (cureqs, alloc_lines * sizeof *cureqs);
@@ -445,8 +440,7 @@ find_and_hash_each_line (struct file_data *current)
 	  /* Grow (alloc_lines - linbuf_base) by adding to alloc_lines.  */
 	  idx_t n = alloc_lines - linbuf_base;
 	  linbuf += linbuf_base;
-	  linbuf = xpalloc (linbuf, &n, 1, MAX (0, IDX_MAX - linbuf_base),
-			    sizeof *linbuf);
+	  linbuf = xpalloc (linbuf, &n, 1, -1, sizeof *linbuf);
 	  linbuf -= linbuf_base;
 	  alloc_lines = n - linbuf_base;
         }

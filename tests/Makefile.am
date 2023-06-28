@@ -5,6 +5,7 @@ TESTS = \
   bignum \
   binary \
   brief-vs-stat-zero-kernel-lies \
+  bug-64316 \
   cmp \
   colliding-file-names \
   diff3 \

@@ -129,7 +129,7 @@ typedef struct incomplete *word;
 typedef ptrdiff_t lin;
 #define LIN_MAX PTRDIFF_MAX
 #define pI "t"
-verify (LIN_MAX <= IDX_MAX);
+verify (LIN_MAX == IDX_MAX);
 
 /* This section contains POSIX-compliant defaults for macros
    that are meant to be overridden by hand in config.h as needed.  */
