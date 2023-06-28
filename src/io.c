@@ -28,7 +28,7 @@
 /* The type of a hash value.  */
 typedef size_t hash_value;
 enum { HASH_VALUE_WIDTH = SIZE_WIDTH };
-verify (! TYPE_SIGNED (hash_value));
+static_assert (! TYPE_SIGNED (hash_value));
 
 /* Rotate a hash value to the left.  */
 static hash_value
@@ -748,7 +748,7 @@ static unsigned char const prime_offset[] =
 
 /* Verify that this host's idx_t is not too wide for the above table.  */
 
-verify (PTRDIFF_WIDTH - 1 <= sizeof prime_offset);
+static_assert (PTRDIFF_WIDTH - 1 <= sizeof prime_offset);
 
 /* Given a vector of two file_data objects, read the file associated
    with each one, and build the table of equivalence classes.
