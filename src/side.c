@@ -151,9 +151,18 @@ print_half_line (char const *const *line, intmax_t indent, intmax_t out_bound)
                     fwrite (tp0, 1, bytes, stdout);
                   }
                 text_pointer = tp0 + bytes;
+
+		/* Resume scanning for single-byte characters, as
+		   shift states are not supported.  */
                 break;
               }
           }
+
+	  /* An encoding error (bytes == (size_t) -1),
+	     as (size_t) -2 cannot happen as the buffer ends in '\n',
+	     and (size_t) -3 cannot happen on any known platform.
+	     Reset, and assume the error has print width 1.  */
+	  memset (&mbstate, 0, sizeof mbstate);
           FALLTHROUGH;
 
         /* Print width 1.  */
