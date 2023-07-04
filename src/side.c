@@ -89,9 +89,11 @@ print_half_line (char const *const *line, intmax_t indent, intmax_t out_bound)
         case '\t':
           {
             intmax_t spaces = tabsize - in_position % tabsize;
+	    intmax_t tabstop;
+	    if (ckd_add (&tabstop, in_position, spaces))
+	      return out_position;
             if (in_position == out_position)
               {
-                intmax_t tabstop = out_position + spaces;
                 if (expand_tabs)
                   {
                     if (out_bound < tabstop)
@@ -106,7 +108,7 @@ print_half_line (char const *const *line, intmax_t indent, intmax_t out_bound)
                       putc (c, out);
                     }
               }
-            in_position += spaces;
+	    in_position = tabstop;
           }
           break;
 
@@ -141,8 +143,8 @@ print_half_line (char const *const *line, intmax_t indent, intmax_t out_bound)
             if (0 < bytes && bytes <= MB_LEN_MAX)
               {
                 int width = c32width (wc);
-                if (0 < width)
-                  in_position += width;
+		if (0 < width && ckd_add (&in_position, in_position, width))
+		  return out_position;
                 if (in_position <= out_bound)
                   {
                     out_position = in_position;
@@ -153,11 +155,6 @@ print_half_line (char const *const *line, intmax_t indent, intmax_t out_bound)
               }
           }
           FALLTHROUGH;
-        case '\f':
-        case '\v':
-          if (in_position < out_bound)
-            putc (c, out);
-          break;
 
         case ' ': case '!': case '"': case '#': case '%':
         case '&': case '\'': case '(': case ')': case '*':
@@ -180,12 +177,14 @@ print_half_line (char const *const *line, intmax_t indent, intmax_t out_bound)
         case 'u': case 'v': case 'w': case 'x': case 'y':
         case 'z': case '{': case '|': case '}': case '~':
           /* These characters are printable ASCII characters.  */
-          if (in_position++ < out_bound)
-            {
-              out_position = in_position;
-              putc (c, out);
-            }
-          break;
+	  if (ckd_add (&in_position, in_position, 1))
+	    return out_position;
+	  FALLTHROUGH;
+
+	case '\f': case '\v':
+	  if (in_position <= out_bound)
+	    putc (c, out);
+	  break;
 
         case '\n':
           return out_position;
