@@ -19,6 +19,9 @@ GNU diffutils NEWS                                    -*- outline -*-
     cp /proc/cmdline t; cmp -s /proc/cmdline t || echo files differ
   [bug present since "the beginning"]
 
+  diff -ly no longer mishandles non-ASCII input
+  [bug#64461 introduced in 2.9]
+
 
 * Noteworthy changes in release 3.10 (2023-05-21) [stable]
 
