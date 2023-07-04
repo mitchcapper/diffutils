@@ -148,7 +148,7 @@ print_half_line (char const *const *line, intmax_t indent, intmax_t out_bound)
                 if (in_position <= out_bound)
                   {
                     out_position = in_position;
-                    fwrite (tp0, 1, bytes, stdout);
+                    fwrite (tp0, 1, bytes, out);
                   }
                 text_pointer = tp0 + bytes;
 
