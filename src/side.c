@@ -140,7 +140,7 @@ print_half_line (char const *const *line, intmax_t indent, intmax_t out_bound)
             char32_t wc;
             size_t bytes = mbrtoc32 (&wc, tp0, text_limit - tp0, &mbstate);
 
-            if (0 < bytes && bytes <= MB_LEN_MAX)
+	    if (bytes <= MB_LEN_MAX)
               {
                 int width = c32width (wc);
 		if (0 < width && ckd_add (&in_position, in_position, width))
@@ -156,6 +156,7 @@ print_half_line (char const *const *line, intmax_t indent, intmax_t out_bound)
           }
           FALLTHROUGH;
 
+        /* Print width 1.  */
         case ' ': case '!': case '"': case '#': case '%':
         case '&': case '\'': case '(': case ')': case '*':
         case '+': case ',': case '-': case '.': case '/':
@@ -176,12 +177,12 @@ print_half_line (char const *const *line, intmax_t indent, intmax_t out_bound)
         case 'p': case 'q': case 'r': case 's': case 't':
         case 'u': case 'v': case 'w': case 'x': case 'y':
         case 'z': case '{': case '|': case '}': case '~':
-          /* These characters are printable ASCII characters.  */
 	  if (ckd_add (&in_position, in_position, 1))
 	    return out_position;
 	  FALLTHROUGH;
 
-	case '\f': case '\v':
+	/* Print width already handled.  */
+	case '\0': case '\f': case '\v':
 	  if (in_position <= out_bound)
 	    putc (c, out);
 	  break;
