@@ -66,14 +66,19 @@ tab_from_to (intmax_t from, intmax_t to)
 }
 
 /* Print the text for half an sdiff line.  This means truncate to
-   width observing tabs, and trim a trailing newline.  Return the
-   last column written (not the number of chars).  */
+   OUT_BOUND columns, observing tabs, and trim a trailing newline.
+   Return the presumed column position on the output device after
+   the write (not the number of chars).  */
 
 static intmax_t
 print_half_line (char const *const *line, intmax_t indent, intmax_t out_bound)
 {
   FILE *out = outfile;
+  /* IN_POSITION is the current column position if we were outputting the
+     entire line, i.e. ignoring OUT_BOUND.  */
   intmax_t in_position = 0;
+  /* OUT_POSITION is the current column position.  It stays <= OUT_BOUND
+     at any moment.  */
   intmax_t out_position = 0;
   char const *text_pointer = line[0];
   char const *text_limit = line[1];
@@ -188,9 +193,14 @@ print_half_line (char const *const *line, intmax_t indent, intmax_t out_bound)
         case 'z': case '{': case '|': case '}': case '~':
 	  if (ckd_add (&in_position, in_position, 1))
 	    return out_position;
-	  FALLTHROUGH;
+	  if (in_position <= out_bound)
+	    {
+	      out_position = in_position;
+	      putc (c, out);
+	    }
+	  break;
 
-	/* Print width already handled.  */
+	/* Print width 0.  */
 	case '\0': case '\f': case '\v':
 	  if (in_position <= out_bound)
 	    putc (c, out);
