@@ -1397,12 +1397,15 @@ output_1_line (char const *base, char const *limit, char const *flag_format,
               break;
 
             case '\b':
-              column--;
-	      if (column < 0)
+	      if (0 < column)
+		column--;
+	      else if (0 < tab)
 		{
 		  tab--;
 		  column = tab_size - 1;
 		}
+	      else
+		continue;
               putc (c, out);
               break;
 

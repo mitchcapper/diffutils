@@ -10,6 +10,7 @@ TESTS = \
   colliding-file-names \
   diff3 \
   excess-slash \
+  expand-tabs \
   help-version	\
   ifdef \
   invalid-re	\
