@@ -16,6 +16,7 @@ TESTS = \
   invalid-re	\
   function-line-vs-leading-space \
   ignore-matching-lines \
+  ignore-tab-expansion \
   label-vs-func	\
   large-subopt \
   new-file \

@@ -292,7 +292,7 @@ find_and_hash_each_line (struct file_data *current)
         case IGNORE_TAB_EXPANSION_AND_TRAILING_SPACE:
         case IGNORE_TRAILING_SPACE:
           {
-	    intmax_t column = 0;
+	    intmax_t tab = 0, column = 0;
             for (unsigned char c; (c = *p++) != '\n'; )
               {
                 if (ig_white_space & IGNORE_TRAILING_SPACE
@@ -318,18 +318,28 @@ find_and_hash_each_line (struct file_data *current)
                   switch (c)
                     {
                     case '\b':
-		      column = (column ? column : tabsize) - 1;
+		      if (0 < column)
+			column--;
+		      else if (0 < tab)
+			{
+			  tab--;
+			  column = tabsize - 1;
+			}
                       break;
 
                     case '\t':
                       c = ' ';
                       repetitions = tabsize - column % tabsize;
+		      tab += column / tabsize + 1;
 		      column = 0;
                       break;
 
                     case '\r':
-                      column = 0;
+		      tab = column = 0;
                       break;
+
+		    case '\0': case '\a': case '\f': case '\v':
+		      break;
 
                     default:
                       column++;
