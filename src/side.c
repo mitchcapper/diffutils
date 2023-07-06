@@ -141,34 +141,84 @@ print_half_line (char const *const *line, intmax_t indent, intmax_t out_bound)
           break;
 
         default:
+          /* Invariant: mbstate is in the initial state here.  */
           {
-            char32_t wc;
-            size_t bytes = mbrtoc32 (&wc, tp0, text_limit - tp0, &mbstate);
+            char const *tp1 = tp0;
+            /* Sum of the widths of the 32-bit wide characters between
+               TP0 and TP1.  */
+            int width_sum = 0;
 
-	    if (bytes <= MB_LEN_MAX)
+            for (;;)
               {
-                int width = c32width (wc);
-		if (0 < width && ckd_add (&in_position, in_position, width))
-		  return out_position;
-                if (in_position <= out_bound)
-                  {
-                    out_position = in_position;
-                    fwrite (tp0, 1, bytes, out);
-                  }
-                text_pointer = tp0 + bytes;
+                /* Invariant: The multibyte sequences between TP0 and TP1
+                   have already been parsed, but not yet been output to OUT
+                   (because whether we can output it or not depends on the
+                   total width, and we can only determine the total width
+                   once we have arrived at a point where MBSTATE is in the
+                   initial state).  */
+                char32_t wc;
+                size_t bytes = mbrtoc32 (&wc, tp1, text_limit - tp1, &mbstate);
 
-		/* Resume scanning for single-byte characters, as
-		   shift states are not supported.  */
-                break;
+                if (bytes < (size_t) -2)
+                  {
+                    /* mbrtoc32 has produced a (or another) 32-bit wide
+                       character.  Add its width to WIDTH_SUM.  */
+                    int width = c32width (wc);
+                    if (width > 0)
+                      if (ckd_add (&width_sum, width_sum, width))
+                        return out_position;
+                    /* Advance TP1.  */
+                    if (bytes != (size_t) -3)
+                      tp1 += (bytes == 0 ? 1 : bytes);
+                  }
+
+                if (bytes >= (size_t) -2 || mbsinit (&mbstate))
+                  {
+                    /* Now see whether we have room for WIDTH_SUM columns,
+                       and if so, output the multibyte sequences between
+                       TP0 and TP1.  */
+                    if (tp0 < tp1)
+                      {
+                        if (ckd_add (&in_position, in_position, width_sum))
+                          return out_position;
+                        if (in_position <= out_bound)
+                          {
+                            out_position = in_position;
+                            fwrite (tp0, 1, tp1 - tp0, out);
+                          }
+                      }
+                    tp0 = tp1;
+
+                    if (bytes >= (size_t) -2)
+                      {
+                        /* An encoding error (bytes == (size_t) -1), as
+                           (size_t) -2 cannot happen as the buffer ends
+                           in '\n'.  */
+                        if (tp0 < text_limit)
+                          {
+                            /* Consume one byte.  Assume it has
+                               print width 1.  */
+                            if (ckd_add (&in_position, in_position, 1))
+                              return out_position;
+                            if (in_position <= out_bound)
+                              {
+                                out_position = in_position;
+                                putc (*tp0, out);
+                              }
+                            tp0++;
+                          }
+                        memset (&mbstate, '\0', sizeof mbstate);
+                      }
+
+                    /* We are done with this multibyte sequence.
+                       Return to the simpler processing in the outer loop.  */
+                    break;
+                  }
               }
           }
-
-	  /* An encoding error (bytes == (size_t) -1),
-	     as (size_t) -2 cannot happen as the buffer ends in '\n',
-	     and (size_t) -3 cannot happen on any known platform.
-	     Reset, and assume the error has print width 1.  */
-	  memset (&mbstate, 0, sizeof mbstate);
-          FALLTHROUGH;
+          /* Invariant: mbstate is in the initial state here again.  */
+          text_pointer = tp0;
+          break;
 
         /* Print width 1.  */
         case ' ': case '!': case '"': case '#': case '$': case '%':
