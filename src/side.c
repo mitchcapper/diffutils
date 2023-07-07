@@ -82,7 +82,6 @@ print_half_line (char const *const *line, intmax_t indent, intmax_t out_bound)
   intmax_t out_position = 0;
   char const *text_pointer = line[0];
   char const *text_limit = line[1];
-  mbstate_t mbstate = { 0 };
 
   while (text_pointer < text_limit)
     {
@@ -141,83 +140,62 @@ print_half_line (char const *const *line, intmax_t indent, intmax_t out_bound)
           break;
 
         default:
-          /* Invariant: mbstate is in the initial state here.  */
           {
-            char const *tp1 = tp0;
-            /* Sum of the widths of the 32-bit wide characters between
-               TP0 and TP1.  */
-            int width_sum = 0;
+	    /* A byte that might start a multibyte character.
+	       Increase TEXT_POINTER, counting columns, until MBSTATE
+	       becomes the initial state again.
 
-            for (;;)
-              {
-                /* Invariant: The multibyte sequences between TP0 and TP1
-                   have already been parsed, but not yet been output to OUT
-                   (because whether we can output it or not depends on the
-                   total width, and we can only determine the total width
-                   once we have arrived at a point where MBSTATE is in the
-                   initial state).  */
-                char32_t wc;
-                size_t bytes = mbrtoc32 (&wc, tp1, text_limit - tp1, &mbstate);
+	       In practice this code is overkill: on realistic platforms
+	       mbrtoc32 never returns (size_t) -3 and always results in
+	       the initial state unless it returns (size_t) -1.
+	       Although handling (size_t) -3 and non initial states
+	       doesn't hurt complexity significantly, do not handle
+	       other theoretical cases that POSIX allows (such as
+	       mbrtoc32 setting wc = '\r') as it's too painful.  */
 
-                if (bytes < (size_t) -2)
-                  {
-                    /* mbrtoc32 has produced a (or another) 32-bit wide
-                       character.  Add its width to WIDTH_SUM.  */
-                    int width = c32width (wc);
-                    if (width > 0)
-                      if (ckd_add (&width_sum, width_sum, width))
-                        return out_position;
-                    /* Advance TP1.  */
-                    if (bytes != (size_t) -3)
-                      tp1 += (bytes == 0 ? 1 : bytes);
-                  }
+	    mbstate_t mbstate = { 0 };
+	    text_pointer = tp0;
 
-                if (bytes >= (size_t) -2 || mbsinit (&mbstate))
-                  {
-                    /* Now see whether we have room for WIDTH_SUM columns,
-                       and if so, output the multibyte sequences between
-                       TP0 and TP1.  */
-                    if (tp0 < tp1)
-                      {
-                        if (ckd_add (&in_position, in_position, width_sum))
-                          return out_position;
-                        if (in_position <= out_bound)
-                          {
-                            out_position = in_position;
-                            fwrite (tp0, 1, tp1 - tp0, out);
-                          }
-                      }
-                    tp0 = tp1;
+	    do
+	      {
+		/* The special value mbrtoc23 returns when it sets WC
+		   to a character but consumes no bytes.  This can
+		   happen only in theory.  Return values greater than
+		   this denote encoding errors.  */
+		size_t SUBSEQUENT = (size_t) -3;
 
-                    if (bytes >= (size_t) -2)
-                      {
-                        /* An encoding error (bytes == (size_t) -1), as
-                           (size_t) -2 cannot happen as the buffer ends
-                           in '\n'.  */
-                        if (tp0 < text_limit)
-                          {
-                            /* Consume one byte.  Assume it has
-                               print width 1.  */
-                            if (ckd_add (&in_position, in_position, 1))
-                              return out_position;
-                            if (in_position <= out_bound)
-                              {
-                                out_position = in_position;
-                                putc (*tp0, out);
-                              }
-                            tp0++;
-                          }
-                        memset (&mbstate, '\0', sizeof mbstate);
-                      }
+		/* Scan one character or encoding error.
+		   BYTES != (size_t) -2 because TEXT_LIMIT[-1] == '\n'.  */
+		char32_t wc;
+		size_t bytes = mbrtoc32 (&wc, text_pointer,
+					 text_limit - text_pointer, &mbstate);
+		if (bytes != SUBSEQUENT)
+		  text_pointer += 0 < bytes && bytes < SUBSEQUENT ? bytes : 1;
 
-                    /* We are done with this multibyte sequence.
-                       Return to the simpler processing in the outer loop.  */
-                    break;
-                  }
-              }
+		/* Assume encoding errors have print width 1.  */
+		int width = bytes <= SUBSEQUENT ? c32width (wc) : 1;
+		if (0 < width && ckd_add (&in_position, in_position, width))
+		  return out_position;
+
+		/* If past the trailing newline, disgorge it and stop scan.  */
+		if (text_pointer == text_limit)
+		  {
+		    text_pointer--;
+		    break;
+		  }
+
+		if (SUBSEQUENT < bytes)
+		  break;
+	      }
+	    while (! mbsinit (&mbstate));
+
+	    /* If there is room, output the bytes since TP0.  */
+	    if (in_position <= out_bound)
+	      {
+		out_position = in_position;
+		fwrite (tp0, 1, text_pointer - tp0, out);
+	      }
           }
-          /* Invariant: mbstate is in the initial state here again.  */
-          text_pointer = tp0;
           break;
 
         /* Print width 1.  */
