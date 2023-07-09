@@ -23,7 +23,10 @@
 #include <cmpbuf.h>
 #include <file-type.h>
 #include <ialloc.h>
+#include <mbcel.h>
 #include <xalloc.h>
+
+#include <uchar.h>
 
 /* The type of a hash value.  */
 typedef size_t hash_value;
@@ -39,7 +42,7 @@ rol (hash_value v, int n)
 
 /* Given a hash value and a new character, return a new hash value.  */
 static hash_value
-hash (hash_value h, unsigned char c)
+hash (hash_value h, hash_value c)
 {
   return rol (h, 7) + c;
 }
@@ -248,8 +251,9 @@ find_and_hash_each_line (struct file_data *current)
   char const *bufend = file_buffer (current) + current->buffered;
   bool ig_case = ignore_case;
   enum DIFF_white_space ig_white_space = ignore_white_space;
+  bool unibyte = MB_CUR_MAX == 1;
   bool diff_length_compare_anyway =
-    ig_white_space != IGNORE_NO_WHITE_SPACE;
+    (ig_white_space != IGNORE_NO_WHITE_SPACE) | (!unibyte & ig_case);
   bool same_length_diff_contents_compare_anyway =
     diff_length_compare_anyway | ig_case;
 
@@ -262,30 +266,62 @@ find_and_hash_each_line (struct file_data *current)
       switch (ig_white_space)
         {
         case IGNORE_ALL_SPACE:
-          for (unsigned char c; (c = *p++) != '\n'; )
-            if (! isspace (c))
-              h = hash (h, ig_case ? tolower (c) : c);
+	  if (unibyte)
+	    for (unsigned char c; (c = *p) != '\n'; p++)
+	      {
+		if (! isspace (c))
+		  h = hash (h, ig_case ? tolower (c) : c);
+	      }
+	  else
+	    for (mbcel_t g; *p != '\n'; p += g.len)
+	      {
+		g = mbcel_scan (p, suffix_begin);
+		if (! c32isspace (g.ch))
+		  h = hash (h, (ig_case ? c32tolower (g.ch) : g.ch) - g.err);
+	      }
           break;
 
         case IGNORE_SPACE_CHANGE:
-	  for (unsigned char c; (c = *p++) != '\n'; )
-            {
-              if (isspace (c))
-                {
-                  do
-		    {
-		      c = *p++;
-		      if (c == '\n')
-			goto hashing_done;
-		    }
-                  while (isspace (c));
+	  if (unibyte)
+	    for (unsigned char c; (c = *p) != '\n'; p++)
+	      {
+		if (isspace (c))
+		  {
+		    do
+		      {
+			c = *++p;
+			if (c == '\n')
+			  goto hashing_done;
+		      }
+		    while (isspace (c));
 
-                  h = hash (h, ' ');
-                }
+		    h = hash (h, ' ');
+		  }
 
-              /* C is now the first non-space.  */
-              h = hash (h, ig_case ? tolower (c) : c);
-            }
+		/* C is now the first non-space.  */
+		h = hash (h, ig_case ? tolower (c) : c);
+	      }
+	  else
+	    for (mbcel_t g; *p != '\n'; p += g.len)
+	      {
+		g = mbcel_scan (p, suffix_begin);
+		if (c32isspace (g.ch))
+		  {
+		    do
+		      {
+			p += g.len;
+			if (*p == '\n')
+			  goto hashing_done;
+			g = mbcel_scan (p, suffix_begin);
+		      }
+		    while (c32isspace (g.ch));
+
+		    h = hash (h, ' ');
+		  }
+
+		/* G is now the first non-space.  */
+		h = hash (h, (ig_case ? c32tolower (g.ch) : g.ch) - g.err);
+	      }
           break;
 
         case IGNORE_TAB_EXPANSION:
@@ -293,83 +329,177 @@ find_and_hash_each_line (struct file_data *current)
         case IGNORE_TRAILING_SPACE:
           {
 	    intmax_t tab = 0, column = 0;
-            for (unsigned char c; (c = *p++) != '\n'; )
-              {
-                if (ig_white_space & IGNORE_TRAILING_SPACE
-                    && isspace (c))
-                  {
-                    char const *p1 = p;
-                    unsigned char c1;
-                    do
-		      {
-			c1 = *p1++;
-			if (c1 == '\n')
-			  {
-			    p = p1;
-			    goto hashing_done;
-			  }
-		      }
-                    while (isspace (c1));
-                  }
+	    if (unibyte)
+	      for (unsigned char c; (c = *p) != '\n'; p++)
+		{
+		  intmax_t repetitions = 1;
 
-		intmax_t repetitions = 1;
-
-                if (ig_white_space & IGNORE_TAB_EXPANSION)
-                  switch (c)
-                    {
-                    case '\b':
-		      if (0 < column)
-			column--;
-		      else if (0 < tab)
+		  if (ig_white_space & IGNORE_TRAILING_SPACE
+		      && isspace (c))
+		    {
+		      char const *p1 = p;
+		      unsigned char c1;
+		      do
 			{
-			  tab--;
-			  column = tabsize - 1;
+			  c1 = *++p1;
+			  if (c1 == '\n')
+			    {
+			      p = p1;
+			      goto hashing_done;
+			    }
 			}
-                      break;
+		      while (isspace (c1));
+		    }
 
-                    case '\t':
-                      c = ' ';
-                      repetitions = tabsize - column % tabsize;
-		      tab += column / tabsize + 1;
-		      column = 0;
-                      break;
+		  if (ig_white_space & IGNORE_TAB_EXPANSION)
+		    switch (c)
+		      {
+		      case '\b':
+			if (0 < column)
+			  column--;
+			else if (0 < tab)
+			  {
+			    tab--;
+			    column = tabsize - 1;
+			  }
+			break;
 
-                    case '\r':
-		      tab = column = 0;
-                      break;
+		      case '\t':
+			c = ' ';
+			repetitions = tabsize - column % tabsize;
+			tab += column / tabsize + 1;
+			column = 0;
+			break;
 
-		    case '\0': case '\a': case '\f': case '\v':
-		      break;
+		      case '\r':
+			tab = column = 0;
+			break;
 
-                    default:
-                      column++;
-                      break;
-                    }
+		      case '\0': case '\a': case '\f': case '\v':
+			break;
 
-                if (ig_case)
-                  c = tolower (c);
+		      default:
+			column++;
+			break;
+		      }
 
-                do
-                  h = hash (h, c);
-                while (--repetitions != 0);
-              }
+		  if (ig_case)
+		    c = tolower (c);
+
+		  do
+		    h = hash (h, c);
+		  while (--repetitions != 0);
+		}
+	    else
+	      for (mbcel_t g; *p != '\n'; p += g.len)
+		{
+		  intmax_t repetitions = 1;
+
+		  g = mbcel_scan (p, suffix_begin);
+		  char32_t ch;
+		  if (g.err)
+		    {
+		      ch = -g.err;
+		      column++;
+		    }
+		  else
+		    {
+		      ch = g.ch;
+		      if (ig_white_space & IGNORE_TRAILING_SPACE
+			  && c32isspace (ch))
+			{
+			  char const *p1 = p + g.len;
+			  for (mbcel_t g1; ; p1 += g1.len)
+			    {
+			      if (*p1 == '\n')
+				{
+				  p = p1;
+				  goto hashing_done;
+				}
+			      g1 = mbcel_scan (p1, suffix_begin);
+			      if (! c32isspace (g1.ch))
+				break;
+			    }
+			}
+
+		      if (ig_white_space & IGNORE_TAB_EXPANSION)
+			switch (ch)
+			  {
+			  case '\b':
+			    if (0 < column)
+			      column--;
+			    else if (0 < tab)
+			      {
+				tab--;
+				column = tabsize - 1;
+			      }
+			    break;
+
+			  case '\t':
+			    ch = ' ';
+			    repetitions = tabsize - column % tabsize;
+			    tab += column / tabsize + 1;
+			    column = 0;
+			    break;
+
+			  case '\r':
+			    tab = column = 0;
+			    break;
+
+			  case '\0': case '\a': case '\f': case '\v':
+			    break;
+
+			  default:
+			    column += c32width (ch);
+			    break;
+			  }
+
+		      if (ig_case)
+			ch = c32tolower (ch);
+		    }
+
+		  do
+		    h = hash (h, ch);
+		  while (--repetitions != 0);
+		}
           }
           break;
 
         default:
-          if (ig_case)
-            for (unsigned char c; (c = *p++) != '\n'; )
-              h = hash (h, tolower (c));
-          else
-            for (unsigned char c; (c = *p++) != '\n'; )
-              h = hash (h, c);
+	  if (unibyte)
+	    {
+	      if (ig_case)
+		for (unsigned char c; (c = *p) != '\n'; p++)
+		  h = hash (h, tolower (c));
+	      else
+		for (unsigned char c; (c = *p) != '\n'; p++)
+		  h = hash (h, c);
+	    }
+	  else
+	    {
+	      if (ig_case)
+		for (mbcel_t g; *p != '\n'; p += g.len)
+		  {
+		    g = mbcel_scan (p, suffix_begin);
+		    h = hash (h, c32tolower (g.ch) - g.err);
+		  }
+	      else
+		for (mbcel_t g; *p != '\n'; p += g.len)
+		  {
+		    g = mbcel_scan (p, suffix_begin);
+		    h = hash (h, g.ch - g.err);
+		  }
+	    }
           break;
         }
 
    hashing_done:;
 
       lin *bucket = &buckets[h % nbuckets];
-      idx_t length = p - ip - 1;
+      idx_t length = p - ip;
+
+      /* Advance past the line's trailing newline.  */
+      p++;
 
       if (p == bufend
           && current->missing_newline
@@ -402,10 +532,11 @@ find_and_hash_each_line (struct file_data *current)
         else if (eqs[i].hash == h)
           {
             char const *eqline = eqs[i].line;
+	    idx_t eqlinelen = eqs[i].length;
 
             /* Reuse existing class if lines_differ reports the lines
                equal.  */
-            if (eqs[i].length == length)
+	    if (eqlinelen == length)
               {
                 /* Reuse existing equivalence class if the lines are identical.
                    This detects the common case of exact identity
@@ -418,7 +549,7 @@ find_and_hash_each_line (struct file_data *current)
             else if (!diff_length_compare_anyway)
               continue;
 
-            if (! lines_differ (eqline, ip))
+	    if (! lines_differ (eqline, eqlinelen, ip, length))
               break;
           }
 
