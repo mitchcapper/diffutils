@@ -98,9 +98,9 @@ mbcel_scan (char const *p, char const *lim)
   mbstate_t mbs = {0};
   size_t len = mbrtoc32 (&ch, p, lim - p, &mbs);
 
-  /* Any LEN of (size_t) -3 or greater is an encoding error,
-     as LEN == (size_t) -3 is not supported.  */
-  if ((size_t) -3 <= len)
+  /* Any LEN with top bit set is an encoding error, as LEN == (size_t) -3
+     is not supported and MB_LEN_MAX <= (size_t) -1 / 2 on all platforms.  */
+  if ((size_t) -1 / 2 < len)
     return (mbcel_t) { .err = *p, .len = 1 };
 
   /* A multi-byte character.  LEN must be positive,
