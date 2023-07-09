@@ -16,7 +16,7 @@
 
 /* Written by Paul Eggert.  */
 
-/* The macros in this file iterate through an array of bytes,
+/* The mbcel_scan function lets code iterate through an array of bytes,
    supporting character encodings in practical use
    more simply than using plain mbrtoc32.
 
