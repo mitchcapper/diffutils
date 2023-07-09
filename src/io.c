@@ -56,7 +56,7 @@ struct equivclass
   lin next;		/* Next item in this bucket.  */
   hash_value hash;	/* Hash of lines in this class.  */
   char const *line;	/* A line that fits this class.  */
-  idx_t length;		/* That line's length, not counting its newline.  */
+  idx_t length;		/* That line's length, counting its newline.  */
 };
 
 /* Hash-table: array of buckets, each being a chain of equivalence classes.
@@ -238,8 +238,9 @@ same_ch_err (char32_t ch1, unsigned char err1, char32_t ch2, unsigned char err2)
   return ! ((ch1 ^ ch2) | (err1 ^ err2));
 }
 
-/* Compare two lines (typically one from each input file)
-   according to the command line options.
+/* Compare lines S1 of length S1LEN and S2 of length S2LEN (typically
+   one line from each input file) according to the command line options.
+   Line lengths include the trailing newline.
    For efficiency, this is invoked only when the lines do not match exactly
    but an option like -i might cause us to ignore the difference.
    Return nonzero if the lines differ.
@@ -436,8 +437,8 @@ lines_differ (char const *s1, idx_t s1len, char const *s2, idx_t s2len)
       }
   else
     {
-      char const *lim1 = s1 + s1len + 1;
-      char const *lim2 = s2 + s2len + 1;
+      char const *lim1 = s1 + s1len;
+      char const *lim2 = s2 + s2len;
       char32_t ch1prev = 0;
 
       while (true)
@@ -929,10 +930,10 @@ find_and_hash_each_line (struct file_data *current)
    hashing_done:;
 
       lin *bucket = &buckets[h % nbuckets];
-      idx_t length = p - ip;
 
       /* Advance past the line's trailing newline.  */
       p++;
+      idx_t length = p - ip;
 
       if (p == bufend
           && current->missing_newline
@@ -974,7 +975,7 @@ find_and_hash_each_line (struct file_data *current)
                 /* Reuse existing equivalence class if the lines are identical.
                    This detects the common case of exact identity
                    faster than lines_differ would.  */
-                if (memcmp (eqline, ip, length) == 0)
+		if (memcmp (eqline, ip, length - 1) == 0)
                   break;
                 if (!same_length_diff_contents_compare_anyway)
                   continue;
