@@ -51,6 +51,8 @@
  #error "Please include config.h first."
 #endif
 
+#include <limits.h>
+#include <stddef.h>
 #include <uchar.h>
 
 /* mbcel_t is a type representing a character CH or an encoding error byte ERR,
@@ -64,6 +66,10 @@ typedef struct
   unsigned char err;
   unsigned char len;
 } mbcel_t;
+
+/* On all known platforms, every multi-byte character length fits in
+   mbcel_t's LEN.  Check this.  */
+static_assert (MB_LEN_MAX <= UCHAR_MAX);
 
 /* Pacify GCC re '*p <= 0x7f' below.  */
 #if defined __GNUC__ && 4 < __GNUC__ + (3 <= __GNUC_MINOR__)
@@ -100,8 +106,14 @@ mbcel_scan (char const *p, char const *lim)
 
   /* Any LEN with top bit set is an encoding error, as LEN == (size_t) -3
      is not supported and MB_LEN_MAX <= (size_t) -1 / 2 on all platforms.  */
+  static_assert (MB_LEN_MAX <= (size_t) -1 / 2);
   if ((size_t) -1 / 2 < len)
     return (mbcel_t) { .err = *p, .len = 1 };
+
+  /* Tell the compiler LEN is at most MB_LEN_MAX,
+     as this can help GCC generate better code.  */
+  if (! (len <= MB_LEN_MAX))
+    unreachable ();
 
   /* A multi-byte character.  LEN must be positive,
      as *P != '\0' and shift sequences are not supported.  */
