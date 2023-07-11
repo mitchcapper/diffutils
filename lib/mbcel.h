@@ -100,8 +100,25 @@ mbcel_scan (char const *p, char const *lim)
   if (0 <= *p && *p <= 0x7f)
     return (mbcel_t) { .ch = *p, .len = 1 };
 
-  char32_t ch;
+  /* An initial mbstate_t; initialization optimized for some platforms.  */
+#if defined __GLIBC__ && 2 < __GLIBC__ + (2 <= __GLIBC_MINOR__)
+  mbstate_t mbs; mbs.__count = 0;
+#elif (defined __FreeBSD__ || defined __DragonFly__ || defined __OpenBSD__ \
+       || (defined __APPLE__ && defined __MACH__))
+  /* Initialize for all encodings: UTF-8, EUC, etc.  */
+  union { mbstate_t m; struct { uchar_t ch; int utf8_want, euc_want; } s; } u;
+  u.s.ch = u.s.utf8_want = u.s.euc_want = 0;
+# define mbs u.m
+#elif defined __NetBSD__
+  union { mbstate_t m; struct _RuneLocale *s; } u;
+  u.s = nullptr;
+# define mbs u.m
+#else
+  /* mbstate_t has unknown structure or is not worth optimizing.  */
   mbstate_t mbs = {0};
+#endif
+
+  char32_t ch;
   size_t len = mbrtoc32 (&ch, p, lim - p, &mbs);
 
   /* Any LEN with top bit set is an encoding error, as LEN == (size_t) -3
