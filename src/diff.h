@@ -336,6 +336,10 @@ struct file_data {
     lin equiv_max;
 };
 
+/* struct file_data.desc markers */
+enum { NONEXISTENT = -1 }; /* nonexistent file */
+enum { UNOPENED = -2 }; /* unopened file (e.g. directory) */
+
 /* Data on two input files being compared.  */
 
 struct comparison

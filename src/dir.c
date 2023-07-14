@@ -61,7 +61,7 @@ dir_read (struct file_data const *dir, struct dirdata *dirdata)
   dirdata->names = nullptr;
   dirdata->data = nullptr;
 
-  if (dir->desc != -1)
+  if (dir->desc != NONEXISTENT)
     {
       /* Open the directory and check for errors.  */
       DIR *reading = opendir (dir->name);
@@ -182,7 +182,7 @@ compare_names_for_qsort (void const *file1, void const *file2)
    This is a top-level routine; it does everything necessary for diff
    on two directories.
 
-   CMP->file[0].desc == -1 says directory CMP->file[0] doesn't exist,
+   CMP->file[0].desc == NONEXISTENT says directory CMP->file[0] doesn't exist,
    but pretend it is empty.  Likewise for CMP->file[1].
 
    HANDLE_FILE is a caller-provided subroutine called to handle each file.
@@ -200,11 +200,11 @@ diff_dirs (struct comparison const *cmp,
            int (*handle_file) (struct comparison const *,
                                char const *, char const *))
 {
-  if ((cmp->file[0].desc == -1 || dir_loop (cmp, 0))
-      && (cmp->file[1].desc == -1 || dir_loop (cmp, 1)))
+  if ((cmp->file[0].desc == NONEXISTENT || dir_loop (cmp, 0))
+      && (cmp->file[1].desc == NONEXISTENT || dir_loop (cmp, 1)))
     {
       error (0, 0, _("%s: recursive directory loop"),
-             cmp->file[cmp->file[0].desc == -1].name);
+             cmp->file[cmp->file[0].desc == NONEXISTENT].name);
       return EXIT_TROUBLE;
     }
 

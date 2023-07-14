@@ -1128,10 +1128,6 @@ set_mtime_to_now (struct stat *st)
 #endif
 }
 
-/* cmp.file[f].desc markers */
-enum { NONEXISTENT = -1 }; /* nonexistent file */
-enum { UNOPENED = -2 }; /* unopened file (e.g. directory) */
-
 /* encoded errno value */
 static int
 errno_encode (int err)
