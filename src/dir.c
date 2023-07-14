@@ -25,10 +25,7 @@
 #include <setjmp.h>
 #include <xalloc.h>
 
-/* Read the directory named by DIR and store into DIRDATA a sorted vector
-   of filenames for its contents.  DIR->desc == -1 means this directory is
-   known to be nonexistent, so set DIRDATA to an empty vector.
-   Return -1 (setting errno) if error, 0 otherwise.  */
+/* A sorted vector of file names obtained by reading a directory.  */
 
 struct dirdata
 {
@@ -47,7 +44,11 @@ static jmp_buf failed_locale_specific_sorting;
 static bool dir_loop (struct comparison const *, int);
 
 
-/* Read a directory and get its vector of names.  */
+/* Read the directory named by DIR and store into DIRDATA a sorted
+   vector of filenames for its contents.
+   DIR->desc == NONEXISTENT means this directory is known to be
+   nonexistent, so set DIRDATA to an empty vector.
+   Return true if successful, false (setting errno) otherwise.  */
 
 static bool
 dir_read (struct file_data const *dir, struct dirdata *dirdata)
