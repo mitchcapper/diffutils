@@ -984,7 +984,7 @@ begin_output (void)
       /* If handling multiple files (because scanning a directory),
          print which files the following output is about.  */
       if (currently_recursive)
-        printf ("%s\n", name);
+        puts (name);
     }
 
   free (name);

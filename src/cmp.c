@@ -187,7 +187,7 @@ usage (void)
 {
   printf (_("Usage: %s [OPTION]... FILE1 [FILE2 [SKIP1 [SKIP2]]]\n"),
           program_name);
-  printf ("%s\n", _("Compare two files byte by byte."));
+  puts (_("Compare two files byte by byte."));
   printf ("\n%s\n\n",
 _("The optional SKIP1 and SKIP2 specify the number of bytes to skip\n"
   "at the beginning of each file (zero by default)."));
