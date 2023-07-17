@@ -21,7 +21,6 @@
 #define GDIFF_MAIN
 #define SYSTEM_INLINE _GL_EXTERN_INLINE
 #include "diff.h"
-#include <assert.h>
 #include "paths.h"
 #include <c-stack.h>
 #include <dirname.h>
@@ -1053,17 +1052,15 @@ Mandatory arguments to long options are mandatory for short options too.\n\
       else
         {
           char const *msg = _(*p);
-          for (char const *nl; (nl = strchr (msg, '\n')); )
+	  for (char const *nl; (nl = strchr (msg, '\n')); msg = nl + 1)
             {
-              int msglen = nl + 1 - msg;
-              /* This assertion is solely to avoid a warning from
-                 gcc's -Wformat-overflow=.  */
-              assert (msglen < 4096);
-              printf ("  %.*s", msglen, msg);
-              msg = nl + 1;
+	      fputs ("  ", stdout);
+	      fwrite (msg, 1, nl + 1 - msg, stdout);
             }
 
-          printf (&"  %s\n"[2 * (*msg != ' ' && *msg != '-')], msg);
+	  if (*msg == ' ' || *msg == '-')
+	    fputs ("  ", stdout);
+	  puts (msg);
         }
     }
   emit_bug_reporting_address ();
@@ -1376,14 +1373,10 @@ compare_files (struct comparison const *parent,
             status = diff_dirs (&cmp, compare_files);
           else
             {
-              char const *dir;
-
-              /* PARENT must be non-null here.  */
-              assert (parent);
-              dir = parent->file[cmp.file[0].desc == NONEXISTENT].name;
-
               /* See POSIX 1003.1-2001 for this format.  */
-              message ("Only in %s: %s\n", dir, name0);
+              message ("Only in %s: %s\n",
+		       parent->file[cmp.file[0].desc == NONEXISTENT].name,
+		       name0);
 
               status = EXIT_FAILURE;
             }
@@ -1407,7 +1400,7 @@ compare_files (struct comparison const *parent,
            || S_ISLNK (cmp.file[1].stat.st_mode))
     {
       /* We get here only if we use lstat(), not stat().  */
-      assert (no_dereference_symlinks);
+      dassert (no_dereference_symlinks);
 
       if (S_ISLNK (cmp.file[0].stat.st_mode)
           && S_ISLNK (cmp.file[1].stat.st_mode))

@@ -438,10 +438,8 @@ find_hunk (struct change *start)
       lin thresh = (start && start->ignore
 		    ? ignorable_threshold
 		    : non_ignorable_threshold);
-      /* It is not supposed to matter which file we check in the end-test.
-         If it would matter, crash.  */
-      if (start && start->line0 - top0 != start->line1 - top1)
-        abort ();
+      /* It is not supposed to matter which file we check in the end-test.  */
+      dassert (!start || start->line0 - top0 == start->line1 - top1);
 
       /* Keep going if less than THRESH lines elapse
 	 before the affected line.  */

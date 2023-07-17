@@ -106,6 +106,17 @@ int strcasecmp (char const *, char const *);
 
 #include "version.h"
 
+/* Evaluate an assertion E that is guaranteed to be true.
+   E should not crash, loop forever, or have side effects.  */
+#if defined DDEBUG && !defined NDEBUG
+/* Abort the program if E is false.  */
+# include <assert.h>
+# define dassert(e) assert (e)
+#else
+/* The compiler can assume E, as behavior is undefined otherwise.  */
+# define dassert(e) assume (e)
+#endif
+
 _GL_INLINE_HEADER_BEGIN
 
 #ifndef SYSTEM_INLINE

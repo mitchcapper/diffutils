@@ -308,7 +308,7 @@ do_printf_spec (FILE *out, char const *spec,
   char c;
 
   /* Scan printf-style SPEC of the form %[-'0]*[0-9]*(.[0-9]*)?[cdoxX].  */
-  /* assert (*f == '%'); */
+  dassert (*f == '%');
   f++;
   while ((c = *f++) == '-' || c == '\'' || c == '0')
     continue;

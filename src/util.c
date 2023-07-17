@@ -169,8 +169,7 @@ print_message_queue (void)
       char const *arg2 = p; p += p < plim ? strlen (p) + 1 : 0;
       char const *arg3 = p; p += p < plim ? strlen (p) + 1 : 0;
       printf (_(m->msgid), arg0, arg1, arg2, arg3);
-      if (p < plim)
-	abort ();
+      dassert (plim <= p);
       struct msg *next = m->next;
       free (m);
       m = next;
@@ -609,7 +608,7 @@ get_funky_string (char **dest, const char **src, bool equals_end,
           break;
 
         default:
-          abort ();
+	  unreachable ();
         }
     }
 
@@ -760,7 +759,7 @@ parse_diff_color (void)
           goto done;
 
         default:
-          abort ();
+	  unreachable ();
         }
     }
  done:
@@ -1294,7 +1293,7 @@ set_color_context (enum color_context color_context)
           break;
 
         default:
-          abort ();
+          unreachable ();
         }
       put_indicator (&color_indicator[C_RIGHT]);
       last_context = color_context;

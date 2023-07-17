@@ -650,7 +650,7 @@ diff_2_files (struct comparison *cmp)
                   break;
 
                 default:
-                  abort ();
+                  unreachable ();
                 }
 
               finish_output ();
