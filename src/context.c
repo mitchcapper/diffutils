@@ -419,7 +419,7 @@ pr_unidiff_hunk (struct change *hunk)
    to the 'struct change' for the last change before those lines.  */
 
 static struct change * ATTRIBUTE_PURE
-find_hunk (struct change *start)
+find_hunk (struct change *script)
 {
   /* Threshold distance is CONTEXT if the second change is ignorable,
      min (2 * CONTEXT + 1, LIN_MAX) otherwise.  */
@@ -428,23 +428,22 @@ find_hunk (struct change *start)
 				 ? LIN_MAX
 				 : non_ignorable_threshold + 1);
 
-  while (true)
+  for (struct change *next; ; script = next)
     {
+      next = script->link;
       /* Compute number of first line in each file beyond this changed.  */
-      lin top0 = start->line0 + start->deleted;
-      lin top1 = start->line1 + start->inserted;
-      struct change *prev = start;
-      start = start->link;
-      lin thresh = (start && start->ignore
+      lin top0 = script->line0 + script->deleted;
+      lin top1 = script->line1 + script->inserted;
+      lin thresh = (next && next->ignore
 		    ? ignorable_threshold
 		    : non_ignorable_threshold);
       /* It is not supposed to matter which file we check in the end-test.  */
-      dassert (!start || start->line0 - top0 == start->line1 - top1);
+      dassert (!next || next->line0 - top0 == next->line1 - top1);
 
       /* Keep going if less than THRESH lines elapse
 	 before the affected line.  */
-      if (!start || thresh <= start->line0 - top0)
-	return prev;
+      if (!next || thresh <= next->line0 - top0)
+	return script;
     }
 }
 

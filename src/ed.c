@@ -29,7 +29,8 @@ static void pr_forward_ed_hunk (struct change *);
 void
 print_ed_script (struct change *script)
 {
-  print_script (script, find_reverse_change, print_ed_hunk);
+  /* The script is reversed, so plain find_change suffices.  */
+  print_script (script, find_change, print_ed_hunk);
 }
 
 /* Print a hunk of an ed diff */

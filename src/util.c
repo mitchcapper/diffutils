@@ -1053,15 +1053,9 @@ finish_output (void)
    Return the last link before the first gap.  */
 
 struct change * ATTRIBUTE_CONST
-find_change (struct change *start)
+find_change (struct change *script)
 {
-  return start;
-}
-
-struct change * ATTRIBUTE_CONST
-find_reverse_change (struct change *start)
-{
-  return start;
+  return script;
 }
 
 /* Divide SCRIPT into pieces by calling HUNKFUN and

@@ -95,7 +95,8 @@ enum output_style
 };
 
 /* True for output styles that are robust,
-   i.e. can handle a file that ends in a non-newline.  */
+   i.e. can handle a file that ends in a non-newline.
+   This is indented unusually to pacify 'make syntax-check'.  */
 DIFF_INLINE bool robust_output_style (enum output_style s)
 {
   return s != OUTPUT_ED && s != OUTPUT_FORWARD_ED;
@@ -399,7 +400,6 @@ extern char const change_letter[4];
 extern char const pr_program[];
 extern lin translate_line_number (struct file_data const *, lin);
 extern struct change *find_change (struct change *);
-extern struct change *find_reverse_change (struct change *);
 extern enum changes analyze_hunk (struct change *, lin *, lin *, lin *, lin *);
 extern void begin_output (void);
 extern void cleanup_signal_handlers (void);
