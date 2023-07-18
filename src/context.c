@@ -105,7 +105,7 @@ print_context_script (struct change *script, bool unidiff)
     for (struct change *e = script; e; e = e->link)
       e->ignore = false;
 
-  find_function_last_search = - files[0].prefix_lines;
+  find_function_last_search = - curr.file[0].prefix_lines;
   find_function_last_match = LIN_MAX;
 
   if (unidiff)
@@ -174,22 +174,22 @@ pr_context_hunk (struct change *hunk)
 
   /* Include a context's width before and after.  */
 
-  lin minus_prefix_lines = files[0].prefix_lines;
+  lin minus_prefix_lines = curr.file[0].prefix_lines;
   first0 = MAX (first0 - context, minus_prefix_lines);
   first1 = MAX (first1 - context, minus_prefix_lines);
-  if (last0 < files[0].valid_lines - context)
+  if (last0 < curr.file[0].valid_lines - context)
     last0 += context;
   else
-    last0 = files[0].valid_lines - 1;
-  if (last1 < files[1].valid_lines - context)
+    last0 = curr.file[0].valid_lines - 1;
+  if (last1 < curr.file[1].valid_lines - context)
     last1 += context;
   else
-    last1 = files[1].valid_lines - 1;
+    last1 = curr.file[1].valid_lines - 1;
 
   /* If desired, find the preceding function definition line in file 0.  */
   char const *function = nullptr;
   if (function_regexp.fastmap)
-    function = find_function (files[0].linbuf, first0);
+    function = find_function (curr.file[0].linbuf, first0);
 
   begin_output ();
   FILE *out = outfile;
@@ -202,7 +202,7 @@ pr_context_hunk (struct change *hunk)
   putc ('\n', out);
   set_color_context (LINE_NUMBER_CONTEXT);
   fputs ("*** ", out);
-  print_context_number_range (&files[0], first0, last0);
+  print_context_number_range (&curr.file[0], first0, last0);
   fputs (" ****", out);
   set_color_context (RESET_CONTEXT);
   putc ('\n', out);
@@ -231,16 +231,16 @@ pr_context_hunk (struct change *hunk)
                  Otherwise it is "deleted".  */
               prefix = (next->inserted > 0 ? "!" : "-");
             }
-          print_1_line_nl (prefix, &files[0].linbuf[i], true);
+	  print_1_line_nl (prefix, &curr.file[0].linbuf[i], true);
           set_color_context (RESET_CONTEXT);
-          if (files[0].linbuf[i + 1][-1] == '\n')
+	  if (curr.file[0].linbuf[i + 1][-1] == '\n')
             putc ('\n', out);
         }
     }
 
   set_color_context (LINE_NUMBER_CONTEXT);
   fputs ("--- ", out);
-  print_context_number_range (&files[1], first1, last1);
+  print_context_number_range (&curr.file[1], first1, last1);
   fputs (" ----", out);
   set_color_context (RESET_CONTEXT);
   putc ('\n', out);
@@ -269,9 +269,9 @@ pr_context_hunk (struct change *hunk)
                  Otherwise it is "inserted".  */
               prefix = (next->deleted > 0 ? "!" : "+");
             }
-          print_1_line_nl (prefix, &files[1].linbuf[i], true);
+	  print_1_line_nl (prefix, &curr.file[1].linbuf[i], true);
           set_color_context (RESET_CONTEXT);
-          if (files[1].linbuf[i + 1][-1] == '\n')
+	  if (curr.file[1].linbuf[i + 1][-1] == '\n')
             putc ('\n', out);
         }
     }
@@ -317,31 +317,31 @@ pr_unidiff_hunk (struct change *hunk)
 
   /* Include a context's width before and after.  */
 
-  lin minus_prefix_lines = - files[0].prefix_lines;
+  lin minus_prefix_lines = - curr.file[0].prefix_lines;
   first0 = MAX (first0 - context, minus_prefix_lines);
   first1 = MAX (first1 - context, minus_prefix_lines);
-  if (last0 < files[0].valid_lines - context)
+  if (last0 < curr.file[0].valid_lines - context)
     last0 += context;
   else
-    last0 = files[0].valid_lines - 1;
-  if (last1 < files[1].valid_lines - context)
+    last0 = curr.file[0].valid_lines - 1;
+  if (last1 < curr.file[1].valid_lines - context)
     last1 += context;
   else
-    last1 = files[1].valid_lines - 1;
+    last1 = curr.file[1].valid_lines - 1;
 
   /* If desired, find the preceding function definition line in file 0.  */
   char const *function = nullptr;
   if (function_regexp.fastmap)
-    function = find_function (files[0].linbuf, first0);
+    function = find_function (curr.file[0].linbuf, first0);
 
   begin_output ();
   FILE *out = outfile;
 
   set_color_context (LINE_NUMBER_CONTEXT);
   fputs ("@@ -", out);
-  print_unidiff_number_range (&files[0], first0, last0);
+  print_unidiff_number_range (&curr.file[0], first0, last0);
   fputs (" +", out);
-  print_unidiff_number_range (&files[1], first1, last1);
+  print_unidiff_number_range (&curr.file[1], first1, last1);
   fputs (" @@", out);
   set_color_context (RESET_CONTEXT);
 
@@ -361,7 +361,7 @@ pr_unidiff_hunk (struct change *hunk)
 
       if (!next || i < next->line0)
         {
-          char const *const *line = &files[0].linbuf[i++];
+	  char const *const *line = &curr.file[0].linbuf[i++];
           if (! (suppress_blank_empty && **line == '\n'))
             putc (initial_tab ? '\t' : ' ', out);
           print_1_line (nullptr, line);
@@ -375,7 +375,7 @@ pr_unidiff_hunk (struct change *hunk)
 
           while (k--)
             {
-              char const *const *line = &files[0].linbuf[i++];
+	      char const *const *line = &curr.file[0].linbuf[i++];
               set_color_context (DELETE_CONTEXT);
               putc ('-', out);
               if (initial_tab && ! (suppress_blank_empty && **line == '\n'))
@@ -394,7 +394,7 @@ pr_unidiff_hunk (struct change *hunk)
 
           while (k--)
             {
-              char const *const *line = &files[1].linbuf[j++];
+	      char const *const *line = &curr.file[1].linbuf[j++];
               set_color_context (ADD_CONTEXT);
               putc ('+', out);
               if (initial_tab && ! (suppress_blank_empty && **line == '\n'))

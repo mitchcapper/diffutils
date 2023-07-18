@@ -823,6 +823,9 @@ main (int argc, char **argv)
 
   int exit_status = EXIT_SUCCESS;
 
+  noparent.file[0].desc = AT_FDCWD;
+  noparent.file[1].desc = AT_FDCWD;
+
   if (from_file)
     {
       if (to_file)
@@ -830,7 +833,7 @@ main (int argc, char **argv)
       else
         for (; optind < argc; optind++)
           {
-            int status = compare_files (nullptr, from_file, argv[optind]);
+	    int status = compare_files (&noparent, from_file, argv[optind]);
             if (exit_status < status)
               exit_status = status;
           }
@@ -840,7 +843,7 @@ main (int argc, char **argv)
       if (to_file)
         for (; optind < argc; optind++)
           {
-            int status = compare_files (nullptr, argv[optind], to_file);
+	    int status = compare_files (&noparent, argv[optind], to_file);
             if (exit_status < status)
               exit_status = status;
           }
@@ -854,7 +857,8 @@ main (int argc, char **argv)
                 try_help ("extra operand '%s'", argv[optind + 2]);
             }
 
-          exit_status = compare_files (nullptr, argv[optind], argv[optind + 1]);
+	  exit_status = compare_files (&noparent,
+				       argv[optind], argv[optind + 1]);
         }
     }
 
@@ -1148,7 +1152,7 @@ dir_p (struct comparison const *pcmp, int f)
 
 /* Compare two files (or dirs) with parent comparison PARENT
    and names NAME0 and NAME1.
-   (If PARENT is null, then the first name is just NAME0, etc.)
+   (If PARENT == &NOPARENT, then the first name is just NAME0, etc.)
    This is self-contained; it opens the files and closes them.
 
    Value is EXIT_SUCCESS if files are the same, EXIT_FAILURE if
@@ -1192,7 +1196,7 @@ compare_files (struct comparison const *parent,
   char *free0;
   char *free1;
 
-  if (!parent)
+  if (parent == &noparent)
     {
       free0 = nullptr;
       free1 = nullptr;
@@ -1242,11 +1246,17 @@ compare_files (struct comparison const *parent,
                   set_mtime_to_now (&cmp.file[f].stat);
                 }
             }
-          else if ((no_dereference_symlinks
-                    ? lstat (cmp.file[f].name, &cmp.file[f].stat)
-                    : stat (cmp.file[f].name, &cmp.file[f].stat))
-                   != 0)
-            cmp.file[f].desc = errno_encode (errno);
+	  else
+	    {
+	      char const *name = cmp.file[f].name;
+	      if (fstatat (parent->file[f].desc,
+			   (parent->file[f].desc < 0 ? name
+			    : last_component (name)),
+			   &cmp.file[f].stat,
+			   no_dereference_symlinks ? AT_SYMLINK_NOFOLLOW : 0)
+		  < 0)
+		cmp.file[f].desc = errno_encode (errno);
+	    }
         }
     }
 
@@ -1263,7 +1273,7 @@ compare_files (struct comparison const *parent,
                && cmp.file[f].stat.st_size == 0)
             : ((cmp.file[f].desc == errno_encode (ENOENT)
                 || cmp.file[f].desc == errno_encode (EBADF))
-               && ! parent
+	       && parent == &noparent
                && (cmp.file[1 - f].desc == UNOPENED
                    || cmp.file[1 - f].desc == STDIN_FILENO))))
       cmp.file[f].desc = NONEXISTENT;
@@ -1288,7 +1298,7 @@ compare_files (struct comparison const *parent,
         }
     }
 
-  if (status == EXIT_SUCCESS && ! parent && !no_directory
+  if (status == EXIT_SUCCESS && !no_directory && parent == &noparent
       && dir_p (&cmp, 0) != dir_p (&cmp, 1))
     {
       /* If one is a directory, and it was specified in the command line,
@@ -1297,17 +1307,21 @@ compare_files (struct comparison const *parent,
       int fnm_arg = dir_p (&cmp, 0);
       int dir_arg = 1 - fnm_arg;
       char const *fnm = cmp.file[fnm_arg].name;
-      char const *dir = cmp.file[dir_arg].name;
+      char const *base_fnm = last_component (fnm);
       char const *filename = cmp.file[dir_arg].name = free0
-        = find_dir_file_pathname (dir, last_component (fnm));
+	= find_dir_file_pathname (&cmp.file[dir_arg], base_fnm);
 
       if (STREQ (fnm, "-"))
         fatal ("cannot compare '-' to a directory");
 
-      if ((no_dereference_symlinks
-           ? lstat (filename, &cmp.file[dir_arg].stat)
-           : stat (filename, &cmp.file[dir_arg].stat))
-          != 0)
+      int dirdesc = cmp.file[dir_arg].desc;
+      cmp.file[dir_arg].desc = UNOPENED;
+      noparent.file[dir_arg].desc = dirdesc < 0 ? AT_FDCWD : dirdesc;
+      if (fstatat (noparent.file[dir_arg].desc,
+		   dirdesc < 0 ? filename : base_fnm,
+		   &cmp.file[dir_arg].stat,
+		   no_dereference_symlinks ? AT_SYMLINK_NOFOLLOW : 0)
+	  < 0)
         {
           perror_with_name (filename);
           status = EXIT_TROUBLE;
@@ -1343,7 +1357,7 @@ compare_files (struct comparison const *parent,
 
       /* If both are directories, compare the files in them.  */
 
-      if (parent && !recursive)
+      if (!recursive && parent != &noparent)
         {
           /* But don't compare dir contents one level down
              unless -r was specified.
@@ -1355,7 +1369,7 @@ compare_files (struct comparison const *parent,
         status = diff_dirs (&cmp, compare_files);
     }
   else if ((dir_p (&cmp, 0) | dir_p (&cmp, 1))
-           || (parent
+	   || (parent != &noparent
                && !((S_ISREG (cmp.file[0].stat.st_mode)
                      || S_ISLNK (cmp.file[0].stat.st_mode))
                     && (S_ISREG (cmp.file[1].stat.st_mode)
@@ -1399,7 +1413,7 @@ compare_files (struct comparison const *parent,
   else if (S_ISLNK (cmp.file[0].stat.st_mode)
            || S_ISLNK (cmp.file[1].stat.st_mode))
     {
-      /* We get here only if we use lstat(), not stat().  */
+      /* We get here only if we are not dereferencing symlinks.  */
       dassert (no_dereference_symlinks);
 
       if (S_ISLNK (cmp.file[0].stat.st_mode)
@@ -1464,51 +1478,44 @@ compare_files (struct comparison const *parent,
 
       /* Open the files and record their descriptors.  */
 
-      int oflags = O_RDONLY | (binary ? O_BINARY : 0);
+      int oflags = (O_RDONLY | (binary ? O_BINARY : 0)
+		    | (no_dereference_symlinks ? O_NOFOLLOW : 0));
 
-      if (cmp.file[0].desc == UNOPENED)
-	{
-	  cmp.file[0].desc = open (cmp.file[0].name, oflags);
-	  if (cmp.file[0].desc < 0)
-	    {
-	      perror_with_name (cmp.file[0].name);
-	      status = EXIT_TROUBLE;
-	    }
-	}
-      if (cmp.file[1].desc == UNOPENED)
-        {
-          if (same_files)
-            cmp.file[1].desc = cmp.file[0].desc;
-	  else
-	    {
-	      cmp.file[1].desc = open (cmp.file[1].name, oflags);
-	      if (cmp.file[1].desc < 0)
-		{
-		  perror_with_name (cmp.file[1].name);
-		  status = EXIT_TROUBLE;
-		}
-	    }
-        }
+      for (int f = 0; f < 2; f++)
+	if (cmp.file[f].desc == UNOPENED)
+	  {
+	    if (f && same_files)
+	      cmp.file[f].desc = cmp.file[0].desc;
+	    else
+	      {
+		int dirfd = parent->file[f].desc;
+		char const *name = cmp.file[f].name;
+		char const *nm = dirfd < 0 ? name : last_component (name);
+		cmp.file[f].desc = openat (dirfd, nm, oflags);
+		if (cmp.file[f].desc < 0)
+		  {
+		    perror_with_name (name);
+		    status = EXIT_TROUBLE;
+		  }
+	      }
+	  }
 
       /* Compare the files, if no error was found.  */
 
       if (status == EXIT_SUCCESS)
         status = diff_2_files (&cmp);
-
-      /* Close the file descriptors.  */
-
-      if (0 <= cmp.file[0].desc && close (cmp.file[0].desc) != 0)
-        {
-          perror_with_name (cmp.file[0].name);
-          status = EXIT_TROUBLE;
-        }
-      if (0 <= cmp.file[1].desc && cmp.file[0].desc != cmp.file[1].desc
-          && close (cmp.file[1].desc) != 0)
-        {
-          perror_with_name (cmp.file[1].name);
-          status = EXIT_TROUBLE;
-        }
     }
+
+
+  /* Close any input files.  */
+  for (int f = 0; f < 2; f++)
+    if ((f == 0 || cmp.file[f].desc != cmp.file[0].desc)
+	&& (cmp.file[f].dirstream ? closedir (cmp.file[f].dirstream) < 0
+	    : 0 <= cmp.file[f].desc && close (cmp.file[f].desc) < 0))
+      {
+	perror_with_name (cmp.file[f].name);
+	status = EXIT_TROUBLE;
+      }
 
   /* Now the comparison has been done, if no error prevented it,
      and STATUS is the value this function will return.  */

@@ -20,6 +20,7 @@
 
 #include "diff.h"
 #include <error.h>
+#include <dirname.h>
 #include <exclude.h>
 #include <filenamecat.h>
 #include <setjmp.h>
@@ -44,14 +45,17 @@ static jmp_buf failed_locale_specific_sorting;
 static bool dir_loop (struct comparison const *, int);
 
 
-/* Read the directory named by DIR and store into DIRDATA a sorted
+/* Given the parent directory PARENTDIRFD (negative for current dir),
+   read the directory named by DIR and store into DIRDATA a sorted
    vector of filenames for its contents.
-   DIR->desc == NONEXISTENT means this directory is known to be
-   nonexistent, so set DIRDATA to an empty vector.
+   Use DIR's basename if PARENTDIRFD is nonnegative, for efficiency.
+   If DIR->desc == NONEXISTENT, this directory is known to be
+   nonexistent so set DIRDATA to an empty vector;
+   otherwise, update DIR->desc and DIR->dirstream as needed.
    Return true if successful, false (setting errno) otherwise.  */
 
 static bool
-dir_read (struct file_data const *dir, struct dirdata *dirdata)
+dir_read (int parentdirfd, struct file_data *dir, struct dirdata *dirdata)
 {
   /* Number of files in directory.  */
   idx_t nnames = 0;
@@ -65,9 +69,22 @@ dir_read (struct file_data const *dir, struct dirdata *dirdata)
   if (dir->desc != NONEXISTENT)
     {
       /* Open the directory and check for errors.  */
-      DIR *reading = opendir (dir->name);
+      int dirfd = dir->desc;
+      if (dirfd < 0)
+	{
+	  dirfd = openat (parentdirfd,
+			  (parentdirfd < 0 ? dir->name
+			   : last_component (dir->name)),
+			  (O_RDONLY | O_DIRECTORY
+			   | (no_dereference_symlinks ? O_NOFOLLOW : 0)));
+	  if (dirfd < 0)
+	    return false;
+	  dir->desc = dirfd;
+	}
+      DIR *reading = fdopendir (dirfd);
       if (!reading)
         return false;
+      dir->dirstream = reading;
 
       /* Initialize the table of filenames.  */
 
@@ -105,13 +122,8 @@ dir_read (struct file_data const *dir, struct dirdata *dirdata)
           nnames++;
         }
 
-      int readdir_errno = errno;
-      if (closedir (reading) < 0 || readdir_errno)
-	{
-	  if (readdir_errno)
-	    errno = readdir_errno;
-          return false;
-        }
+      if (errno)
+	return false;
     }
 
   /* Create the 'names' table from the 'data' table.  */
@@ -183,8 +195,9 @@ compare_names_for_qsort (void const *file1, void const *file2)
    This is a top-level routine; it does everything necessary for diff
    on two directories.
 
-   CMP->file[0].desc == NONEXISTENT says directory CMP->file[0] doesn't exist,
-   but pretend it is empty.  Likewise for CMP->file[1].
+   If CMP->file[0].desc == NONEXISTENT, directory CMP->file[0] doesn't exist
+   and pretend it is empty.  Otherwise, update CMP->file[0].desc and
+   CMP->file[0].dirstream as needed.  Likewise for CMP->file[1].
 
    HANDLE_FILE is a caller-provided subroutine called to handle each file.
    It gets three operands: CMP, name of file in dir 0, name of file in dir 1.
@@ -197,7 +210,7 @@ compare_names_for_qsort (void const *file1, void const *file2)
    or EXIT_TROUBLE if trouble is encountered in opening files.  */
 
 int
-diff_dirs (struct comparison const *cmp,
+diff_dirs (struct comparison *cmp,
            int (*handle_file) (struct comparison const *,
                                char const *, char const *))
 {
@@ -213,7 +226,7 @@ diff_dirs (struct comparison const *cmp,
   struct dirdata dirdata[2];
   int volatile val = EXIT_SUCCESS;
   for (int i = 0; i < 2; i++)
-    if (! dir_read (&cmp->file[i], &dirdata[i]))
+    if (! dir_read (cmp->parent->file[i].desc, &cmp->file[i], &dirdata[i]))
       {
         perror_with_name (cmp->file[i].name);
         val = EXIT_TROUBLE;
@@ -317,7 +330,7 @@ dir_loop (struct comparison const *cmp, int i)
 /* Find a matching filename in a directory.  */
 
 char *
-find_dir_file_pathname (char const *dir, char const *file)
+find_dir_file_pathname (struct file_data *dir, char const *file)
 {
   /* IF_LINT due to GCC bug 21161.  */
   char const *IF_LINT (volatile) match = file;
@@ -326,35 +339,26 @@ find_dir_file_pathname (char const *dir, char const *file)
   dirdata.names = nullptr;
   dirdata.data = nullptr;
 
-  if (ignore_file_name_case)
+  if (ignore_file_name_case && dir_read (AT_FDCWD, dir, &dirdata))
     {
-      struct file_data filedata;
-      filedata.name = dir;
-      filedata.desc = 0;
-
-      if (dir_read (&filedata, &dirdata))
-        {
-          locale_specific_sorting = true;
-          if (setjmp (failed_locale_specific_sorting))
-            match = file; /* longjmp may mess up MATCH.  */
-          else
+      locale_specific_sorting = true;
+      if (setjmp (failed_locale_specific_sorting))
+	match = file; /* longjmp may mess up MATCH.  */
+      else
+	for (char const **p = dirdata.names; *p; p++)
+	  if (compare_names (*p, file) == 0)
             {
-              for (char const **p = dirdata.names; *p; p++)
-                if (compare_names (*p, file) == 0)
-                  {
-                    if (file_name_cmp (*p, file) == 0)
-                      {
-                        match = *p;
-                        break;
-                      }
-                    if (match == file)
-                      match = *p;
-                  }
+	      if (file_name_cmp (*p, file) == 0)
+		{
+		  match = *p;
+		  break;
+		}
+	      if (match == file)
+		match = *p;
             }
-        }
     }
 
-  char *val = file_name_concat (dir, match, nullptr);
+  char *val = file_name_concat (dir->name, match, nullptr);
   free (dirdata.names);
   free (dirdata.data);
   return val;

@@ -989,19 +989,9 @@ begin_output (void)
   free (name);
 
   /* A special header is needed at the beginning of context output.  */
-  switch (output_style)
-    {
-    case OUTPUT_CONTEXT:
-      print_context_header (files, (char const *const *)names, false);
-      break;
-
-    case OUTPUT_UNIFIED:
-      print_context_header (files, (char const *const *)names, true);
-      break;
-
-    default:
-      break;
-    }
+  if (output_style == OUTPUT_CONTEXT || output_style == OUTPUT_UNIFIED)
+    print_context_header (curr.file, (char const *const *) names,
+			  output_style == OUTPUT_UNIFIED);
 
   if (names[0] != current_name0)
     free (names[0]);
@@ -1370,8 +1360,9 @@ analyze_hunk (struct change *hunk,
   bool skip_leading_white_space =
     skip_white_space && IGNORE_SPACE_CHANGE <= ignore_white_space;
 
-  char const *const *linbuf0 = files[0].linbuf;  /* Help the compiler.  */
-  char const *const *linbuf1 = files[1].linbuf;
+  /* Help the compiler.  */
+  char const *const *linbuf0 = curr.file[0].linbuf;
+  char const *const *linbuf1 = curr.file[1].linbuf;
 
   lin show_from = 0, show_to = 0;
 

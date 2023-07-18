@@ -37,6 +37,10 @@ GNU diffutils NEWS                                    -*- outline -*-
   diff -ly no longer mishandles non-ASCII input
   [bug#64461 introduced in 2.9]
 
+  diff - A/B now works correctly when standard input is a directory,
+  by reading a file named B in that directory.
+  [bug present since "the beginning"]
+
 
 * Noteworthy changes in release 3.10 (2023-05-21) [stable]
 
