@@ -411,7 +411,11 @@ cmp (void)
   word *buffer1 = buffer[1];
   char *buf0 = (char *) buffer0;
   char *buf1 = (char *) buffer1;
-  int offset_width IF_LINT (= 0); /* IF_LINT due to GCC bug 101768.  */
+
+  /* For -l, the print width of the offset, a positive number.
+     Otherwise, the negative of the comparison type.
+     This portmanteauization pacifies gcc -Wmaybe-uninitialized.  */
+  int offset_width;
 
   if (comparison_type == type_all_diffs)
     {
@@ -428,6 +432,8 @@ cmp (void)
       for (offset_width = 1; (byte_number_max /= 10) != 0; offset_width++)
         continue;
     }
+  else
+    offset_width = -comparison_type;
 
   bool eof[2] = { false, false };
 
@@ -520,7 +526,7 @@ cmp (void)
         }
 
       byte_number += first_diff;
-      if (comparison_type == type_first_diff && first_diff != 0)
+      if (offset_width == -type_first_diff && first_diff != 0)
         {
           line_number += count_newlines (buf0, first_diff);
           at_line_start = buf0[first_diff - 1] == '\n';
@@ -530,9 +536,9 @@ cmp (void)
 
       if (first_diff < smaller)
         {
-          switch (comparison_type)
+	  switch (offset_width)
             {
-            case type_first_diff:
+	    case -type_first_diff:
               {
                 char byte_buf[INT_BUFSIZE_BOUND (off_t)];
                 char line_buf[INT_BUFSIZE_BOUND (off_t)];
@@ -575,10 +581,12 @@ cmp (void)
                   }
               }
               FALLTHROUGH;
-            case type_status:
+	    case -type_status:
               return EXIT_FAILURE;
 
-            case type_all_diffs:
+	    default:
+	      dassert (comparison_type == type_all_diffs);
+
               do
                 {
                   unsigned char c0 = buf0[first_diff];
@@ -607,10 +615,11 @@ cmp (void)
                   first_diff++;
                 }
               while (first_diff < smaller);
+
               differing = -1;
               break;
 
-            case type_no_stdout:
+	    case -type_no_stdout:
               differing = 1;
               break;
             }
@@ -618,7 +627,7 @@ cmp (void)
 
       if (read0 != read1)
         {
-          if (differing <= 0 && comparison_type != type_status)
+	  if (differing <= 0 && offset_width != -type_status)
             {
               char const *shorter_file = file[read1 < read0];
 
@@ -633,7 +642,7 @@ cmp (void)
                   char byte_buf[INT_BUFSIZE_BOUND (off_t)];
                   char const *byte_num = offtostr (byte_number - 1, byte_buf);
 
-                  if (comparison_type == type_first_diff)
+		  if (offset_width == -type_first_diff)
                     {
                       char line_buf[INT_BUFSIZE_BOUND (off_t)];
                       char const *line_num

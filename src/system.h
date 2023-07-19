@@ -20,13 +20,6 @@
 
 #include <config.h>
 
-/* Use this to suppress gcc's "...may be used before initialized" warnings. */
-#ifdef GCC_LINT
-# define IF_LINT(Code) Code
-#else
-# define IF_LINT(Code) /* empty */
-#endif
-
 #include <count-leading-zeros.h>
 #include <verify.h>
 
