@@ -46,7 +46,8 @@
 #ifndef _MBCEL_H
 #define _MBCEL_H 1
 
-/* This file uses _GL_INLINE_HEADER_BEGIN, _GL_INLINE.  */
+/* This file uses _GL_INLINE_HEADER_BEGIN, _GL_INLINE,
+   _GL_ATTRIBUTE_MAY_ALIAS.  */
 #if !_GL_CONFIG_H_INCLUDED
  #error "Please include config.h first."
 #endif
@@ -100,18 +101,32 @@ mbcel_scan (char const *p, char const *lim)
   if (0 <= *p && *p <= 0x7f)
     return (mbcel_t) { .ch = *p, .len = 1 };
 
-  /* An initial mbstate_t; initialization optimized for some platforms.  */
+  /* An initial mbstate_t; initialization optimized for some platforms.
+     For details about these and other platforms, see wchar.in.h.  */
 #if defined __GLIBC__ && 2 < __GLIBC__ + (2 <= __GLIBC_MINOR__)
+  /* Although only a trivial optimization, it's worth it for GNU.  */
   mbstate_t mbs; mbs.__count = 0;
 #elif (defined __FreeBSD__ || defined __DragonFly__ || defined __OpenBSD__ \
        || (defined __APPLE__ && defined __MACH__))
-  /* Initialize for all encodings: UTF-8, EUC, etc.  */
-  union { mbstate_t m; struct { uchar_t ch; int utf8_want, euc_want; } s; } u;
+  /* These platforms have 128-byte mbstate_t.  What were they thinking?
+     Initialize just for supported encodings (UTF-8, EUC, etc.).
+     Avoid memset because some compilers generate function call code.  */
+  struct mbhidden { char32_t ch; int utf8_want, euc_want; }
+    _GL_ATTRIBUTE_MAY_ALIAS;
+  union { mbstate_t m; struct mbhidden s; } u;
   u.s.ch = u.s.utf8_want = u.s.euc_want = 0;
 # define mbs u.m
 #elif defined __NetBSD__
-  union { mbstate_t m; struct _RuneLocale *s; } u;
-  u.s = nullptr;
+  /* Like FreeBSD, but mbstate_t starts with a pointer and
+     (before joerg commit dated 2020-06-02 01:30:31 +0000)
+     up to another pointer's worth of padding.  */
+  struct mbhidden {
+    struct _RuneLocale *p[2];
+    char32_t ch; int utf8_want, euc_want;
+  } _GL_ATTRIBUTE_MAY_ALIAS;
+  union { mbstate_t m; struct mbhidden s; } u;
+  u.s.p[0] = u.s.p[1] = nullptr;
+  u.s.ch = u.s.utf8_want = u.s.euc_want = 0;
 # define mbs u.m
 #else
   /* mbstate_t has unknown structure or is not worth optimizing.  */
