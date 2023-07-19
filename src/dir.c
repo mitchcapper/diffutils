@@ -42,6 +42,7 @@ static bool locale_specific_sorting;
 /* Where to go if locale-specific sorting fails.  */
 static jmp_buf failed_locale_specific_sorting;
 
+static int compare_names (char const *, char const *);
 static bool dir_loop (struct comparison const *, int);
 
 
@@ -52,10 +53,13 @@ static bool dir_loop (struct comparison const *, int);
    If DIR->desc == NONEXISTENT, this directory is known to be
    nonexistent so set DIRDATA to an empty vector;
    otherwise, update DIR->desc and DIR->dirstream as needed.
+   If STARTFILE, ignore directory entries less than STARTFILE, and if
+   STARTFILE_ONLY, also ignore directory entries greater than STARTFILE.
    Return true if successful, false (setting errno) otherwise.  */
 
 static bool
-dir_read (int parentdirfd, struct file_data *dir, struct dirdata *dirdata)
+dir_read (int parentdirfd, struct file_data *dir, struct dirdata *dirdata,
+	  char const *startfile, bool startfile_only)
 {
   /* Number of files in directory.  */
   idx_t nnames = 0;
@@ -109,6 +113,13 @@ dir_read (int parentdirfd, struct file_data *dir, struct dirdata *dirdata)
           if (d_name[0] == '.'
               && (d_name[1] == 0 || (d_name[1] == '.' && d_name[2] == 0)))
             continue;
+
+	  if (startfile)
+	    {
+	      int cmp = compare_names (d_name, startfile);
+	      if (cmp < 0 || (startfile_only && !!cmp))
+		continue;
+	    }
 
           if (excluded_file_name (excluded, d_name))
             continue;
@@ -226,7 +237,8 @@ diff_dirs (struct comparison *cmp,
   struct dirdata dirdata[2];
   int volatile val = EXIT_SUCCESS;
   for (int i = 0; i < 2; i++)
-    if (! dir_read (cmp->parent->file[i].desc, &cmp->file[i], &dirdata[i]))
+    if (! dir_read (cmp->parent->file[i].desc, &cmp->file[i], &dirdata[i],
+		    cmp->parent == &noparent ? starting_file : nullptr, false))
       {
         perror_with_name (cmp->file[i].name);
         val = EXIT_TROUBLE;
@@ -245,17 +257,6 @@ diff_dirs (struct comparison *cmp,
       for (int i = 0; i < 2; i++)
         qsort (names[i], dirdata[i].nnames, sizeof *dirdata[i].names,
                compare_names_for_qsort);
-
-      /* If '-S name' was given, and this is the topmost level of comparison,
-         ignore all file names less than the specified starting name.  */
-
-      if (starting_file && cmp->parent == &noparent)
-        {
-          while (*names[0] && compare_names (*names[0], starting_file) < 0)
-            names[0]++;
-          while (*names[1] && compare_names (*names[1], starting_file) < 0)
-            names[1]++;
-        }
 
       /* Loop while files remain in one or both dirs.  */
       while (*names[0] || *names[1])
@@ -339,23 +340,22 @@ find_dir_file_pathname (struct file_data *dir, char const *file)
   dirdata.names = nullptr;
   dirdata.data = nullptr;
 
-  if (ignore_file_name_case && dir_read (AT_FDCWD, dir, &dirdata))
+  if (ignore_file_name_case && dir_read (AT_FDCWD, dir, &dirdata, file, true))
     {
       locale_specific_sorting = true;
       if (setjmp (failed_locale_specific_sorting))
 	match = file; /* longjmp may mess up MATCH.  */
       else
 	for (char const **p = dirdata.names; *p; p++)
-	  if (compare_names (*p, file) == 0)
-            {
-	      if (file_name_cmp (*p, file) == 0)
-		{
-		  match = *p;
-		  break;
-		}
-	      if (match == file)
+	  {
+	    if (file_name_cmp (*p, file) == 0)
+	      {
 		match = *p;
-            }
+		break;
+	      }
+	    if (match == file)
+	      match = *p;
+	  }
     }
 
   char *val = file_name_concat (dir->name, match, nullptr);
