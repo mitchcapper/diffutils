@@ -333,30 +333,23 @@ dir_loop (struct comparison const *cmp, int i)
 char *
 find_dir_file_pathname (struct file_data *dir, char const *file)
 {
-  /* IF_LINT due to GCC bug 21161.  */
-  char const *IF_LINT (volatile) match = file;
+  char const *match = file;
 
   struct dirdata dirdata;
   dirdata.names = nullptr;
   dirdata.data = nullptr;
 
   if (ignore_file_name_case && dir_read (AT_FDCWD, dir, &dirdata, file, true))
-    {
-      locale_specific_sorting = true;
-      if (setjmp (failed_locale_specific_sorting))
-	match = file; /* longjmp may mess up MATCH.  */
-      else
-	for (char const **p = dirdata.names; *p; p++)
+    for (char const **p = dirdata.names; *p; p++)
+      {
+	if (file_name_cmp (*p, file) == 0)
 	  {
-	    if (file_name_cmp (*p, file) == 0)
-	      {
-		match = *p;
-		break;
-	      }
-	    if (match == file)
-	      match = *p;
+	    match = *p;
+	    break;
 	  }
-    }
+	if (match == file)
+	  match = *p;
+      }
 
   char *val = file_name_concat (dir->name, match, nullptr);
   free (dirdata.names);
