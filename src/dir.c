@@ -235,7 +235,7 @@ diff_dirs (struct comparison *cmp,
 
   /* Get contents of both dirs.  */
   struct dirdata dirdata[2];
-  int volatile val = EXIT_SUCCESS;
+  int val = EXIT_SUCCESS;
   for (int i = 0; i < 2; i++)
     if (! dir_read (cmp->parent->file[i].desc, &cmp->file[i], &dirdata[i],
 		    cmp->parent == &noparent ? starting_file : nullptr, false))
@@ -246,7 +246,7 @@ diff_dirs (struct comparison *cmp,
 
   if (val == EXIT_SUCCESS)
     {
-      char const **volatile names[2] = {dirdata[0].names, dirdata[1].names};
+      char const **names[2] = {dirdata[0].names, dirdata[1].names};
 
       /* Use locale-specific sorting if possible, else native byte order.  */
       locale_specific_sorting = true;
