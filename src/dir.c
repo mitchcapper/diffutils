@@ -249,7 +249,7 @@ diff_dirs (struct comparison *cmp,
       /* If '-S name' was given, and this is the topmost level of comparison,
          ignore all file names less than the specified starting name.  */
 
-      if (starting_file && ! cmp->parent)
+      if (starting_file && cmp->parent == &noparent)
         {
           while (*names[0] && compare_names (*names[0], starting_file) < 0)
             names[0]++;
@@ -321,7 +321,7 @@ diff_dirs (struct comparison *cmp,
 static bool ATTRIBUTE_PURE
 dir_loop (struct comparison const *cmp, int i)
 {
-  for (struct comparison const *p = cmp; (p = p->parent); )
+  for (struct comparison const *p = cmp; (p = p->parent) != &noparent; )
     if (0 < same_file (&p->file[i].stat, &cmp->file[i].stat))
       return true;
   return false;
