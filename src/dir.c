@@ -200,15 +200,7 @@ compare_names_for_qsort (void const *file1, void const *file2)
 {
   char const *const *f1 = file1;
   char const *const *f2 = file2;
-  char const *name1 = *f1;
-  char const *name2 = *f2;
-  if (locale_specific_sorting)
-    {
-      int diff = compare_collated (name1, name2);
-      if (diff)
-        return diff;
-    }
-  return file_name_cmp (name1, name2);
+  return compare_names (*f1, *f2);
 }
 
 /* Compare the contents of two directories named in CMP.
