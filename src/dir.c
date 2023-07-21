@@ -26,6 +26,15 @@
 #include <setjmp.h>
 #include <xalloc.h>
 
+#if ! HAVE_STRCASECOLL
+# if HAVE_STRICOLL || defined stricoll
+#  define strcasecoll(a, b) stricoll (a, b)
+# else
+#  include <mbcel.h>
+#  define strcasecoll(a, b) mbcel_strcasecmp (a, b) /* best we can do */
+# endif
+#endif
+
 /* A sorted vector of file names obtained by reading a directory.  */
 
 struct dirdata

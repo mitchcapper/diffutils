@@ -51,23 +51,12 @@
 #include <stdlib.h>
 #define EXIT_TROUBLE 2
 
+#include <inttypes.h>
 #include <limits.h>
 #include <locale.h>
 #include <stdckdint.h>
 #include <stddef.h>
-#include <inttypes.h>
-
 #include <string.h>
-#if ! HAVE_STRCASECOLL
-# if HAVE_STRICOLL || defined stricoll
-#  define strcasecoll(a, b) stricoll (a, b)
-# else
-#  define strcasecoll(a, b) strcasecmp (a, b) /* best we can do */
-# endif
-#endif
-#if ! (HAVE_STRCASECMP || defined strcasecmp)
-int strcasecmp (char const *, char const *);
-#endif
 
 #include <gettext.h>
 #if ! ENABLE_NLS
