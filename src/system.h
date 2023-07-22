@@ -27,6 +27,8 @@
 
 #include <sys/stat.h>
 #include <stat-macros.h>
+#include <stat-time.h>
+#include <timespec.h>
 
 #ifndef STAT_BLOCKSIZE
 # if HAVE_STRUCT_STAT_ST_BLKSIZE
@@ -178,6 +180,10 @@ static_assert (LIN_MAX == IDX_MAX);
    inspect all attributes, only attributes useful in checking for this
    bug.
 
+   Check first the attributes most likely to differ, for speed.
+   Birthtime is special as st_birthtime is not portable,
+   but when there is a birthtime it is most likely to differ.
+
    It's possible for two distinct files on a buggy file system to have
    the same attributes, but it's not worth slowing down all
    implementations (or complicating the configuration) to cater to
@@ -185,13 +191,16 @@ static_assert (LIN_MAX == IDX_MAX);
 
 #ifndef same_file_attributes
 # define same_file_attributes(s, t) \
-   ((s)->st_mode == (t)->st_mode \
-    && (s)->st_nlink == (t)->st_nlink \
+   (timespec_cmp (get_stat_birthtime (s), get_stat_birthtime (t)) == 0 \
+    && (s)->st_ctime == (t)->st_ctime \
+    && get_stat_ctime_ns (s) == get_stat_ctime_ns (t) \
+    && (s)->st_mtime == (t)->st_mtime \
+    && get_stat_mtime_ns (s) == get_stat_mtime_ns (t) \
+    && (s)->st_size == (t)->st_size \
+    && (s)->st_mode == (t)->st_mode \
     && (s)->st_uid == (t)->st_uid \
     && (s)->st_gid == (t)->st_gid \
-    && (s)->st_size == (t)->st_size \
-    && (s)->st_mtime == (t)->st_mtime \
-    && (s)->st_ctime == (t)->st_ctime)
+    && (s)->st_nlink == (t)->st_nlink)
 #endif
 
 #define STREQ(a, b) (strcmp (a, b) == 0)
