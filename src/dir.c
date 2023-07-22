@@ -23,17 +23,9 @@
 #include <dirname.h>
 #include <exclude.h>
 #include <filenamecat.h>
+#include <mbcel.h>
 #include <setjmp.h>
 #include <xalloc.h>
-
-#if ! HAVE_STRCASECOLL
-# if HAVE_STRICOLL || defined stricoll
-#  define strcasecoll(a, b) stricoll (a, b)
-# else
-#  include <mbcel.h>
-#  define strcasecoll(a, b) mbcel_strcasecmp (a, b) /* best we can do */
-# endif
-#endif
 
 /* A sorted vector of file names obtained by reading a directory.  */
 
@@ -165,15 +157,19 @@ dir_read (int parentdirfd, struct file_data *dir, struct dirdata *dirdata,
 static int
 compare_collated (char const *name1, char const *name2)
 {
-  errno = 0;
-  int r = (ignore_file_name_case
-	   ? strcasecoll (name1, name2)
-	   : strcoll (name1, name2));
-  if (errno)
+  int r;
+  if (ignore_file_name_case)
+    r = mbcel_strcasecmp (name1, name2);  /* Best we can do.  */
+  else
     {
-      error (0, errno, _("cannot compare file names '%s' and '%s'"),
-             name1, name2);
-      longjmp (failed_locale_specific_sorting, 1);
+      errno = 0;
+      r = strcoll (name1, name2);
+      if (errno)
+	{
+	  error (0, errno, _("cannot compare file names '%s' and '%s'"),
+		 name1, name2);
+	  longjmp (failed_locale_specific_sorting, 1);
+	}
     }
   return r;
 }
@@ -251,8 +247,9 @@ diff_dirs (struct comparison *cmp,
 
       /* Use locale-specific sorting if possible, else native byte order.  */
       locale_specific_sorting = true;
-      if (setjmp (failed_locale_specific_sorting))
-        locale_specific_sorting = false;
+      if (! ignore_file_name_case)
+	if (setjmp (failed_locale_specific_sorting))
+	  locale_specific_sorting = false;
 
       /* Sort the directories.  */
       for (int i = 0; i < 2; i++)
