@@ -35,7 +35,6 @@
 #include <progname.h>
 #include <sh-quote.h>
 #include <stat-time.h>
-#include <timespec.h>
 #include <version-etc.h>
 #include <xalloc.h>
 #include <xreadlink.h>
@@ -1110,25 +1109,6 @@ specify_colors_style (char const *value)
 }
 
 
-/* Set the last-modified time of *ST to be the current time.  */
-
-static void
-set_mtime_to_now (struct stat *st)
-{
-#ifdef STAT_TIMESPEC
-  gettime (&STAT_TIMESPEC (st, st_mtim));
-#else
-  struct timespec t;
-  gettime (&t);
-  st->st_mtime = t.tv_sec;
-# if defined STAT_TIMESPEC_NS
-  STAT_TIMESPEC_NS (st, st_mtim) = t.tv_nsec;
-# elif defined HAVE_STRUCT_STAT_ST_SPARE1
-  st->st_spare1 = t.tv_nsec / 1000;
-# endif
-#endif
-}
-
 /* encoded errno value */
 static int
 errno_encode (int err)
@@ -1240,10 +1220,6 @@ compare_files (struct comparison const *parent,
                         cmp.file[f].stat.st_size =
                           MAX (0, cmp.file[f].stat.st_size - pos);
                     }
-
-                  /* POSIX 1003.1-2001 requires current time for
-                     stdin.  */
-                  set_mtime_to_now (&cmp.file[f].stat);
                 }
             }
 	  else

@@ -47,11 +47,24 @@ print_context_label (char const *mark,
     fprintf (outfile, "%s %s", mark, label);
   else
     {
+      /* POSIX requires current time for stdin.  */
+      struct timespec ts;
+      if (inf->desc == STDIN_FILENO)
+	{
+	  static struct timespec now;
+	  if (!now.tv_sec)
+	    timespec_get (&now, TIME_UTC);
+	  ts = now;
+	}
+      else
+	ts = get_stat_mtime (&inf->stat);
+
       char buf[MAX (INT_STRLEN_BOUND (int) + 32,
                     INT_STRLEN_BOUND (time_t) + 11)];
-      struct tm const *tm = localtime (&inf->stat.st_mtime);
-      int nsec = get_stat_mtime_ns (&inf->stat);
-      if (! (tm && nstrftime (buf, sizeof buf, time_format, tm, localtz, nsec)))
+      struct tm const *tm = localtime (&ts.tv_sec);
+      int nsec = ts.tv_nsec;
+      if (! (tm && nstrftime (buf, sizeof buf, time_format,
+			      tm, localtz, nsec)))
         {
           static_assert (TYPE_IS_INTEGER (time_t));
           if (LONG_MIN <= TYPE_MINIMUM (time_t)
