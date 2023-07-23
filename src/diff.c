@@ -728,8 +728,7 @@ main (int argc, char **argv)
 
   if (output_style != OUTPUT_CONTEXT || hard_locale (LC_TIME))
     {
-#if (defined STAT_TIMESPEC || defined STAT_TIMESPEC_NS \
-     || defined HAVE_STRUCT_STAT_ST_SPARE1)
+#if defined STAT_TIMESPEC || defined STAT_TIMESPEC_NS
       time_format = "%Y-%m-%d %H:%M:%S.%N %z";
 #else
       time_format = "%Y-%m-%d %H:%M:%S %z";
