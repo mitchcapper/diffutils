@@ -29,7 +29,6 @@
 #include <file-type.h>
 #include <getopt.h>
 #include <hard-locale.h>
-#include <inttostr.h>
 #include <progname.h>
 #include <unlocked-io.h>
 #include <version-etc.h>
@@ -482,8 +481,8 @@ cmp (void)
     }
 
   bool at_line_start = true;
-  off_t line_number = 1;	/* Line number (1...) of difference. */
-  off_t byte_number = 1;	/* Byte number (1...) of difference. */
+  intmax_t line_number = 1;	/* Line number (1...) of difference. */
+  intmax_t byte_number = 1;	/* Byte number (1...) of difference. */
   intmax_t remaining = bytes;	/* Remaining bytes to compare, or -1.  */
 
   while (true)
@@ -540,17 +539,13 @@ cmp (void)
             {
 	    case -type_first_diff:
               {
-                char byte_buf[INT_BUFSIZE_BOUND (off_t)];
-                char line_buf[INT_BUFSIZE_BOUND (off_t)];
-                char const *byte_num = offtostr (byte_number, byte_buf);
-                char const *line_num = offtostr (line_number, line_buf);
                 if (!opt_print_bytes)
                   {
                     /* See POSIX for this format.  This message is
                        used only in the POSIX locale, so it need not
                        be translated.  */
                     static char const char_message[] =
-                      "%s %s differ: char %s, line %s\n";
+		      "%s %s differ: char %"PRIdMAX", line %"PRIdMAX"\n";
 
                     /* The POSIX rationale recommends using the word
                        "byte" outside the POSIX locale.  Some gettext
@@ -559,13 +554,13 @@ cmp (void)
                        are set, so use "byte" if a translation is
                        available, or if outside the POSIX locale.  */
                     static char const byte_msgid[] =
-                      N_("%s %s differ: byte %s, line %s\n");
+		      N_("%s %s differ: byte %"PRIdMAX", line %"PRIdMAX"\n");
                     char const *byte_message = _(byte_msgid);
                     bool use_byte_message = (byte_message != byte_msgid
                                              || hard_locale_LC_MESSAGES ());
 
                     printf (use_byte_message ? byte_message : char_message,
-                            file[0], file[1], byte_num, line_num);
+			    file[0], file[1], byte_number, line_number);
                   }
                 else
                   {
@@ -575,8 +570,9 @@ cmp (void)
                     char s1[5];
                     sprintc (s0, c0);
                     sprintc (s1, c1);
-                    printf (_("%s %s differ: byte %s, line %s is %3o %s %3o %s\n"),
-                            file[0], file[1], byte_num, line_num,
+		    printf (_("%s %s differ: byte %"PRIdMAX", line %"PRIdMAX
+			      " is %3o %s %3o %s\n"),
+			    file[0], file[1], byte_number, line_number,
                             c0, s0, c1, s1);
                   }
               }
@@ -593,13 +589,11 @@ cmp (void)
                   unsigned char c1 = buf1[first_diff];
                   if (c0 != c1)
                     {
-                      char byte_buf[INT_BUFSIZE_BOUND (off_t)];
-                      char const *byte_num = offtostr (byte_number, byte_buf);
                       if (!opt_print_bytes)
                         {
                           /* See POSIX for this format.  */
-                          printf ("%*s %3o %3o\n",
-                                  offset_width, byte_num, c0, c1);
+			  printf ("%*"PRIdMAX" %3o %3o\n",
+				  offset_width, byte_number, c0, c1);
                         }
                       else
                         {
@@ -607,8 +601,8 @@ cmp (void)
                           char s1[5];
                           sprintc (s0, c0);
                           sprintc (s1, c1);
-                          printf ("%*s %3o %-4s %3o %s\n",
-                                  offset_width, byte_num, c0, s0, c1, s1);
+			  printf ("%*"PRIdMAX" %3o %-4s %3o %s\n",
+				  offset_width, byte_number, c0, s0, c1, s1);
                         }
                     }
                   byte_number++;
@@ -627,40 +621,22 @@ cmp (void)
 
       if (read0 != read1)
         {
+	  /* POSIX says that each of these format strings must be
+	     "cmp: EOF on %s", optionally followed by a blank and
+	     extra text sans newline, then terminated by "\n".  */
 	  if (differing <= 0 && offset_width != -type_status)
-            {
-              char const *shorter_file = file[read1 < read0];
-
-              /* POSIX says that each of these format strings must be
-                 "cmp: EOF on %s", optionally followed by a blank and
-                 extra text sans newline, then terminated by "\n".  */
-              if (byte_number == 1)
-                fprintf (stderr, _("cmp: EOF on %s which is empty\n"),
-                         shorter_file);
-              else
-                {
-                  char byte_buf[INT_BUFSIZE_BOUND (off_t)];
-                  char const *byte_num = offtostr (byte_number - 1, byte_buf);
-
-		  if (offset_width == -type_first_diff)
-                    {
-                      char line_buf[INT_BUFSIZE_BOUND (off_t)];
-                      char const *line_num
-                        = offtostr (line_number - at_line_start, line_buf);
-                      fprintf (stderr,
-                               (at_line_start
-                                ? _("cmp: EOF on %s after byte %s, line %s\n")
-                                : _("cmp: EOF on %s after byte %s,"
-                                    " in line %s\n")),
-                               shorter_file, byte_num, line_num);
-                    }
-                  else
-                    fprintf (stderr,
-                             _("cmp: EOF on %s after byte %s\n"),
-                             shorter_file, byte_num);
-                }
-            }
-
+	    fprintf (stderr,
+		     _(byte_number == 1
+		       ? N_("cmp: EOF on %s which is empty\n")
+		       : offset_width != -type_first_diff
+		       ? N_("cmp: EOF on %s after byte %"PRIdMAX"\n")
+		       : at_line_start
+		       ? N_("cmp: EOF on %s after byte %"PRIdMAX","
+			    " line %"PRIdMAX"\n")
+		       : N_("cmp: EOF on %s after byte %"PRIdMAX","
+			    " in line %"PRIdMAX"\n")),
+		     file[read1 < read0],
+		     byte_number, line_number - at_line_start);
           return EXIT_FAILURE;
         }
 
