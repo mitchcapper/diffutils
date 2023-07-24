@@ -636,7 +636,7 @@ cmp (void)
 		       : N_("cmp: EOF on %s after byte %"PRIdMAX","
 			    " in line %"PRIdMAX"\n")),
 		     file[read1 < read0],
-		     byte_number, line_number - at_line_start);
+		     byte_number - 1, line_number - at_line_start);
           return EXIT_FAILURE;
         }
 
