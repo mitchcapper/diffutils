@@ -23,6 +23,7 @@
 #include "diff.h"
 #include "paths.h"
 #include <c-stack.h>
+#include <careadlinkat.h>
 #include <dirname.h>
 #include <error.h>
 #include <exclude.h>
@@ -37,7 +38,6 @@
 #include <stat-time.h>
 #include <version-etc.h>
 #include <xalloc.h>
-#include <xreadlink.h>
 #include <xstdopen.h>
 #include <binary-io.h>
 
@@ -1395,30 +1395,43 @@ compare_files (struct comparison const *parent,
           && S_ISLNK (cmp.file[1].stat.st_mode))
         {
           /* Compare the values of the symbolic links.  */
-          char *link_value[2] = { nullptr, nullptr };
+	  if (cmp.file[0].stat.st_size != cmp.file[1].stat.st_size)
+	    status = EXIT_FAILURE;
+	  else
+	    {
+	      char *link_value[2]; link_value[1] = nullptr;
+	      char linkbuf[2][128];
 
-          for (int f = 0; f < 2; f++)
-            {
-              link_value[f] = xreadlink (cmp.file[f].name);
-              if (link_value[f] == nullptr)
-                {
-                  perror_with_name (cmp.file[f].name);
-                  status = EXIT_TROUBLE;
-                  break;
-                }
-            }
-          if (status == EXIT_SUCCESS)
-            {
-              if ( ! STREQ (link_value[0], link_value[1]))
-                {
-                  message ("Symbolic links %s and %s differ\n",
-                           cmp.file[0].name, cmp.file[1].name);
-                  /* This is a difference.  */
-                  status = EXIT_FAILURE;
-                }
-            }
-          for (int f = 0; f < 2; f++)
-            free (link_value[f]);
+	      for (bool f = false; ; f = true)
+		{
+		  int dirfd = parent->file[f].desc;
+		  char const *name = cmp.file[f].name;
+		  char const *nm = dirfd < 0 ? name : last_component (name);
+		  link_value[f] = careadlinkat (dirfd, nm,
+						linkbuf[f], sizeof linkbuf[f],
+						nullptr, readlinkat);
+		  if (!link_value[f])
+		    {
+		      perror_with_name (cmp.file[f].name);
+		      status = EXIT_TROUBLE;
+		      break;
+		    }
+		  if (f)
+		    {
+		      status = (STREQ (link_value[0], link_value[f])
+				? EXIT_SUCCESS : EXIT_FAILURE);
+		      break;
+		    }
+		}
+
+	      for (int f = 0; f < 2; f++)
+		if (link_value[f] != linkbuf[f])
+		  free (link_value[f]);
+	    }
+
+          if (status == EXIT_FAILURE)
+	    message ("Symbolic links %s and %s differ\n",
+		     cmp.file[0].name, cmp.file[1].name);
         }
       else
         {
