@@ -43,6 +43,12 @@
 #ifndef SA_RESTART
 # define SA_RESTART 0
 #endif
+#ifndef SIGSTOP
+# define SIGSTOP 0
+#endif
+#ifndef SIGTSTP
+# define SIGTSTP 0
+#endif
 
 char const pr_program[] = PR_PROGRAM;
 
@@ -266,9 +272,7 @@ process_signals (void)
 
       /* Reload stop_signal_count and (if needed) interrupt_signal, in
 	 case a new signal was handled before sigprocmask took effect.  */
-      int sig;
-#ifdef SIGTSTP
-      int stops = stop_signal_count;
+      int stops = stop_signal_count, sig;
 
       /* SIGTSTP is special, since the application can receive that signal
          more than once.  In this case, don't set the signal handler to the
@@ -279,7 +283,6 @@ process_signals (void)
           sig = SIGSTOP;
         }
       else
-#endif
 	{
 	  sig = interrupt_signal;
 	  xsignal (sig, SIG_DFL);
@@ -299,7 +302,7 @@ process_signals (void)
    and which of them are actually caught.  */
 static int const sig[] =
   {
-#ifdef SIGTSTP
+#if SIGTSTP
     /* This one is handled specially; see is_tstp_index.  */
     SIGTSTP,
 #endif
@@ -341,11 +344,7 @@ enum { nsigs = sizeof (sig) / sizeof *(sig) };
 static bool
 is_tstp_index (int j)
 {
-#ifdef SIGTSTP
-  return j == 0;
-#else
-  return false;
-#endif
+  return SIGTSTP && j == 0;
 }
 
 static void
