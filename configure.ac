@@ -127,7 +127,8 @@ if test $gl_gcc_warnings != no; then
   AH_VERBATIM([FORTIFY_SOURCE],
   [/* Enable compile-time and run-time bounds-checking, and some warnings,
       without upsetting glibc 2.15+. */
-   #if !defined _FORTIFY_SOURCE && defined __OPTIMIZE__ && __OPTIMIZE__
+   #if !defined _FORTIFY_SOURCE && defined __OPTIMIZE__ && __OPTIMIZE__ \
+       && !defined __MINGW32__
    # define _FORTIFY_SOURCE 2
    #endif
   ])

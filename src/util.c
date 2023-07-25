@@ -266,7 +266,9 @@ process_signals (void)
 
       /* Reload stop_signal_count and (if needed) interrupt_signal, in
 	 case a new signal was handled before sigprocmask took effect.  */
-      int stops = stop_signal_count, sig;
+      int sig;
+#ifdef SIGTSTP
+      int stops = stop_signal_count;
 
       /* SIGTSTP is special, since the application can receive that signal
          more than once.  In this case, don't set the signal handler to the
@@ -277,6 +279,7 @@ process_signals (void)
           sig = SIGSTOP;
         }
       else
+#endif
 	{
 	  sig = interrupt_signal;
 	  xsignal (sig, SIG_DFL);
@@ -305,7 +308,13 @@ static int const sig[] =
 #ifdef SIGALRM
     SIGALRM,
 #endif
-    SIGHUP, SIGINT, SIGPIPE,
+#ifdef SIGHUP
+    SIGHUP,
+#endif
+    SIGINT,
+#ifdef SIGPIPE
+    SIGPIPE,
+#endif
 #ifdef SIGQUIT
     SIGQUIT,
 #endif
