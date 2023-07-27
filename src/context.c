@@ -61,13 +61,13 @@ print_context_label (char const *mark,
 
       /* Buffer for nstftime output, big enough to handle any
 	 timestamp formatted according to time_format.
-	 Its size tracks the format "%Y-%m-%d %H:%M:%S.%N %z",
-	 with one int for year and the other for time zone hour.
+	 Its size is an upper bound for the format "%Y-%m-%d %H:%M:%S.%N %z",
+	 with an int for year and a time_t for time zone hour.
 	 The format "%Y-%m-%d %H:%M:%S %z" generates fewer bytes,
 	 and although the format "%a %b %e %T %Y" could in theory
 	 generate more bytes in practice it never does.  */
-      char buf[2 * INT_STRLEN_BOUND (int)
-	       + sizeof "-%m-%d :%M:%S.00000000 +00"];
+      char buf[INT_STRLEN_BOUND (int) + INT_STRLEN_BOUND (time_t)
+	       + sizeof "-%m-%d %H:%M:%S.000000000 +00"];
 
       struct tm const *tm = localtime (&ts.tv_sec);
       int nsec = ts.tv_nsec;
