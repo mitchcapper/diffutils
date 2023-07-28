@@ -1235,23 +1235,16 @@ compare_files (struct comparison const *parent,
         }
     }
 
-  /* Mark files as nonexistent as needed for -N and -P, if they are
-     inaccessible empty regular files (the kind of files that 'patch'
-     creates to indicate nonexistent backups), or if they are
-     top-level files that do not exist but their counterparts do
-     exist.  */
-  for (int f = 0; f < 2; f++)
-    if ((new_file || (f == 0 && unidirectional_new_file))
-        && (cmp.file[f].desc == UNOPENED
-            ? (S_ISREG (cmp.file[f].stat.st_mode)
-               && ! (cmp.file[f].stat.st_mode & (S_IRWXU | S_IRWXG | S_IRWXO))
-               && cmp.file[f].stat.st_size == 0)
-            : ((cmp.file[f].desc == errno_encode (ENOENT)
-                || cmp.file[f].desc == errno_encode (EBADF))
-	       && parent == &noparent
-               && (cmp.file[1 - f].desc == UNOPENED
-                   || cmp.file[1 - f].desc == STDIN_FILENO))))
-      cmp.file[f].desc = NONEXISTENT;
+  /* At the top level mark files as nonexistent as needed for -N and -P,
+     if they do not exist but their counterparts do exist.  */
+  if (parent == &noparent)
+    for (int f = 0; f < 2; f++)
+      if ((new_file || (f == 0 && unidirectional_new_file))
+	  && (cmp.file[f].desc == errno_encode (ENOENT)
+	      || cmp.file[f].desc == errno_encode (EBADF))
+	  && (cmp.file[1 - f].desc == UNOPENED
+	      || cmp.file[1 - f].desc == STDIN_FILENO))
+	cmp.file[f].desc = NONEXISTENT;
 
   for (int f = 0; f < 2; f++)
     if (cmp.file[f].desc == NONEXISTENT)
