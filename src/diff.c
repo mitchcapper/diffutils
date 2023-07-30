@@ -1210,7 +1210,9 @@ compare_files (struct comparison const *parent,
                 cmp.file[f].desc = errno_encode (errno);
               else
                 {
-                  if (S_ISREG (cmp.file[f].stat.st_mode))
+		  cmp.file[f].stat.st_size = stat_size (&cmp.file[f].stat);
+		  if (0 <= cmp.file[f].stat.st_size
+		      && S_ISREG (cmp.file[f].stat.st_mode))
                     {
                       off_t pos = lseek (STDIN_FILENO, 0, SEEK_CUR);
                       if (pos < 0)
@@ -1231,6 +1233,8 @@ compare_files (struct comparison const *parent,
 			   no_dereference_symlinks ? AT_SYMLINK_NOFOLLOW : 0)
 		  < 0)
 		cmp.file[f].desc = errno_encode (errno);
+	      else
+		cmp.file[f].stat.st_size = stat_size (&cmp.file[f].stat);
 	    }
         }
     }
@@ -1294,6 +1298,8 @@ compare_files (struct comparison const *parent,
           perror_with_name (filename);
           status = EXIT_TROUBLE;
         }
+      else
+	cmp.file[dir_arg].stat.st_size = stat_size (&cmp.file[dir_arg].stat);
     }
 
   bool same_files;
@@ -1388,7 +1394,9 @@ compare_files (struct comparison const *parent,
           && S_ISLNK (cmp.file[1].stat.st_mode))
         {
           /* Compare the values of the symbolic links.  */
-	  if (cmp.file[0].stat.st_size != cmp.file[1].stat.st_size)
+	  if (cmp.file[0].stat.st_size != cmp.file[1].stat.st_size
+	      && 0 <= cmp.file[0].stat.st_size
+	      && 0 <= cmp.file[1].stat.st_size)
 	    status = EXIT_FAILURE;
 	  else
 	    {
@@ -1445,8 +1453,8 @@ compare_files (struct comparison const *parent,
            && S_ISREG (cmp.file[0].stat.st_mode)
            && S_ISREG (cmp.file[1].stat.st_mode)
            && cmp.file[0].stat.st_size != cmp.file[1].stat.st_size
-           && 0 < cmp.file[0].stat.st_size
-           && 0 < cmp.file[1].stat.st_size)
+           && 0 <= cmp.file[0].stat.st_size
+           && 0 <= cmp.file[1].stat.st_size)
     {
       message ("Files %s and %s differ\n",
                file_label[0] ? file_label[0] : cmp.file[0].name,
