@@ -1279,13 +1279,11 @@ compare_files (struct comparison const *parent,
       int fnm_arg = dir_p (&cmp, 0);
       int dir_arg = 1 - fnm_arg;
       char const *fnm = cmp.file[fnm_arg].name;
+      if (STREQ (fnm, "-"))
+        fatal ("cannot compare '-' to a directory");
       char const *base_fnm = last_component (fnm);
       char const *filename = cmp.file[dir_arg].name = free0
 	= find_dir_file_pathname (&cmp.file[dir_arg], base_fnm);
-
-      if (STREQ (fnm, "-"))
-        fatal ("cannot compare '-' to a directory");
-
       int dirdesc = cmp.file[dir_arg].desc;
       cmp.file[dir_arg].desc = UNOPENED;
       noparent.file[dir_arg].desc = dirdesc < 0 ? AT_FDCWD : dirdesc;
