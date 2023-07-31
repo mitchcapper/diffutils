@@ -92,6 +92,13 @@ static bool binary;
 enum { binary = true };
 #endif
 
+/* Use Linux-style O_PATH if available, POSIX-style O_SEARCH otherwise.  */
+#ifdef O_PATH
+enum { O_PATHSEARCH = O_PATH };
+#else
+enum { O_PATHSEARCH = O_SEARCH };
+#endif
+
 /* If one file is missing, treat it as present but empty (-N).  */
 static bool new_file;
 
@@ -1190,53 +1197,86 @@ compare_files (struct comparison const *parent,
         = file_name_concat (parent->file[1].name, name1, nullptr);
     }
 
-  /* Stat the files.  */
+  int oflags = ((binary ? O_BINARY : 0)
+		| (no_dereference_symlinks ? O_NOFOLLOW : 0));
+
+  /* For both input files X, if X is at the top level and X can be
+     opened, openat and fstat X as that's a bit more efficient.
+     Otherwise, just fstatat X; openat will be done later.  */
 
   for (int f = 0; f < 2; f++)
     {
-      if (cmp.file[f].desc != NONEXISTENT)
-        {
-          if (f && file_name_cmp (cmp.file[f].name, cmp.file[0].name) == 0)
-            {
-              cmp.file[f].desc = cmp.file[0].desc;
-              cmp.file[f].stat = cmp.file[0].stat;
-            }
-          else if (STREQ (cmp.file[f].name, "-"))
-            {
-              cmp.file[f].desc = STDIN_FILENO;
-              if (binary && ! isatty (STDIN_FILENO))
-                set_binary_mode (STDIN_FILENO, O_BINARY);
-              if (fstat (STDIN_FILENO, &cmp.file[f].stat) != 0)
-                cmp.file[f].desc = errno_encode (errno);
-              else
-                {
-		  cmp.file[f].stat.st_size = stat_size (&cmp.file[f].stat);
-		  if (0 <= cmp.file[f].stat.st_size
-		      && S_ISREG (cmp.file[f].stat.st_mode))
-                    {
-                      off_t pos = lseek (STDIN_FILENO, 0, SEEK_CUR);
-                      if (pos < 0)
-                        cmp.file[f].desc = errno_encode (errno);
-                      else
-                        cmp.file[f].stat.st_size =
-                          MAX (0, cmp.file[f].stat.st_size - pos);
-                    }
-                }
-            }
-	  else
+      int fd = cmp.file[f].desc;
+      if (fd != UNOPENED)
+	continue;
+
+      if (f && file_name_cmp (cmp.file[f].name, cmp.file[0].name) == 0)
+	{
+	  cmp.file[f].desc = cmp.file[0].desc;
+	  cmp.file[f].stat = cmp.file[0].stat;
+	  continue;
+	}
+
+      int parentdesc = parent->file[f].desc;
+      char const *name = cmp.file[f].name;
+      char const *nm = parentdesc < 0 ? name : last_component (name);
+
+      if (STREQ (cmp.file[f].name, "-"))
+	{
+	  fd = STDIN_FILENO;
+	  if (binary && ! isatty (fd))
+	    set_binary_mode (fd, O_BINARY);
+	}
+      else if (parent == &noparent)
+	{
+	  fd = openat (parentdesc, nm, O_RDONLY | oflags);
+	  if (fd < 0)
 	    {
-	      char const *name = cmp.file[f].name;
-	      if (fstatat (parent->file[f].desc,
-			   (parent->file[f].desc < 0 ? name
-			    : last_component (name)),
-			   &cmp.file[f].stat,
-			   no_dereference_symlinks ? AT_SYMLINK_NOFOLLOW : 0)
-		  < 0)
-		cmp.file[f].desc = errno_encode (errno);
-	      else
-		cmp.file[f].stat.st_size = stat_size (&cmp.file[f].stat);
+	      int err = errno;
+
+	      /* 'diff DIR FILE' needs read access to DIR if
+		 --ignore-file-name-case; otherwise O_PATHSEARCH suffices.
+		 But do not check for this if ---no-directory.  */
+	      if (err == EACCES
+		  && !ignore_file_name_case && !no_directory
+		  && (f == 0 || (0 <= cmp.file[0].stat.st_size
+				 && ! S_ISDIR (cmp.file[0].stat.st_mode))))
+		fd = openat (parentdesc, nm,
+			     O_PATHSEARCH | O_DIRECTORY | oflags);
+	      if (fd < 0)
+		fd = (err == ELOOP && no_dereference_symlinks
+		      ? UNOPENED : errno_encode (err));
 	    }
-        }
+	}
+
+      if (fd == UNOPENED)
+	{
+	  int sflags = no_dereference_symlinks ? AT_SYMLINK_NOFOLLOW : 0;
+	  if (fstatat (parentdesc, nm, &cmp.file[f].stat, sflags) < 0)
+	    fd = errno_encode (errno);
+	}
+      else if (0 <= fd && fstat (fd, &cmp.file[f].stat) < 0)
+	{
+	  int err = errno;
+	  close (fd);
+	  fd = errno_encode (err);
+	}
+
+      cmp.file[f].desc = fd;
+
+      if (UNOPENED <= fd)
+	{
+	  off_t size = stat_size (&cmp.file[f].stat);
+	  cmp.file[f].stat.st_size = size;
+
+	  if (0 <= size && fd == STDIN_FILENO
+	      && S_ISREG (cmp.file[f].stat.st_mode))
+	    {
+	      off_t pos = lseek (fd, 0, SEEK_CUR);
+	      if (0 <= pos)
+		cmp.file[f].stat.st_size = MAX (0, size - pos);
+	    }
+	}
     }
 
   /* At the top level mark files as nonexistent as needed for -N and -P,
@@ -1287,11 +1327,13 @@ compare_files (struct comparison const *parent,
       int dirdesc = cmp.file[dir_arg].desc;
       cmp.file[dir_arg].desc = UNOPENED;
       noparent.file[dir_arg].desc = dirdesc < 0 ? AT_FDCWD : dirdesc;
-      if (fstatat (noparent.file[dir_arg].desc,
-		   dirdesc < 0 ? filename : base_fnm,
-		   &cmp.file[dir_arg].stat,
-		   no_dereference_symlinks ? AT_SYMLINK_NOFOLLOW : 0)
-	  < 0)
+      int fd = openat (noparent.file[dir_arg].desc,
+		       dirdesc < 0 ? filename : base_fnm,
+		       O_RDONLY | oflags);
+      cmp.file[dir_arg].desc = ((fd < 0
+				 || fstat (fd, &cmp.file[dir_arg].stat) < 0)
+				? errno_encode (errno) : fd);
+      if (cmp.file[dir_arg].desc < 0)
         {
           perror_with_name (filename);
           status = EXIT_TROUBLE;
@@ -1465,9 +1507,6 @@ compare_files (struct comparison const *parent,
 
       /* Open the files and record their descriptors.  */
 
-      int oflags = (O_RDONLY | (binary ? O_BINARY : 0)
-		    | (no_dereference_symlinks ? O_NOFOLLOW : 0));
-
       for (int f = 0; f < 2; f++)
 	if (cmp.file[f].desc == UNOPENED)
 	  {
@@ -1478,7 +1517,7 @@ compare_files (struct comparison const *parent,
 		int dirfd = parent->file[f].desc;
 		char const *name = cmp.file[f].name;
 		char const *nm = dirfd < 0 ? name : last_component (name);
-		cmp.file[f].desc = openat (dirfd, nm, oflags);
+		cmp.file[f].desc = openat (dirfd, nm, O_RDONLY | oflags);
 		if (cmp.file[f].desc < 0)
 		  {
 		    perror_with_name (name);
