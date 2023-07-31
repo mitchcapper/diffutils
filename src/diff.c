@@ -1119,6 +1119,7 @@ specify_colors_style (char const *value)
 static int
 errno_encode (int err)
 {
+  dassert (0 < err);
   return -3 - err;
 }
 
