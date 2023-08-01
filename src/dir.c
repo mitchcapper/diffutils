@@ -207,20 +207,11 @@ compare_names_for_qsort (void const *file1, void const *file2)
    and pretend it is empty.  Otherwise, update CMP->file[0].desc and
    CMP->file[0].dirstream as needed.  Likewise for CMP->file[1].
 
-   HANDLE_FILE is a caller-provided subroutine called to handle each file.
-   It gets three operands: CMP, name of file in dir 0, name of file in dir 1.
-   These names are relative to the original working directory.
-
-   For a file that appears in only one of the dirs, one of the name-args
-   to HANDLE_FILE is zero.
-
-   Returns the maximum of all the values returned by HANDLE_FILE,
+   Returns the maximum of all the values returned by compare_files,
    or EXIT_TROUBLE if trouble is encountered in opening files.  */
 
 int
-diff_dirs (struct comparison *cmp,
-           int (*handle_file) (struct comparison const *,
-                               char const *, char const *))
+diff_dirs (struct comparison *cmp)
 {
   if ((cmp->file[0].desc == NONEXISTENT || dir_loop (cmp, 0))
       && (cmp->file[1].desc == NONEXISTENT || dir_loop (cmp, 1)))
@@ -295,9 +286,9 @@ diff_dirs (struct comparison *cmp,
                 }
             }
 
-          int v1 = (*handle_file) (cmp,
-				   0 < nameorder ? nullptr : *n0++,
-				   nameorder < 0 ? nullptr : *n1++);
+	  int v1 = compare_files (cmp,
+				  0 < nameorder ? nullptr : *n0++,
+				  nameorder < 0 ? nullptr : *n1++);
           if (val < v1)
             val = v1;
         }

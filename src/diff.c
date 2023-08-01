@@ -64,7 +64,6 @@ struct regexp_list
   struct re_pattern_buffer *buf;
 };
 
-static int compare_files (struct comparison const *, char const *, char const *);
 static void add_regexp (struct regexp_list *, char const *);
 static void summarize_regexp_list (struct regexp_list *);
 static void specify_style (enum output_style);
@@ -1142,10 +1141,13 @@ dir_p (struct comparison const *pcmp, int f)
    (If PARENT == &NOPARENT, then the first name is just NAME0, etc.)
    This is self-contained; it opens the files and closes them.
 
+   Names are relative to the original working directory.  If a file
+   appears in only one dir, the other name is a null pointer.
+
    Value is EXIT_SUCCESS if files are the same, EXIT_FAILURE if
    different, EXIT_TROUBLE if there is a problem opening them.  */
 
-static int
+int
 compare_files (struct comparison const *parent,
                char const *name0,
                char const *name1)
@@ -1381,7 +1383,7 @@ compare_files (struct comparison const *parent,
                    cmp.file[0].name, cmp.file[1].name);
         }
       else
-        status = diff_dirs (&cmp, compare_files);
+        status = diff_dirs (&cmp);
     }
   else if ((dir_p (&cmp, 0) | dir_p (&cmp, 1))
 	   || (parent != &noparent
@@ -1399,7 +1401,7 @@ compare_files (struct comparison const *parent,
               && (new_file
                   || (unidirectional_new_file
                       && cmp.file[0].desc == NONEXISTENT)))
-            status = diff_dirs (&cmp, compare_files);
+            status = diff_dirs (&cmp);
           else
             {
               /* See POSIX 1003.1-2001 for this format.  */

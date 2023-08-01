@@ -381,10 +381,12 @@ extern void print_context_header (struct file_data[],
 				  char const *const *, bool);
 extern void print_context_script (struct change *, bool);
 
+/* diff.c */
+extern int compare_files (struct comparison const *,
+			  char const *, char const *);
+
 /* dir.c */
-extern int diff_dirs (struct comparison *,
-                      int (*) (struct comparison const *,
-                               char const *, char const *));
+extern int diff_dirs (struct comparison *);
 extern char *find_dir_file_pathname (struct file_data *, char const *)
   ATTRIBUTE_MALLOC ATTRIBUTE_DEALLOC_FREE
   ATTRIBUTE_RETURNS_NONNULL;
