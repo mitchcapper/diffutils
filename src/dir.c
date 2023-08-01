@@ -243,8 +243,6 @@ diff_dirs (struct comparison *cmp,
 
   if (val == EXIT_SUCCESS)
     {
-      char const **names[2] = {dirdata[0].names, dirdata[1].names};
-
       /* Use locale-specific sorting if possible, else native byte order.  */
       locale_specific_sorting = true;
       if (! ignore_file_name_case)
@@ -253,17 +251,18 @@ diff_dirs (struct comparison *cmp,
 
       /* Sort the directories.  */
       for (int i = 0; i < 2; i++)
-        qsort (names[i], dirdata[i].nnames, sizeof *dirdata[i].names,
+        qsort (dirdata[i].names, dirdata[i].nnames, sizeof *dirdata[i].names,
                compare_names_for_qsort);
 
       /* Loop while files remain in one or both dirs.  */
-      while (*names[0] || *names[1])
+      char const **n0 = dirdata[0].names;
+      char const **n1 = dirdata[1].names;
+      while (*n0 || *n1)
         {
           /* Compare next name in dir 0 with next name in dir 1.
              At the end of a dir,
              pretend the "next name" in that dir is very large.  */
-          int nameorder = (!*names[0] ? 1 : !*names[1] ? -1
-                           : compare_names (*names[0], *names[1]));
+          int nameorder = !*n0 ? 1 : !*n1 ? -1 : compare_names (*n0, *n1);
 
           /* Prefer a file_name_cmp match if available.  This algorithm is
              O(N**2), where N is the number of names in a directory
@@ -271,13 +270,11 @@ diff_dirs (struct comparison *cmp,
              is so small it's not worth tuning.  */
           if (nameorder == 0 && ignore_file_name_case)
             {
-              int raw_order = file_name_cmp (*names[0], *names[1]);
+              int raw_order = file_name_cmp (*n0, *n1);
               if (raw_order != 0)
                 {
-                  int greater_side = raw_order < 0;
-                  int lesser_side = 1 - greater_side;
-                  char const **lesser = names[lesser_side];
-                  char const *greater_name = *names[greater_side];
+                  char const **lesser = raw_order < 0 ? n0 : n1;
+                  char const *greater_name = *(raw_order < 0 ? n1 : n0);
 
                   for (char const **p = lesser + 1;
                        *p && compare_names (*p, greater_name) == 0;
@@ -299,8 +296,8 @@ diff_dirs (struct comparison *cmp,
             }
 
           int v1 = (*handle_file) (cmp,
-                                   0 < nameorder ? 0 : *names[0]++,
-                                   nameorder < 0 ? 0 : *names[1]++);
+				   0 < nameorder ? nullptr : *n0++,
+				   nameorder < 0 ? nullptr : *n1++);
           if (val < v1)
             val = v1;
         }
