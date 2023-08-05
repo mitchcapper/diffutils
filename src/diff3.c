@@ -396,7 +396,7 @@ main (int argc, char **argv)
                                tag_strings[0], tag_strings[1], tag_strings[2]);
   else if (merge)
     {
-      xfreopen (file[rev_mapping[FILE0]], "r", stdin);
+      xfreopen (file[rev_mapping[FILE0]], "re", stdin);
       conflicts_found
         = output_diff3_merge (stdin, stdout, diff3, mapping, rev_mapping,
                               tag_strings[0], tag_strings[1], tag_strings[2]);
