@@ -1200,7 +1200,7 @@ compare_files (struct comparison const *parent,
         = file_name_concat (parent->file[1].name, name1, nullptr);
     }
 
-  int oflags = ((binary ? O_BINARY : 0)
+  int oflags = ((binary ? O_BINARY : 0) | O_CLOEXEC
 		| (no_dereference_symlinks ? O_NOFOLLOW : 0));
 
   /* For both input files X, if X is at the top level and X can be

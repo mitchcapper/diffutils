@@ -80,7 +80,7 @@ dir_read (int parentdirfd, struct file_data *dir, struct dirdata *dirdata,
 	  dirfd = openat (parentdirfd,
 			  (parentdirfd < 0 ? dir->name
 			   : last_component (dir->name)),
-			  (O_RDONLY | O_DIRECTORY
+			  (O_RDONLY | O_CLOEXEC | O_DIRECTORY
 			   | (no_dereference_symlinks ? O_NOFOLLOW : 0)));
 	  if (dirfd < 0)
 	    return false;

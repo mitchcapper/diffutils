@@ -302,7 +302,7 @@ main (int argc, char **argv)
         }
       else
         {
-          file_desc[f] = open (file[f], O_RDONLY | O_BINARY);
+          file_desc[f] = open (file[f], O_RDONLY | O_BINARY | O_CLOEXEC);
 
           if (file_desc[f] < 0)
             {
