@@ -940,6 +940,16 @@ try_help (char const *reason_msgid, char const *operand)
          program_name);
 }
 
+/* Get the value of errno after a system call fails,
+   and help the compiler by telling it that errno is positive.  */
+static int
+get_errno (void)
+{
+  int err = errno;
+  dassert (0 < err);
+  return err;
+}
+
 static void
 check_stdout (void)
 {
@@ -1249,7 +1259,7 @@ compare_files (struct comparison const *parent,
 	  fd = openat (parentdesc, nm, O_RDONLY | oflags);
 	  if (fd < 0)
 	    {
-	      err = errno;
+	      err = get_errno ();
 
 	      /* 'diff DIR FILE' needs read access to DIR if
 		 --ignore-file-name-case; otherwise O_PATHSEARCH suffices.
@@ -1293,7 +1303,7 @@ compare_files (struct comparison const *parent,
 			  no_dereference_symlinks ? AT_SYMLINK_NOFOLLOW : 0)
 	       : fstat (fd, &cmp.file[f].stat))
 	      < 0)
-	    err = errno;
+	    err = get_errno ();
 	  else
 	    {
 	      cmp.file[f].detype = detype_from_mode (cmp.file[f].stat.st_mode);
@@ -1304,7 +1314,7 @@ compare_files (struct comparison const *parent,
 		{
 		  off_t pos = lseek (fd, 0, SEEK_CUR);
 		  if (pos < 0)
-		    err = errno;
+		    err = get_errno ();
 		  else
 		    size = MAX (0, size - pos);
 		}
@@ -1360,7 +1370,7 @@ compare_files (struct comparison const *parent,
 				       O_RDONLY | oflags);
       if (cmp.file[dir_arg].desc < 0
 	  || fstat (cmp.file[dir_arg].desc, &cmp.file[dir_arg].stat) < 0)
-	cmp.file[dir_arg].err = errno;
+	cmp.file[dir_arg].err = get_errno ();
       else
 	{
 	  cmp.file[dir_arg].detype
