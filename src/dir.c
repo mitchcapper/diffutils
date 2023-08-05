@@ -27,7 +27,13 @@
 #include <setjmp.h>
 #include <xalloc.h>
 
-/* A sorted vector of file names obtained by reading a directory.  */
+#ifndef HAVE_STRUCT_DIRENT_D_TYPE
+# define HAVE_STRUCT_DIRENT_D_TYPE false
+#endif
+
+/* A sorted vector of file names obtained by reading a directory.
+   If HAVE_STRUCT_DIRENT_D_TYPE, each name is preceded by a byte
+   giving the file type as an enum detype value.  */
 
 struct dirdata
 {
@@ -108,7 +114,6 @@ dir_read (int parentdirfd, struct file_data *dir, struct dirdata *dirdata,
 	    break;
 
           char *d_name = next->d_name;
-          idx_t d_size = _D_EXACT_NAMLEN (next) + 1;
 
           /* Ignore "." and "..".  */
           if (d_name[0] == '.'
@@ -125,10 +130,31 @@ dir_read (int parentdirfd, struct file_data *dir, struct dirdata *dirdata,
           if (excluded_file_name (excluded, d_name))
             continue;
 
+	  idx_t d_size = HAVE_STRUCT_DIRENT_D_TYPE + _D_EXACT_NAMLEN (next) + 1;
           if (data_alloc - data_used < d_size)
 	    dirdata->data = data
 	      = xpalloc (data, &data_alloc,
 			 d_size - (data_alloc - data_used), -1, 1);
+#if HAVE_STRUCT_DIRENT_D_TYPE
+	  char detype;
+	  switch (next->d_type)
+	    {
+	    case DT_BLK:  detype = DE_BLK;  break;
+	    case DT_CHR:  detype = DE_CHR;  break;
+	    case DT_DIR:  detype = DE_DIR;  break;
+	    case DT_FIFO: detype = DE_FIFO; break;
+	    case DT_LNK:  detype = DE_LNK;  break;
+	    case DT_REG:  detype = DE_REG;  break;
+	    case DT_SOCK: detype = DE_SOCK; break;
+# ifdef DT_WHT
+	    case DT_WHT:  detype = DE_WHT;  break;
+# endif
+	    case DT_UNKNOWN: detype = DE_UNKNOWN; break;
+	    default:         detype = DE_OTHER;   break;
+	    }
+	  data[data_used++] = detype;
+	  d_size--;
+#endif
           memcpy (data + data_used, d_name, d_size);
           data_used += d_size;
           nnames++;
@@ -144,6 +170,7 @@ dir_read (int parentdirfd, struct file_data *dir, struct dirdata *dirdata,
   dirdata->nnames = nnames;
   for (idx_t i = 0; i < nnames; i++)
     {
+      data += HAVE_STRUCT_DIRENT_D_TYPE;
       names[i] = data;
       data += strlen (data) + 1;
     }
@@ -286,9 +313,12 @@ diff_dirs (struct comparison *cmp)
                 }
             }
 
+	  enum detype
+	    detype0 = HAVE_STRUCT_DIRENT_D_TYPE && *n0 ? (*n0)[-1] : DE_UNKNOWN,
+	    detype1 = HAVE_STRUCT_DIRENT_D_TYPE && *n1 ? (*n1)[-1] : DE_UNKNOWN;
 	  int v1 = compare_files (cmp,
-				  0 < nameorder ? nullptr : *n0++,
-				  nameorder < 0 ? nullptr : *n1++);
+				  0 < nameorder ? nullptr : *n0++, detype0,
+				  nameorder < 0 ? nullptr : *n1++, detype1);
           if (val < v1)
             val = v1;
         }
