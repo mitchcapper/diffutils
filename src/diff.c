@@ -1282,12 +1282,17 @@ compare_files (struct comparison const *parent,
 		  fd = UNOPENED;
 		  err = 0;
 		}
+
+	      cmp.file[f].openerr = err;
 	    }
 	}
 
       /* Get the file's status if needed to determine either the file's type
 	 or whether it is the same physical file as the other.  */
-      if (! (err | cmp.file[1 - f].err)
+      if (! cmp.file[1 - f].err
+	  && ! (/* If openat fails as follows, fstatat would fail too.  */
+		err == ENOENT || err == ENOTDIR || err == ELOOP
+		|| err == EOVERFLOW || err == ENAMETOOLONG)
 	  && ((cmp.file[f].detype == cmp.file[1 - f].detype
 	       && (cmp.file[f].detype != DE_DIR
 		   || recursive | toplevel))
@@ -1306,6 +1311,7 @@ compare_files (struct comparison const *parent,
 	    err = get_errno ();
 	  else
 	    {
+	      err = 0;
 	      cmp.file[f].detype = detype_from_mode (cmp.file[f].stat.st_mode);
 	      off_t size = stat_size (&cmp.file[f].stat);
 
@@ -1332,9 +1338,9 @@ compare_files (struct comparison const *parent,
   if (toplevel)
     for (int f = 0; f < 2; f++)
       if ((new_file || (f == 0 && unidirectional_new_file))
-	  && (cmp.file[f].err == ENOENT || cmp.file[f].err == EBADF)
-	  && (cmp.file[1 - f].desc == UNOPENED
-	      || cmp.file[1 - f].desc == STDIN_FILENO))
+	  && (cmp.file[f].err == ENOENT || cmp.file[f].err == ENOTDIR)
+	  && ! (cmp.file[1 - f].err == ENOENT
+		|| cmp.file[1 - f].err == ENOTDIR))
 	{
 	  cmp.file[f].desc = NONEXISTENT;
 	  cmp.file[f].err = 0;
@@ -1563,6 +1569,11 @@ compare_files (struct comparison const *parent,
 		    status = EXIT_TROUBLE;
 		  }
 	      }
+	  }
+	else if (cmp.file[f].desc == OPEN_FAILED)
+	  {
+	    error (0, cmp.file[f].openerr, "%s", cmp.file[f].name);
+	    status = EXIT_TROUBLE;
 	  }
 
       /* Compare the files, if no error was found.  */

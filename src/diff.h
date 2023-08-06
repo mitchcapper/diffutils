@@ -293,7 +293,8 @@ enum detype
 
 struct file_data {
     int             desc;	/* File descriptor  */
-    int             err;	/* Error number or 0  */
+    int             openerr;	/* openat errno, or 0  */
+    int             err;	/* openat or fstatat or fstat errno, or 0  */
     enum detype     detype;	/* Directory entry type or DE_UNKNOWN  */
     char const      *name;	/* File name  */
     struct stat     stat;	/* File status */
@@ -363,9 +364,10 @@ struct file_data {
     lin equiv_max;
 };
 
-/* struct file_data.desc markers.  Open failures are -1.
+/* struct file_data.desc markers.
    A top level parent directory desc can be AT_FDCWD;
    it is OK if AT_FDCWD is one of these other values.  */
+enum { OPEN_FAILED = -1 }; /* open was attempted but failed */
 enum { NONEXISTENT = -2 }; /* nonexistent file */
 enum { UNOPENED = -3 }; /* unopened file (e.g., file type mismatch) */
 
