@@ -4,6 +4,11 @@ GNU diffutils NEWS                                    -*- outline -*-
 
 ** Improvements
 
+  diff now outputs more information when symbolic links differ, and
+  quotes their names to avoid ambiguity.  For example, instead of
+  "Symbolic links d/x do and e/x do differ", diff now outputs
+  "Symbolic links 'd/x do' -> 'a' and 'e/x do' -> 'b' differ".
+
   diff's --ignore-case (-i) and --ignore-file-name-case options now
   support multi-byte characters.  For example, they treat Greek
   capital Δ like small δ when input uses UTF-8.

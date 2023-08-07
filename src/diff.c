@@ -34,6 +34,7 @@
 #include <getopt.h>
 #include <hard-locale.h>
 #include <progname.h>
+#include <quote.h>
 #include <sh-quote.h>
 #include <stat-time.h>
 #include <version-etc.h>
@@ -1493,45 +1494,39 @@ compare_files (struct comparison const *parent,
       dassert (no_dereference_symlinks);
 
       /* Compare the values of the symbolic links.  */
-      if (cmp.file[0].stat.st_size != cmp.file[1].stat.st_size
-	  && 0 <= cmp.file[0].stat.st_size
-	  && 0 <= cmp.file[1].stat.st_size)
-	status = EXIT_FAILURE;
-      else
+      char *link_value[2]; link_value[1] = nullptr;
+      char linkbuf[2][128];
+
+      for (bool f = false; ; f = true)
 	{
-	  char *link_value[2]; link_value[1] = nullptr;
-	  char linkbuf[2][128];
-
-	  for (bool f = false; ; f = true)
+	  int dirfd = parent->file[f].desc;
+	  char const *name = cmp.file[f].name;
+	  char const *nm = dirfd < 0 ? name : last_component (name);
+	  link_value[f] = careadlinkat (dirfd, nm,
+					linkbuf[f], sizeof linkbuf[f],
+					nullptr, readlinkat);
+	  if (!link_value[f])
 	    {
-	      int dirfd = parent->file[f].desc;
-	      char const *name = cmp.file[f].name;
-	      char const *nm = dirfd < 0 ? name : last_component (name);
-	      link_value[f] = careadlinkat (dirfd, nm,
-					    linkbuf[f], sizeof linkbuf[f],
-					    nullptr, readlinkat);
-	      if (!link_value[f])
-		{
-		  perror_with_name (cmp.file[f].name);
-		  status = EXIT_TROUBLE;
-		  break;
-		}
-	      if (f)
-		{
-		  status = (STREQ (link_value[0], link_value[f])
-			    ? EXIT_SUCCESS : EXIT_FAILURE);
-		  break;
-		}
+	      perror_with_name (cmp.file[f].name);
+	      status = EXIT_TROUBLE;
+	      break;
 	    }
-
-	  for (int f = 0; f < 2; f++)
-	    if (link_value[f] != linkbuf[f])
-	      free (link_value[f]);
+	  if (f)
+	    {
+	      status = (STREQ (link_value[0], link_value[f])
+			? EXIT_SUCCESS : EXIT_FAILURE);
+	      break;
+	    }
 	}
 
       if (status == EXIT_FAILURE)
-	message ("Symbolic links %s and %s differ\n",
-		 cmp.file[0].name, cmp.file[1].name);
+	message ("Symbolic links %s -> %s and %s -> %s differ\n",
+		 quote_n (0, cmp.file[0].name), quote_n (1, link_value[0]),
+		 quote_n (2, cmp.file[1].name), quote_n (3, link_value[1]));
+
+      for (int f = 0; f < 2; f++)
+	if (link_value[f] != linkbuf[f])
+	  free (link_value[f]);
     }
   else if (files_can_be_treated_as_binary
 	   && cmp.file[0].detype == DE_REG
