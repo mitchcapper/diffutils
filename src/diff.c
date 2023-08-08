@@ -1316,13 +1316,10 @@ compare_files (struct comparison const *parent,
 	      cmp.file[f].detype = detype_from_mode (cmp.file[f].stat.st_mode);
 	      off_t size = stat_size (&cmp.file[f].stat);
 
-	      if (0 <= size && fd == STDIN_FILENO
-		  && cmp.file[f].detype == DE_REG)
+	      if (0 <= size && fd == STDIN_FILENO)
 		{
 		  off_t pos = lseek (fd, 0, SEEK_CUR);
-		  if (pos < 0)
-		    err = get_errno ();
-		  else
+		  if (0 <= pos)
 		    size = MAX (0, size - pos);
 		}
 
