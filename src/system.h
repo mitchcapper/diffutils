@@ -114,7 +114,11 @@
 SYSTEM_EXTERN dev_t proc_dev;
 #endif
 
-#if false && (defined __linux__ || defined __ANDROID__)
+/* Use this for code that could be used if diff ever cares about
+   st_size for symlinks, which it doesn't now.  */
+#define care_about_symlink_size false
+
+#if care_about_symlink_size && (defined __linux__ || defined __ANDROID__)
 # include <sys/utsname.h>
 /* 1 if symlink st_size is OK, -1 if not, 0 if unknown yet.  */
 SYSTEM_EXTERN signed char symlink_size_ok;
@@ -180,11 +184,17 @@ static_assert (LIN_MAX == IDX_MAX);
 SYSTEM_INLINE off_t stat_size (struct stat *s)
 {
   mode_t mode = s->st_mode;
+  off_t size = s->st_size;
+  if (size < 0)
+    return -1;
+  if (! (S_ISREG (mode) || (care_about_symlink_size && S_ISLNK (mode))
+	 || S_TYPEISSHM (s) || S_TYPEISTMO (s)))
+    return -1;
 
 #if (defined __linux__ || defined __CYGWIN__ || defined __FreeBSD__ \
      || defined __NetBSD__ || defined _AIX)
   /* On some systems, /proc files with size zero are suspect.  */
-  if (S_ISREG (mode) && s->st_size == 0)
+  if (size == 0)
     {
       if (!proc_dev)
 	{
@@ -197,10 +207,9 @@ SYSTEM_INLINE off_t stat_size (struct stat *s)
 	return -1;
     }
 #endif
-#if false && (defined __linux__ || defined __ANDROID__)
+#if care_about_symlink_size && (defined __linux__ || defined __ANDROID__)
   /* Symlinks have suspect sizes on Linux kernels before 5.15,
-     due to bugs in fscrypt.  However, diffutils never looks
-     at symlink sizes so this code is not needed.  */
+     due to bugs in fscrypt.  */
   if (S_ISLNK (mode))
     {
       if (! symlink_size_ok)
@@ -221,10 +230,7 @@ SYSTEM_INLINE off_t stat_size (struct stat *s)
     }
 #endif
 
-  return (((S_ISREG (mode) || S_ISLNK (mode)
-	    || S_TYPEISSHM (s) || S_TYPEISTMO (s))
-	   && 0 <= s->st_size)
-	  ? s->st_size : -1);
+  return size;
 }
 
 /* Do struct stat *S, *T have the same file attributes?
