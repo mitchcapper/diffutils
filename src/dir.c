@@ -19,11 +19,14 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.  */
 
 #include "diff.h"
-#include <error.h>
+
+#include <diagnose.h>
 #include <dirname.h>
+#include <error.h>
 #include <exclude.h>
 #include <filenamecat.h>
 #include <mbcel.h>
+#include <quote.h>
 #include <setjmp.h>
 #include <xalloc.h>
 
@@ -193,8 +196,8 @@ compare_collated (char const *name1, char const *name2)
       r = strcoll (name1, name2);
       if (errno)
 	{
-	  error (0, errno, _("cannot compare file names '%s' and '%s'"),
-		 name1, name2);
+	  error (0, errno, _("cannot compare file names %s and %s"),
+		 quote_n (0, name1), quote_n (1, name2));
 	  longjmp (failed_locale_specific_sorting, 1);
 	}
     }
@@ -244,7 +247,7 @@ diff_dirs (struct comparison *cmp)
       && (cmp->file[1].desc == NONEXISTENT || dir_loop (cmp, 1)))
     {
       error (0, 0, _("%s: recursive directory loop"),
-             cmp->file[cmp->file[0].desc == NONEXISTENT].name);
+	     squote (0, cmp->file[cmp->file[0].desc == NONEXISTENT].name));
       return EXIT_TROUBLE;
     }
 

@@ -51,7 +51,6 @@
 #endif
 
 #include <stdlib.h>
-#define EXIT_TROUBLE 2
 
 #include <inttypes.h>
 #include <limits.h>

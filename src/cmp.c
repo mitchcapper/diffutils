@@ -20,22 +20,24 @@
 #include "system.h"
 #include "paths.h"
 
-#include <stdio.h>
-
+#include <binary-io.h>
 #include <c-stack.h>
 #include <cmpbuf.h>
+#include <diagnose.h>
 #include <error.h>
 #include <exitfail.h>
 #include <file-type.h>
 #include <getopt.h>
 #include <hard-locale.h>
 #include <progname.h>
+#include <quote.h>
 #include <unlocked-io.h>
 #include <version-etc.h>
 #include <xalloc.h>
-#include <binary-io.h>
 #include <xstdopen.h>
 #include <xstrtol.h>
+
+#include <stdio.h>
 
 /* The official name of this program (e.g., no 'g' prefix).  */
 static char const PROGRAM_NAME[] = "cmp";
@@ -122,15 +124,6 @@ static struct option const longopts[] =
   {0, 0, 0, 0}
 };
 
-static _Noreturn void
-try_help (char const *reason_msgid, char const *operand)
-{
-  if (reason_msgid)
-    error (0, 0, _(reason_msgid), operand);
-  error (EXIT_TROUBLE, 0,
-         _("Try '%s --help' for more information."), program_name);
-}
-
 static char const valid_suffixes[] = "kKMGTPEZY0";
 
 /* Update ignore_initial[F] according to the result of parsing an
@@ -147,7 +140,7 @@ specify_ignore_initial (int f, char **argptr, char delimiter)
   if (! ((e == LONGINT_OK
           || (e == LONGINT_INVALID_SUFFIX_CHAR && **argptr == delimiter))
          && 0 <= val))
-    try_help ("invalid --ignore-initial value '%s'", arg);
+    try_help ("invalid --ignore-initial value %s", quote (arg));
   if (0 <= ignore_initial[f] && ignore_initial[f] < val)
     ignore_initial[f] = d == e ? val : -1;
 }
@@ -187,7 +180,7 @@ static void
 usage (void)
 {
   printf (_("Usage: %s [OPTION]... FILE1 [FILE2 [SKIP1 [SKIP2]]]\n"),
-          program_name);
+	  squote (0, program_name));
   puts (_("Compare two files byte by byte."));
   printf ("\n%s\n\n",
 _("The optional SKIP1 and SKIP2 specify the number of bytes to skip\n"
@@ -247,7 +240,7 @@ main (int argc, char **argv)
           intmax_t n;
 	  strtol_error e = xstrtoimax (optarg, nullptr, 0, &n, valid_suffixes);
 	  if ((e & ~LONGINT_OVERFLOW) != LONGINT_OK || n < 0)
-            try_help ("invalid --bytes value '%s'", optarg);
+	    try_help ("invalid --bytes value %s", quote (optarg));
 	  bytes = MIN (bytes, n);
         }
         break;
@@ -272,7 +265,7 @@ main (int argc, char **argv)
       }
 
   if (optind == argc)
-    try_help ("missing operand after '%s'", argv[argc - 1]);
+    try_help ("missing operand after %s", quote (argv[argc - 1]));
 
   file[0] = argv[optind++];
   file[1] = optind < argc ? argv[optind++] : "-";
@@ -284,7 +277,7 @@ main (int argc, char **argv)
     }
 
   if (optind < argc)
-    try_help ("extra operand '%s'", argv[optind]);
+    try_help ("extra operand %s", quote (argv[optind]));
 
   for (int f = 0; f < 2; f++)
     {
@@ -307,7 +300,7 @@ main (int argc, char **argv)
           if (file_desc[f] < 0)
             {
               if (comparison_type != type_status)
-                error (0, errno, "%s", file[f]);
+		error (0, errno, "%s", squote (0, file[f]));
               exit (EXIT_TROUBLE);
             }
         }
@@ -393,7 +386,7 @@ main (int argc, char **argv)
 
   for (int f = 0; f < 2; f++)
     if (close (file_desc[f]) != 0)
-      error (EXIT_TROUBLE, errno, "%s", file[f]);
+      error (EXIT_TROUBLE, errno, "%s", squote (0, file[f]));
   if (exit_status != EXIT_SUCCESS && comparison_type < type_no_stdout)
     check_stdout ();
   exit (exit_status);
@@ -461,7 +454,7 @@ cmp (void)
 	  /* Report an error if asked to ignore more than
 	     INTMAX_MAX bytes of a non-regular file,
 	     as the actual number of bytes to ignore is not known.  */
-	  error (EXIT_TROUBLE, EOVERFLOW, "%s", file[f]);
+	  error (EXIT_TROUBLE, EOVERFLOW, "%s", squote (0, file[f]));
 	}
       else
 	{
@@ -473,7 +466,7 @@ cmp (void)
               if (r != bytes_to_read)
                 {
                   if (r < 0)
-                    error (EXIT_TROUBLE, errno, "%s", file[f]);
+		    error (EXIT_TROUBLE, errno, "%s", squote (0, file[f]));
                   break;
                 }
               ig -= r;
@@ -495,11 +488,11 @@ cmp (void)
       ptrdiff_t read0 = (eof[0] ? 0
 			 : block_read (file_desc[0], buf0, bytes_to_read));
       if (read0 < 0)
-        error (EXIT_TROUBLE, errno, "%s", file[0]);
+	error (EXIT_TROUBLE, errno, "%s", squote (0, file[0]));
       ptrdiff_t read1 = (eof[1] ? 0
 			 : block_read (file_desc[1], buf1, bytes_to_read));
       if (read1 < 0)
-        error (EXIT_TROUBLE, errno, "%s", file[1]);
+	error (EXIT_TROUBLE, errno, "%s", squote (0, file[1]));
 
       idx_t smaller = MIN (read0, read1);
 
@@ -637,7 +630,7 @@ cmp (void)
 			    " line %"PRIdMAX"\n")
 		       : N_("cmp: EOF on %s after byte %"PRIdMAX","
 			    " in line %"PRIdMAX"\n")),
-		     file[read1 < read0],
+		     quote (file[read1 < read0]),
 		     byte_number - 1, line_number - at_line_start);
           return EXIT_FAILURE;
         }

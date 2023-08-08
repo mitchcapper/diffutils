@@ -22,14 +22,17 @@
 #define SYSTEM_INLINE _GL_EXTERN_INLINE
 #include "diff.h"
 #include "paths.h"
+
+#include <binary-io.h>
 #include <c-stack.h>
 #include <careadlinkat.h>
+#include <diagnose.h>
 #include <dirname.h>
 #include <error.h>
 #include <exclude.h>
 #include <exitfail.h>
-#include <filenamecat.h>
 #include <file-type.h>
+#include <filenamecat.h>
 #include <fnmatch.h>
 #include <getopt.h>
 #include <hard-locale.h>
@@ -40,7 +43,6 @@
 #include <version-etc.h>
 #include <xalloc.h>
 #include <xstdopen.h>
-#include <binary-io.h>
 
 /* The official name of this program (e.g., no 'g' prefix).  */
 static char const PROGRAM_NAME[] = "diff";
@@ -70,7 +72,6 @@ static void summarize_regexp_list (struct regexp_list *);
 static void specify_style (enum output_style);
 static void specify_value (char const **, char const *, char const *);
 static void specify_colors_style (char const *);
-static _Noreturn void try_help (char const *, char const *);
 static void check_stdout (void);
 static void usage (void);
 
@@ -361,7 +362,7 @@ main (int argc, char **argv)
 	      char *numend;
 	      numval = strtoimax (optarg, &numend, 10);
 	      if (*numend || numval < 0)
-		try_help ("invalid context length '%s'", optarg);
+		try_help ("invalid context length %s", quote (optarg));
 	    }
 	  else
 	    numval = 3;
@@ -572,7 +573,7 @@ main (int argc, char **argv)
 	  char *numend;
 	  intmax_t numval = strtoimax (optarg, &numend, 10);
 	  if (numval <= 0 || *numend)
-	    try_help ("invalid width '%s'", optarg);
+	    try_help ("invalid width %s", quote (optarg));
 	  if (width != numval)
 	    {
 	      if (width)
@@ -604,7 +605,7 @@ main (int argc, char **argv)
 	  char *numend;
 	  intmax_t numval = strtoimax (optarg, &numend, 10);
 	  if (*numend || numval < 0)
-	    try_help ("invalid horizon length '%s'", optarg);
+	    try_help ("invalid horizon length %s", quote (optarg));
 	  horizon_lines = MAX (horizon_lines, MIN (numval, LIN_MAX));
 	}
 	break;
@@ -663,7 +664,7 @@ main (int argc, char **argv)
 	  intmax_t numval = strtoimax (optarg, &numend, 10);
 	  if (! (0 < numval && numval <= INTMAX_MAX - GUTTER_WIDTH_MINIMUM)
 	      || *numend)
-	    try_help ("invalid tabsize '%s'", optarg);
+	    try_help ("invalid tabsize %s", quote (optarg));
 	  if (tabsize != numval)
 	    {
 	      if (tabsize)
@@ -861,9 +862,9 @@ main (int argc, char **argv)
           if (argc - optind != 2)
             {
               if (argc - optind < 2)
-                try_help ("missing operand after '%s'", argv[argc - 1]);
+		try_help ("missing operand after %s", quote (argv[argc - 1]));
               else
-                try_help ("extra operand '%s'", argv[optind + 2]);
+		try_help ("extra operand %s", quote (argv[optind + 2]));
             }
 
 	  exit_status = compare_files (&noparent,
@@ -889,7 +890,7 @@ add_regexp (struct regexp_list *reglist, char const *pattern)
   char const *m = re_compile_pattern (pattern, patlen, reglist->buf);
 
   if (m != 0)
-    error (EXIT_TROUBLE, 0, "%s: %s", pattern, m);
+    error (EXIT_TROUBLE, 0, "%s: %s", squote (0, pattern), m);
   else
     {
       char *regexps = reglist->regexps;
@@ -927,18 +928,10 @@ summarize_regexp_list (struct regexp_list *reglist)
           char const *m = re_compile_pattern (reglist->regexps, reglist->len,
                                               reglist->buf);
           if (m)
-            error (EXIT_TROUBLE, 0, "%s: %s", reglist->regexps, m);
+	    error (EXIT_TROUBLE, 0, "%s: %s",
+		   squote (0, reglist->regexps), m);
         }
     }
-}
-
-static void
-try_help (char const *reason_msgid, char const *operand)
-{
-  if (reason_msgid)
-    error (0, 0, _(reason_msgid), operand);
-  error (EXIT_TROUBLE, 0, _("Try '%s --help' for more information."),
-         program_name);
 }
 
 /* Get the value of errno after a system call fails,
@@ -1062,7 +1055,7 @@ static char const *const option_help_msgid[] = {
 static void
 usage (void)
 {
-  printf (_("Usage: %s [OPTION]... FILES\n"), program_name);
+  printf (_("Usage: %s [OPTION]... FILES\n"), squote (0, program_name));
   printf ("%s\n\n", _("Compare FILES line by line."));
 
   fputs (_("\
@@ -1097,7 +1090,7 @@ specify_value (char const **var, char const *value, char const *option)
 {
   if (*var && ! STREQ (*var, value))
     {
-      error (0, 0, _("conflicting %s option value '%s'"), option, value);
+      error (0, 0, _("conflicting %s option value %s"), option, quote (value));
       try_help (nullptr, nullptr);
     }
   *var = value;
@@ -1126,7 +1119,7 @@ specify_colors_style (char const *value)
   else if (STREQ (value, "never"))
     colors_style = NEVER;
   else
-    try_help ("invalid color '%s'", value);
+    try_help ("invalid color %s", quote (value));
 }
 
 
@@ -1176,7 +1169,7 @@ compare_files (struct comparison const *parent,
       char const *dir = parent->file[!name0].name;
 
       /* See POSIX 1003.1-2017 for this format.  */
-      message ("Only in %s: %s\n", dir, name);
+      message ("Only in %s: %s\n", squote (0, dir), squote (1, name));
 
       /* Return EXIT_FAILURE so that diff_dirs will return
          EXIT_FAILURE ("some files differ").  */
@@ -1388,7 +1381,7 @@ compare_files (struct comparison const *parent,
   for (int f = 0; f < 2; f++)
     if (cmp.file[f].err)
       {
-	error (0, cmp.file[f].err, "%s", cmp.file[f].name);
+	error (0, cmp.file[f].err, "%s", squote (0, cmp.file[f].name));
 	status = EXIT_TROUBLE;
       }
 
@@ -1435,7 +1428,8 @@ compare_files (struct comparison const *parent,
              unless -r was specified.
 	     See POSIX 1003.1-2017 for this format.  */
           message ("Common subdirectories: %s and %s\n",
-                   cmp.file[0].name, cmp.file[1].name);
+		   squote (0, cmp.file[0].name),
+		   squote (1, cmp.file[1].name));
         }
       else
         status = diff_dirs (&cmp);
@@ -1445,9 +1439,8 @@ compare_files (struct comparison const *parent,
 	   || (cmp.file[1].desc == NONEXISTENT && !new_file))
     {
       /* Only one file exists.  See POSIX 1003.1-2017 for this format.  */
-      message ("Only in %s: %s\n",
-	       parent->file[cmp.file[0].desc == NONEXISTENT].name,
-	       name0);
+      char const *dname = parent->file[cmp.file[0].desc == NONEXISTENT].name;
+      message ("Only in %s: %s\n", squote (0, dname), squote (1, name0));
       status = EXIT_FAILURE;
     }
   else if (cmp.file[0].detype != cmp.file[1].detype
@@ -1479,8 +1472,10 @@ compare_files (struct comparison const *parent,
       /* POSIX 1003.1-2017 says any message will do, so long as it
 	 contains the file names.  */
       message ("File %s is a %s while file %s is a %s\n",
-	       file_label[0] ? file_label[0] : cmp.file[0].name, ftype[0],
-	       file_label[1] ? file_label[1] : cmp.file[1].name, ftype[1]);
+	       file_label[0] ? file_label[0] : squote (0, cmp.file[0].name),
+	       ftype[0],
+	       file_label[1] ? file_label[1] : squote (1, cmp.file[1].name),
+	       ftype[1]);
 
       /* This is a difference.  */
       status = EXIT_FAILURE;
@@ -1533,8 +1528,8 @@ compare_files (struct comparison const *parent,
            && 0 <= cmp.file[1].stat.st_size)
     {
       message ("Files %s and %s differ\n",
-               file_label[0] ? file_label[0] : cmp.file[0].name,
-               file_label[1] ? file_label[1] : cmp.file[1].name);
+	       file_label[0] ? file_label[0] : squote (0, cmp.file[0].name),
+	       file_label[1] ? file_label[1] : squote (1, cmp.file[1].name));
       status = EXIT_FAILURE;
     }
   else
@@ -1564,7 +1559,8 @@ compare_files (struct comparison const *parent,
 	  }
 	else if (cmp.file[f].desc == OPEN_FAILED)
 	  {
-	    error (0, cmp.file[f].openerr, "%s", cmp.file[f].name);
+	    error (0, cmp.file[f].openerr, "%s",
+		   squote (0, cmp.file[f].name));
 	    status = EXIT_TROUBLE;
 	  }
 
@@ -1591,9 +1587,10 @@ compare_files (struct comparison const *parent,
   if (status == EXIT_SUCCESS)
     {
       if (report_identical_files && !dir_p (&cmp, 0))
-        message ("Files %s and %s are identical\n",
-                 file_label[0] ? file_label[0] : cmp.file[0].name,
-                 file_label[1] ? file_label[1] : cmp.file[1].name);
+	message
+	  ("Files %s and %s are identical\n",
+	   file_label[0] ? file_label[0] : squote (0, cmp.file[0].name),
+	   file_label[1] ? file_label[1] : squote (1, cmp.file[1].name));
     }
   else
     {
