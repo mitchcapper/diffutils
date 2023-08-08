@@ -323,17 +323,14 @@ main (int argc, char **argv)
 	stat_buf[f].st_size = stat_size (&stat_buf[f]);
     }
 
-  /* If the files are links to the same inode and have the same file position,
-     they are identical.  */
+  /* If the files are the same and have the same file position,
+     the contents are identical.  */
 
   if (-1 <= stat_buf[0].st_size && -1 <= stat_buf[1].st_size
       && 0 < same_file (&stat_buf[0], &stat_buf[1])
-      && same_file_attributes (&stat_buf[0], &stat_buf[1]))
-    {
-      off_t pos = file_position (0);
-      if (0 <= pos && pos == file_position (1))
-	return EXIT_SUCCESS;
-    }
+      && same_file_attributes (&stat_buf[0], &stat_buf[1])
+      && file_position (0) == file_position (1))
+    return EXIT_SUCCESS;
 
   /* If output is redirected to the null device, we can avoid some of
      the work.  */
@@ -726,7 +723,8 @@ sprintc (char *buf, unsigned char c)
 
 /* Position file F to ignore_initial[F] bytes from its initial position,
    and yield its new position.  Return a negative number on failure.
-   Don't try more than once.  */
+   Do not report an error on failure, as lseek is generally a no-op
+   on devices that cannot seek.  Don't try more than once.  */
 
 static off_t
 file_position (int f)
