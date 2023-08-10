@@ -180,7 +180,7 @@ static_assert (LIN_MAX == IDX_MAX);
 
 /* Return the number of bytes in the file described by *S,
    or -1 if this cannot be determined reliably.  */
-SYSTEM_INLINE off_t stat_size (struct stat *s)
+SYSTEM_INLINE off_t stat_size (struct stat const *s)
 {
   mode_t mode = s->st_mode;
   off_t size = s->st_size;
