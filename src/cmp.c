@@ -320,8 +320,7 @@ main (int argc, char **argv)
      the contents are identical.  */
 
   if (-1 <= stat_buf[0].st_size && -1 <= stat_buf[1].st_size
-      && 0 < same_file (&stat_buf[0], &stat_buf[1])
-      && same_file_attributes (&stat_buf[0], &stat_buf[1])
+      && same_file (&stat_buf[0], &stat_buf[1])
       && file_position (0) == file_position (1))
     return EXIT_SUCCESS;
 
@@ -335,7 +334,7 @@ main (int argc, char **argv)
       if (fstat (STDOUT_FILENO, &outstat) == 0
 	  && S_ISCHR (outstat.st_mode)
           && stat (NULL_DEVICE, &nullstat) == 0
-          && 0 < same_file (&outstat, &nullstat))
+	  && same_file (&outstat, &nullstat))
         comparison_type = type_no_stdout;
     }
 

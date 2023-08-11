@@ -342,7 +342,7 @@ static bool ATTRIBUTE_PURE
 dir_loop (struct comparison const *cmp, int i)
 {
   for (struct comparison const *p = cmp; (p = p->parent) != &noparent; )
-    if (0 < same_file (&p->file[i].stat, &cmp->file[i].stat))
+    if (same_file (&p->file[i].stat, &cmp->file[i].stat))
       return true;
   return false;
 }

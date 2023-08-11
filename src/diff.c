@@ -1400,9 +1400,7 @@ compare_files (struct comparison const *parent,
             = (cmp.file[0].desc != NONEXISTENT
                && cmp.file[1].desc != NONEXISTENT
 	       && cmp.file[0].detype == cmp.file[1].detype
-               && 0 < same_file (&cmp.file[0].stat, &cmp.file[1].stat)
-               && same_file_attributes (&cmp.file[0].stat,
-                                        &cmp.file[1].stat)))
+	       && same_file (&cmp.file[0].stat, &cmp.file[1].stat)))
            && no_diff_means_no_output)
     {
       /* The two named files are actually the same physical file.
