@@ -29,6 +29,12 @@
 #include <stat-macros.h>
 #include <stat-time.h>
 #include <timespec.h>
+#ifdef _WIN32
+#ifndef _TIMESPEC_TYPEDEF
+typedef struct timespec timespec;
+#define _TIMESPEC_TYPEDEF
+#endif
+#endif
 
 #ifndef STAT_BLOCKSIZE
 # if HAVE_STRUCT_STAT_ST_BLKSIZE
