@@ -29,6 +29,12 @@
 #include <stat-size.h>
 #include <stat-time.h>
 #include <timespec.h>
+#ifdef _WIN32
+#ifndef _TIMESPEC_TYPEDEF
+typedef struct timespec timespec;
+#define _TIMESPEC_TYPEDEF
+#endif
+#endif
 
 #include <unistd.h>
 
