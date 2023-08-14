@@ -1512,21 +1512,11 @@ compare_files (struct comparison const *parent,
 	    }
 	}
 
-      /* Get the file's status if needed to determine either the file's type
-	 or whether it is the same physical file as the other.  */
-      if (! cmp.file[1 - f].err
-	  && ! (/* If openat fails as follows, fstatat would fail too.  */
-		err == ENOENT || err == ENOTDIR || err == ELOOP
-		|| err == EOVERFLOW || err == ENAMETOOLONG)
-	  && ((cmp.file[f].detype == cmp.file[1 - f].detype
-	       && (cmp.file[f].detype != DE_DIR
-		   || recursive | toplevel))
-	      || cmp.file[f].detype == DE_UNKNOWN
-	      || cmp.file[1 - f].detype == DE_UNKNOWN
-	      || cmp.file[f].detype == DE_OTHER
-	      || (!no_dereference_symlinks
-		  && (cmp.file[f].detype == DE_LNK
-		      || cmp.file[1 - f].detype == DE_LNK))))
+      /* Get the file's status unless an earlier error makes it unnecessary.  */
+      if (! (cmp.file[1 - f].err
+	     /* If openat failed as follows, fstatat would fail too.  */
+	     || err == ENOENT || err == ENOTDIR || err == ELOOP
+	     || err == EOVERFLOW || err == ENAMETOOLONG))
 	{
 	  if ((fd < 0
 	       ? fstatat (parentdesc, nm, &cmp.file[f].stat,
