@@ -44,6 +44,15 @@
 #include <xalloc.h>
 #include <xstdopen.h>
 
+#ifdef MAJOR_IN_MKDEV
+# include <sys/mkdev.h>
+#elif defined MAJOR_IN_SYSMACROS
+# include <sys/sysmacros.h>
+#elif !defined major /* Might be defined in sys/types.h.  */
+# define major(dev)  (((dev) >> 8) & 0xff)
+# define minor(dev)  ((dev) & 0xff)
+#endif
+
 /* The official name of this program (e.g., no 'g' prefix).  */
 static char const PROGRAM_NAME[] = "diff";
 
@@ -1517,6 +1526,29 @@ compare_files (struct comparison const *parent,
       for (int f = 0; f < 2; f++)
 	if (link_value[f] != linkbuf[f])
 	  free (link_value[f]);
+    }
+  else if (!toplevel
+	   && (cmp.file[0].detype == DE_CHR || cmp.file[0].detype == DE_BLK))
+    {
+      intmax_t num[] = {
+	major (cmp.file[0].stat.st_rdev),
+	minor (cmp.file[0].stat.st_rdev),
+	major (cmp.file[1].stat.st_rdev),
+	minor (cmp.file[1].stat.st_rdev)
+      };
+      enum { n_num = sizeof num / sizeof *num };
+      char numbuf[n_num][INT_BUFSIZE_BOUND (intmax_t)];
+      for (int i = 0; i < n_num; i++)
+	sprintf (numbuf[i], "%"PRIdMAX, num[i]);
+
+      message ((cmp.file[0].detype == DE_CHR
+		? ("Character special files %s (%s, %s)"
+		   " and %s (%s, %s) differ\n")
+		: ("Block special files %s (%s, %s)"
+		   " and %s (%s, %s) differ\n")),
+	       quote_n (0, cmp.file[0].name), numbuf[0], numbuf[1],
+	       quote_n (2, cmp.file[1].name), numbuf[2], numbuf[3]);
+      status = EXIT_FAILURE;
     }
   else if (files_can_be_treated_as_binary
 	   && cmp.file[0].detype == DE_REG
