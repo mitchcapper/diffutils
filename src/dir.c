@@ -316,12 +316,12 @@ diff_dirs (struct comparison *cmp)
                 }
             }
 
-	  enum detype
-	    detype0 = HAVE_STRUCT_DIRENT_D_TYPE && *n0 ? (*n0)[-1] : DE_UNKNOWN,
-	    detype1 = HAVE_STRUCT_DIRENT_D_TYPE && *n1 ? (*n1)[-1] : DE_UNKNOWN;
-	  int v1 = compare_files (cmp,
-				  0 < nameorder ? nullptr : *n0++, detype0,
-				  nameorder < 0 ? nullptr : *n1++, detype1);
+	  enum detype detypes[]
+	    = { HAVE_STRUCT_DIRENT_D_TYPE && *n0 ? (*n0)[-1] : DE_UNKNOWN,
+		HAVE_STRUCT_DIRENT_D_TYPE && *n1 ? (*n1)[-1] : DE_UNKNOWN };
+	  int v1 = compare_files (cmp, detypes,
+				  0 < nameorder ? nullptr : *n0++,
+				  nameorder < 0 ? nullptr : *n1++);
           if (val < v1)
             val = v1;
         }

@@ -55,6 +55,12 @@ Symbolic links 'symlink2' -> 'regular2' and 'symlink3' -> 'regular3' differ
 EOF
 compare expected out || fail=1
 
+mkdir subdir &&
+ln -s loop loop &&
+ln -s loop subdir/loop || framework_failure_
+diff --no-dereference loop subdir > out || fail=1
+compare /dev/null out || fail=1
+
 # Recursive comparisons.
 
 # Compare symbolic link with nonexistent file.
