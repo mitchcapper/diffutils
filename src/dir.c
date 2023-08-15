@@ -25,7 +25,7 @@
 #include <error.h>
 #include <exclude.h>
 #include <filenamecat.h>
-#include <mbcel.h>
+#include <mcel.h>
 #include <quote.h>
 #include <setjmp.h>
 #include <xalloc.h>
@@ -189,7 +189,7 @@ compare_collated (char const *name1, char const *name2)
 {
   int r;
   if (ignore_file_name_case)
-    r = mbcel_strcasecmp (name1, name2);  /* Best we can do.  */
+    r = mcel_casecmp (name1, name2);  /* Best we can do.  */
   else
     {
       errno = 0;
