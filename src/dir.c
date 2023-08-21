@@ -209,7 +209,7 @@ compare_names (char const *name1, char const *name2)
   if (locale_specific_sorting)
     {
       int diff = compare_collated (name1, name2);
-      if (diff || ignore_file_name_case)
+      if (diff)
         return diff;
     }
   return file_name_cmp (name1, name2);
