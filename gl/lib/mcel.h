@@ -159,14 +159,14 @@ mcel_ch (char32_t ch, size_t len)
   assume (0 < len);
   assume (len <= MCEL_LEN_MAX);
   assume (ch <= MCEL_CHAR_MAX);
-  return (mcel_t) {ch: ch, len: len};
+  return (mcel_t) {.ch = ch, .len = len};
 }
 MCEL_INLINE mcel_t
 mcel_err (unsigned char err)
 {
   assume (MCEL_ERR_MIN <= err);
   assume (err <= MCEL_ERR_MAX);
-  return (mcel_t) {err: err, len: 1};
+  return (mcel_t) {.err = err, .len = 1};
 }
 
 /* Compare C1 and C2, with encoding errors sorting after characters.
