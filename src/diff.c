@@ -1558,7 +1558,11 @@ compare_files (struct comparison const *parent, enum detype const detype[2],
 	    cmp.file[dir_arg].desc = openat (dirfd, atname,
 					     O_PATHSEARCH | oflags);
 	  if (cmp.file[dir_arg].desc < 0
-	      || fstat (cmp.file[dir_arg].desc, &cmp.file[dir_arg].stat) < 0)
+	      ? (O_PATH_DEFINED || !no_dereference_symlinks || errno != ELOOP
+		 || (fstatat (dirfd, atname, &cmp.file[dir_arg].stat,
+			      AT_SYMLINK_NOFOLLOW)
+		     < 0))
+	      : fstat (cmp.file[dir_arg].desc, &cmp.file[dir_arg].stat) < 0)
 	    cmp.file[dir_arg].err = get_errno ();
 	  else
 	    {
