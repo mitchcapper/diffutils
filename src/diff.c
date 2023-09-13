@@ -24,6 +24,7 @@
 #include "paths.h"
 
 #include <binary-io.h>
+#include <c-ctype.h>
 #include <c-stack.h>
 #include <careadlinkat.h>
 #include <diagnose.h>

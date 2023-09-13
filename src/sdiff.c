@@ -25,6 +25,7 @@
 #include <stdio.h>
 #include <unlocked-io.h>
 
+#include <c-ctype.h>
 #include <c-stack.h>
 #include <dirname.h>
 #include <diagnose.h>
