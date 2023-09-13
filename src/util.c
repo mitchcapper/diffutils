@@ -1086,11 +1086,11 @@ output_1_line (char const *base, char const *limit, char const *flag_format,
         {
           idx_t to_write = MIN (left, MAX_CHUNK);
           idx_t written = fwrite (base, sizeof (char), to_write, outfile);
+          process_signals ();
           if (written < to_write)
             return;
           base += written;
           left -= written;
-          process_signals ();
         }
     }
   else
