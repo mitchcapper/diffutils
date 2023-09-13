@@ -823,7 +823,7 @@ skip_white (void)
   for (;;)
     {
       c = getchar ();
-      if (! isspace (c) || c == '\n')
+      if (! c_isspace (c) || c == '\n')
         break;
       checksigs ();
     }
