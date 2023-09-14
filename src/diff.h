@@ -440,8 +440,9 @@ extern void print_sdiff_script (struct change *);
 /* util.c */
 extern char const change_letter[4];
 extern char const pr_program[];
-extern lin translate_line_number (struct file_data const *, lin);
-extern struct change *find_change (struct change *);
+extern lin translate_line_number (struct file_data const *, lin)
+  ATTRIBUTE_PURE;
+extern struct change *find_change (struct change *) ATTRIBUTE_CONST;
 extern enum changes analyze_hunk (struct change *, lin *, lin *, lin *, lin *);
 extern void begin_output (void);
 extern void cleanup_signal_handlers (void);
