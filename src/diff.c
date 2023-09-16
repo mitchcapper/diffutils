@@ -1545,16 +1545,22 @@ compare_files (struct comparison const *parent, enum detype const detype[2],
 	  if (cmp.file[fnm_arg].desc == STDIN_FILENO)
 	    fatal ("cannot compare '-' to a directory");
 	  char const *fnm = cmp.file[fnm_arg].name;
+	  enum detype dir_detype;
 	  char const *filename = cmp.file[dir_arg].name = free0
-	    = find_dir_file_pathname (&cmp.file[dir_arg], last_component (fnm));
+	    = find_dir_file_pathname (&cmp.file[dir_arg], last_component (fnm),
+				      &dir_detype);
 	  int dirfd = cmp.file[dir_arg].desc;
 	  if (dirfd < 0)
 	    dirfd = AT_FDCWD;
 	  char const *atname = dirfd < 0 ? filename : last_component (filename);
 	  cmp.file[dir_arg].desc = UNOPENED;
 	  noparent.file[dir_arg].desc = dirfd;
-	  cmp.file[dir_arg].desc = openat (dirfd, atname, O_RDONLY | oflags);
+	  cmp.file[dir_arg].desc
+	    = (dir_detype == DE_LNK && no_dereference_symlinks
+	       ? (errno = ELOOP, -1)
+	       : openat (dirfd, atname, O_RDONLY | oflags));
 	  if (O_PATH_DEFINED && cmp.file[dir_arg].desc < 0
+	      && (dir_detype == DE_LNK || dir_detype == DE_UNKNOWN)
 	      && no_dereference_symlinks && errno == ELOOP)
 	    cmp.file[dir_arg].desc = openat (dirfd, atname,
 					     O_PATHSEARCH | oflags);

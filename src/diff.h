@@ -413,7 +413,8 @@ extern int compare_files (struct comparison const *, enum detype const[2],
 
 /* dir.c */
 extern int diff_dirs (struct comparison *);
-extern char *find_dir_file_pathname (struct file_data *, char const *)
+extern char *find_dir_file_pathname (struct file_data *, char const *,
+				     enum detype *)
   ATTRIBUTE_MALLOC ATTRIBUTE_DEALLOC_FREE
   ATTRIBUTE_RETURNS_NONNULL;
 
