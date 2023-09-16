@@ -1147,7 +1147,7 @@ output_1_line (char const *base, char const *limit, char const *flag_format,
 		return;
               break;
 
-            default:
+            default:;
 	      mcel_t g = mcel_scan (t, limit);
 	      column += g.err ? 1 : c32isprint (g.ch) ? c32width (g.ch) : 0;
 	      tab += column / tab_size;
