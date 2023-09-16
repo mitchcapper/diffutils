@@ -1488,7 +1488,8 @@ compare_files (struct comparison const *parent, enum detype const detype[2],
 
 	      /* If it might be a symlink, play it safe and fstatat later.  */
 	      if (err == ELOOP && no_dereference_symlinks
-		  && (detype[f] == DE_LNK || detype[f] == DE_UNKNOWN))
+		  && (detype[f] == DE_UNKNOWN
+		      || (detype[f] == DE_LNK && accmode == O_RDONLY)))
 		{
 		  fd = UNOPENED;
 		  err = 0;
