@@ -1164,7 +1164,7 @@ compare_prepped_files (struct comparison const *parent,
 
   bool toplevel = parent == &noparent;
 
-  /* Comapre the two hierarchies if both files are directories, or if
+  /* Compare the two hierarchies if both files are directories, or if
      diff is recursive and one file is a directory and the other
      pretends to be a directory full of empty files.  But don't
      compare dir contents one level down unless -r was specified.  */
