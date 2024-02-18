@@ -196,7 +196,7 @@ slurp (struct file_data *current)
 	  && !ckd_add (&cc, file_size - file_size % sizeof (word), extra_room)
 	  && current->bufsize < cc)
 	{
-	  #if 13 <= __GNUC__
+	  #if __GNUC__ == 13
 	    /* Work around GCC bug 110014.  */
 	    #pragma GCC diagnostic push
 	    #pragma GCC diagnostic ignored "-Wanalyzer-allocation-size"
@@ -210,7 +210,7 @@ slurp (struct file_data *current)
 	      current->bufsize = cc;
 	    }
 
-	  #if 13 <= __GNUC__
+	  #if __GNUC__ == 13
 	    #pragma GCC diagnostic pop
 	  #endif
 	}
