@@ -20,7 +20,6 @@
 
 #include <config.h>
 
-#include <count-leading-zeros.h>
 #include <verify.h>
 
 #include <sys/types.h>
@@ -55,6 +54,7 @@
 #include <inttypes.h>
 #include <limits.h>
 #include <locale.h>
+#include <stdbit.h>
 #include <stdckdint.h>
 #include <stddef.h>
 #include <string.h>
@@ -294,8 +294,10 @@ SYSTEM_INLINE off_t stat_size (struct stat const *s)
 /* Return the floor of the log base 2 of N.  Return -1 if N is zero.  */
 SYSTEM_INLINE int floor_log2 (idx_t n)
 {
-  static_assert (IDX_MAX <= ULLONG_MAX);
-  return ULLONG_WIDTH - 1 - count_leading_zeros_ll (n);
+  static_assert (IDX_MAX <= SIZE_MAX);
+  size_t s = n;
+  int w = stdc_bit_width (s);
+  return w - 1;
 }
 
 _GL_INLINE_HEADER_END
