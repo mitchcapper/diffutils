@@ -97,17 +97,14 @@
 # define dassert(e) assume (e)
 #endif
 
-#ifdef SYSTEM_INLINE
-# define SYSTEM_EXTERN(decl) extern decl; decl
-# else
-# define SYSTEM_EXTERN(decl) extern decl
+#ifndef SYSTEM_INLINE
 # define SYSTEM_INLINE _GL_INLINE
 #endif
 
 #if (defined __linux__ || defined __CYGWIN__ || defined __FreeBSD__ \
      || defined __NetBSD__ || defined _AIX)
 /* The device number of the /proc file system if known; zero otherwise.  */
-SYSTEM_EXTERN (dev_t proc_dev);
+extern dev_t proc_dev;
 #endif
 
 /* Use this for code that could be used if diff ever cares about
@@ -117,7 +114,7 @@ SYSTEM_EXTERN (dev_t proc_dev);
 #if care_about_symlink_size && (defined __linux__ || defined __ANDROID__)
 # include <sys/utsname.h>
 /* 1 if symlink st_size is OK, -1 if not, 0 if unknown yet.  */
-SYSTEM_EXTERN (signed char symlink_size_ok);
+extern signed char symlink_size_ok;
 #endif
 
 _GL_INLINE_HEADER_BEGIN
